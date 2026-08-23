@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Institution\Models;
 
+use App\Platform\Concerns\Auditable;
 use App\Platform\Models\BaseModel;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class Faculty extends BaseModel
 {
+    use Auditable;
+
     /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
@@ -20,7 +23,7 @@ final class Faculty extends BaseModel
 
     protected $table = 'institution.faculties';
 
-    protected $fillable = ['institution_id', 'campus_id', 'code', 'name', 'is_active'];
+    protected $fillable = ['institution_id', 'campus_id', 'code', 'name', 'type', 'head_of_unit_id', 'is_active', 'status', 'resolution_reference'];
 
     protected function casts(): array
     {

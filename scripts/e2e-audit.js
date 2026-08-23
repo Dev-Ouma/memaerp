@@ -11,7 +11,10 @@ async function runE2eAudit() {
   const apps = [
     { name: 'Public Website', url: 'http://localhost:3000', expectedTitle: 'Mema University' },
     { name: 'Applicant Portal', url: 'http://localhost:3001', expectedTitle: 'Admissions' },
+    { name: 'Applicant Status', url: 'http://localhost:3001/status', expectedTitle: 'Admissions' },
     { name: 'Student Portal', url: 'http://localhost:3002', expectedTitle: 'Student Portal' },
+    { name: 'Lecturer Portal', url: 'http://localhost:3003', expectedTitle: 'Lecturer Portal' },
+    { name: 'Staff Portal', url: 'http://localhost:3004', expectedTitle: 'Staff Portal' },
     { name: 'ERP Admin Console', url: 'http://localhost:3005', expectedTitle: 'Enterprise Administration' },
   ];
 

@@ -28,7 +28,7 @@ final class CurriculumAndCourseTest extends TestCase
         $this->seed(DemoUserSeeder::class);
         $this->seed(CurriculumAndCourseSeeder::class);
 
-        $this->admin = User::query()->where('email', 'admin@mema.ac.ke')->firstOrFail();
+        $this->admin = User::query()->where('email', 'registrar@mema.ac.ke')->firstOrFail();
         $this->token = $this->admin->createToken('test-suite')->plainTextToken;
     }
 

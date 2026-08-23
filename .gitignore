@@ -28,10 +28,21 @@ apps/api/public/hot
 apps/api/bootstrap/cache/*
 !apps/api/bootstrap/cache/.gitkeep
 
+# Database dumps — a backup is a full copy of everyone's personal data, salaries and grades.
+# Committing one puts all of it in every clone, forever, including on machines that were never
+# meant to hold it.
+apps/api/storage/backups/*
+!apps/api/storage/backups/.gitkeep
+backups/
+*.dump
+*.dump.sha256
+*.sql.gz
+
 # Testing
 coverage/
 .phpunit.result.cache
 .phpunit.cache/
+.deptrac.cache
 
 # Editors & OS
 .DS_Store
@@ -49,3 +60,7 @@ docker/data/
 # Agent observations
 skill-observations/
 
+# Playwright
+playwright-report/
+test-results/
+blob-report/

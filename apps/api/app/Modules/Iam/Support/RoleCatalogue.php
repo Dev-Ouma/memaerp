@@ -42,7 +42,10 @@ final class RoleCatalogue
                     'institution.structure.view', 'institution.structure.manage',
                     'institution.calendar.view', 'institution.calendar.manage',
                     'institution.grading-scale.view',
+                    'curriculum.programme.view', 'course.catalogue.view',
                     'audit.log.view',
+                    'lms.sync.view', 'lms.sync.manage',
+                    'attendance.report.view',
                 ],
             ],
             [
@@ -67,18 +70,23 @@ final class RoleCatalogue
                 'description' => 'Owns the academic record: admissions decisions, registration, results publication, transcripts.',
                 'default_scope' => Scope::INSTITUTION,
                 'permissions' => [
+                    'institution.structure.view',
                     'institution.calendar.view', 'institution.calendar.manage',
                     'institution.grading-scale.view', 'institution.grading-scale.manage',
                     'curriculum.programme.view', 'curriculum.programme.manage',
-                    'course.catalogue.view', 'course.offering.view', 'course.offering.manage',
-                    'admission.application.view', 'admission.application.decide',
+                    'course.catalogue.view', 'course.catalogue.manage', 'course.catalogue.approve',
+                    'course.offering.view', 'course.offering.manage', 'course.offering.assign-lecturer',
+                    'admission.application.view', 'admission.application.review', 'admission.application.decide',
+                    'admission.prospect.manage', 'admission.kuccps.import',
                     'student.record.view', 'student.record.update', 'student.record.view-sensitive',
+                    'student.record.matriculate', 'student.record.status',
                     'enrollment.registration.view', 'enrollment.registration.register-on-behalf',
                     'enrollment.registration.override',
                     'examination.marks.view', 'examination.marks.publish',
                     'graduation.clearance.view', 'graduation.clearance.clear',
                     'graduation.transcript.issue',
                     'analytics.dashboard.view',
+                    'advising.assignment.manage', 'advising.advisee.view',
                 ],
             ],
             [
@@ -89,8 +97,9 @@ final class RoleCatalogue
                 'default_scope' => Scope::FACULTY,
                 'permissions' => [
                     'institution.structure.view', 'institution.calendar.view',
-                    'curriculum.programme.view', 'curriculum.programme.approve',
-                    'course.catalogue.view', 'course.offering.view', 'course.offering.manage',
+                    'curriculum.programme.view', 'curriculum.programme.manage',
+                    'course.catalogue.view', 'course.catalogue.approve',
+                    'course.offering.view', 'course.offering.manage',
                     'course.offering.assign-lecturer',
                     'admission.application.view', 'admission.application.review',
                     'student.record.view',
@@ -98,6 +107,8 @@ final class RoleCatalogue
                     'examination.marks.view', 'examination.marks.approve',
                     'graduation.clearance.view', 'graduation.clearance.clear',
                     'analytics.dashboard.view',
+                    'attendance.report.view', 'attendance.override.manage',
+                    'advising.assignment.manage', 'advising.advisee.view', 'advising.notes.manage',
                 ],
             ],
             [
@@ -108,8 +119,8 @@ final class RoleCatalogue
                 'default_scope' => Scope::DEPARTMENT,
                 'permissions' => [
                     'institution.structure.view', 'institution.calendar.view',
-                    'curriculum.programme.view',
-                    'course.catalogue.view', 'course.catalogue.manage',
+                    'curriculum.programme.view', 'curriculum.programme.manage',
+                    'course.catalogue.view', 'course.catalogue.manage', 'course.catalogue.approve',
                     'course.offering.view', 'course.offering.manage', 'course.offering.assign-lecturer',
                     'admission.application.view', 'admission.application.review',
                     'student.record.view',
@@ -117,6 +128,8 @@ final class RoleCatalogue
                     'examination.marks.view', 'examination.marks.verify',
                     'graduation.clearance.view', 'graduation.clearance.clear',
                     'analytics.dashboard.view',
+                    'attendance.report.view', 'attendance.override.manage',
+                    'advising.assignment.manage', 'advising.advisee.view', 'advising.notes.manage',
                 ],
             ],
             [
@@ -131,6 +144,8 @@ final class RoleCatalogue
                     'student.record.view',
                     'enrollment.registration.view',
                     'examination.marks.view', 'examination.marks.enter',
+                    'attendance.session.manage', 'attendance.report.view',
+                    'advising.advisee.view', 'advising.notes.manage',
                 ],
             ],
             [
@@ -195,7 +210,8 @@ final class RoleCatalogue
                 'permissions' => [
                     'curriculum.programme.view', 'course.catalogue.view',
                     'admission.application.view', 'admission.application.review',
-                    'student.record.view',
+                    'admission.prospect.manage',
+                    'student.record.view', 'student.record.matriculate',
                 ],
             ],
             [
@@ -212,6 +228,9 @@ final class RoleCatalogue
                     'finance.invoice.view', 'finance.payment.view', 'finance.waiver.request',
                     'examination.marks.view',
                     'graduation.clearance.view',
+                    'lms.launch.view',
+                    'attendance.checkin.self', 'attendance.record.view-self',
+                    'advising.progress.view-self', 'advising.session.request',
                 ],
             ],
             [
@@ -222,7 +241,7 @@ final class RoleCatalogue
                 'default_scope' => Scope::SELF,
                 'permissions' => [
                     'curriculum.programme.view', 'course.catalogue.view',
-                    'admission.application.view',
+                    'admission.application.view', 'admission.application.submit',
                 ],
             ],
             [
@@ -284,7 +303,7 @@ final class RoleCatalogue
             ['deputy-registrar', 'Deputy Academic Registrar', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, $academic],
             ['graduate-school-admin', 'Graduate School Administrator', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, $academic],
             ['programme-coordinator', 'Programme Coordinator', Role::FAMILY_ACADEMIC, Scope::DEPARTMENT, $academic],
-            ['academic-advisor', 'Academic Advisor / Mentor', Role::FAMILY_ACADEMIC, Scope::SELF, $academic],
+            ['academic-advisor', 'Academic Advisor / Mentor', Role::FAMILY_ACADEMIC, Scope::SELF, array_merge($academic, ['advising.advisee.view', 'advising.notes.manage'])],
             ['trainer', 'Skills & Workshop Trainer', Role::FAMILY_ACADEMIC, Scope::SELF, ['course.catalogue.view', 'course.offering.view', 'examination.marks.enter']],
             ['exam-admin', 'Examination Administrator', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, ['student.record.view', 'examination.marks.view', 'examination.marks.moderate']],
             ['exam-coordinator', 'Faculty / Department Exam Coordinator', Role::FAMILY_ADMINISTRATIVE, Scope::FACULTY, ['student.record.view', 'examination.marks.view', 'examination.marks.verify']],
@@ -311,9 +330,9 @@ final class RoleCatalogue
             ['assistant-librarian', 'Assistant Librarian / Cataloguer', Role::FAMILY_ADMINISTRATIVE, Scope::CAMPUS, $read],
             ['election-commissioner', 'University Election Commissioner', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, $read],
             ['returning-officer', 'Student Union Election Returning Officer', Role::FAMILY_ADMINISTRATIVE, Scope::CAMPUS, $read],
-            ['senate-member', 'Senate Committee Member', Role::FAMILY_EXECUTIVE, Scope::INSTITUTION, $academic],
+            ['senate-member', 'Senate Committee Member', Role::FAMILY_EXECUTIVE, Scope::INSTITUTION, array_merge($academic, ['curriculum.programme.manage', 'curriculum.programme.approve', 'course.catalogue.manage', 'course.catalogue.approve', 'course.offering.manage', 'course.offering.assign-lecturer'])],
             ['pdc-coordinator', 'Professional Development Centre Coordinator', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, $read],
-            ['ict-security', 'ICT Security Officer', Role::FAMILY_SYSTEM, Scope::INSTITUTION, ['iam.user.view', 'iam.user.suspend', 'iam.role.view', 'audit.log.view']],
+            ['ict-security', 'ICT Security Officer', Role::FAMILY_SYSTEM, Scope::INSTITUTION, ['iam.user.view', 'iam.user.suspend', 'iam.role.view', 'audit.log.view', 'lms.sync.view', 'lms.sync.manage']],
             ['user-support', 'ICT Helpdesk & User Support', Role::FAMILY_SYSTEM, Scope::INSTITUTION, ['iam.user.view', 'iam.user.reset-password']],
         ];
 

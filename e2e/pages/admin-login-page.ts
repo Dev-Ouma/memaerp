@@ -7,10 +7,10 @@ export class AdminLoginPage {
   readonly errorAlert: Locator;
 
   constructor(private readonly page: Page) {
-    this.loginInput = page.getByLabel('Username or email');
-    this.passwordInput = page.getByLabel('Password');
-    this.submitButton = page.getByRole('button', { name: 'Sign in' });
-    this.errorAlert = page.getByText('Sign in failed');
+    this.loginInput = page.getByLabel(/Username or email|Institutional Email/i);
+    this.passwordInput = page.getByLabel(/Password|ERP Security Key/i);
+    this.submitButton = page.getByRole('button', { name: /Sign in|Sign In to ERP/i });
+    this.errorAlert = page.getByText(/Sign in failed|Access Denied/i);
   }
 
   async goto(): Promise<void> {

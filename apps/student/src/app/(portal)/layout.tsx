@@ -1,55 +1,8 @@
 'use client';
 
 import React from 'react';
-import {
-  LayoutDashboard,
-  BookOpen,
-  Calendar,
-  CreditCard,
-  Award,
-  CheckCircle2,
-} from 'lucide-react';
 import { PortalShell } from '@mema/auth';
-import type { NavItem } from '@mema/ui';
-
-const studentNavItems: NavItem[] = [
-  {
-    title: 'Overview',
-    href: '/',
-    icon: <LayoutDashboard className="h-5 w-5" />,
-  },
-  {
-    title: 'Course Registration',
-    href: '/registration',
-    icon: <BookOpen className="h-5 w-5" />,
-    permission: 'enrollment.registration.register',
-    badge: 'Open',
-  },
-  {
-    title: 'Timetable & Classes',
-    href: '/timetable',
-    icon: <Calendar className="h-5 w-5" />,
-    permission: 'enrollment.registration.view',
-  },
-  {
-    title: 'Fees & Payments',
-    href: '/finance',
-    icon: <CreditCard className="h-5 w-5" />,
-    anyPermission: ['finance.invoice.view', 'finance.payment.view'],
-  },
-  {
-    title: 'Results & Transcripts',
-    href: '/results',
-    icon: <Award className="h-5 w-5" />,
-    permission: 'examination.marks.view',
-  },
-  {
-    title: 'Clearance & ID',
-    href: '/clearance',
-    icon: <CheckCircle2 className="h-5 w-5" />,
-    permission: 'graduation.clearance.view',
-  },
-];
+import { studentNavItems } from '@/config/portal-nav';
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   return (

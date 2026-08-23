@@ -43,7 +43,7 @@ final class CurriculumAndCourseSeeder extends Seeder
                 'duration_years' => 4,
                 'total_credits_required' => 128,
                 'is_active' => true,
-            ]
+            ],
         );
 
         // 2. Seed Curriculum Version
@@ -58,7 +58,7 @@ final class CurriculumAndCourseSeeder extends Seeder
                 'senate_approval_ref' => 'SEN/2026/RES-104',
                 'is_approved' => true,
                 'approved_at' => Carbon::now(),
-            ]
+            ],
         );
 
         // 3. Seed Master Courses
@@ -78,18 +78,20 @@ final class CurriculumAndCourseSeeder extends Seeder
                     'institution_id' => $institution->id,
                     'code' => $c['code'],
                 ],
-                array_merge($c, ['department_id' => $csDept->id, 'is_active' => true])
+                array_merge($c, ['department_id' => $csDept->id, 'is_active' => true, 'status' => 'ACTIVE']),
             );
         }
 
         // 4. Seed Prerequisites
         CoursePrerequisite::query()->firstOrCreate([
+            'institution_id' => $institution->id,
             'course_id' => $courseMap['CSC 102']->id,
             'prerequisite_course_id' => $courseMap['CSC 101']->id,
             'requirement_type' => 'PREREQUISITE',
         ]);
 
         CoursePrerequisite::query()->firstOrCreate([
+            'institution_id' => $institution->id,
             'course_id' => $courseMap['CSC 201']->id,
             'prerequisite_course_id' => $courseMap['CSC 102']->id,
             'requirement_type' => 'PREREQUISITE',
@@ -107,6 +109,7 @@ final class CurriculumAndCourseSeeder extends Seeder
 
         foreach ($curriculumMap as $item) {
             CurriculumCourse::query()->firstOrCreate([
+                'institution_id' => $institution->id,
                 'curriculum_version_id' => $version->id,
                 'course_id' => $courseMap[$item['course']]->id,
             ], [
@@ -114,6 +117,20 @@ final class CurriculumAndCourseSeeder extends Seeder
                 'semester' => $item['sem'],
                 'course_type' => $item['type'],
             ]);
+        }
+
+        // Build the demonstration version as a draft and lock it only after its structure exists.
+        // This mirrors the production workflow and remains compatible with the database-level
+        // immutability trigger introduced by the completed curriculum engine.
+        if ($version->status !== 'APPROVED') {
+            $version->forceFill([
+                'status' => 'APPROVED',
+                'is_approved' => true,
+                'approved_at' => $version->approved_at ?? Carbon::now(),
+                'locked_at' => Carbon::now(),
+                'graduation_credits_required' => 20,
+                'structure_hash' => hash('sha256', 'seeded:'.$version->id),
+            ])->save();
         }
 
         // 6. Seed Course Offerings for Current Term

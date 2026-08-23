@@ -14,16 +14,16 @@ administration web portal, automated feature tests, and Chromium browser tests.
 
 | Requirement | Implemented behavior | Primary verification |
 |---|---|---|
-| 00.01 Accounts and provisioning | Institution-bound user creation, person creation, applicant/student/employee/alumni identity linking, initial `PENDING` state and forced password change | Protected `POST /api/v1/iam/users`; feature suite |
+| 00.01 Accounts and provisioning | Institution-bound user creation, person creation, applicant/student/employee/alumni identity linking, initial `PENDING` state and forced password change | Protected API, administrator web form, feature and Chromium tests |
 | 00.02 Profile governance | Credential and human-record separation through `iam.users`, `student.persons`, and `student.person_identities`; protected live IAM user projection | Login by institutional identity and protected web security view |
-| 00.03 Account states | `PENDING`, `ACTIVE`, `LOCKED`, `SUSPENDED`, `DEACTIVATED`; five-failure timed lock; audited administrative state changes; token/session revocation on disablement | Lockout and authorization feature tests |
+| 00.03 Account states | `PENDING`, `ACTIVE`, `LOCKED`, `SUSPENDED`, `DEACTIVATED`; five-failure timed lock; audited administrative state changes; token/session revocation on disablement | Administrator web form, lockout and authorization tests |
 | 00.04 Multi-identifier login | Case-normalized email, username, and active person identity identifiers such as employee/student number | `EMP-000001` API and Chromium login tests |
 | 00.05 Password policy | Argon2id, 12–128 characters, uppercase/lowercase/digit/symbol requirements, and five-password history | Reset test verifies `argon2id` hash and history row |
 | 00.06 Password reset | Generic anti-enumeration response, cryptographically random hashed token, 15-minute expiry, single use, password-policy enforcement, and global session revocation | API feature test and Chromium reset test |
-| 00.07 TOTP MFA | RFC 6238 TOTP, encrypted secret, provisioning URI for authenticator QR rendering, enrollment confirmation, login challenge, expiry and attempt limiting | Full setup → confirm → login → verify feature test |
+| 00.07 TOTP MFA | RFC 6238 TOTP, encrypted secret, locally rendered enrollment QR, manual key, enrollment confirmation, login challenge, expiry and attempt limiting | Full browser enrollment/disable flow and setup → confirm → login → verify feature test |
 | 00.08 Recovery codes | Ten randomly generated codes, stored only as password hashes and consumed once | MFA enrollment/verification feature coverage |
-| 00.09 Account recovery | Permission-protected, reason-required, audited administrator MFA reset; pending challenges, tokens and sessions are revoked | Administrator recovery feature test |
-| 00.10 Sessions | CSPRNG opaque identifiers, tracked devices/IP/user agent, idle and absolute role-based expiry, login/MFA rotation, global `session_version`, individual and global revoke, `__Host-ERPSESSION` production cookie contract | Session tests, middleware tests, and credentialed SPA browser test |
+| 00.09 Account recovery | Permission-protected, reason-required, audited administrator MFA reset; pending challenges, tokens and sessions are revoked | Administrator recovery web flow and feature test |
+| 00.10 Sessions | CSPRNG opaque identifiers, tracked devices/IP/user agent, idle and absolute role-based expiry, login/MFA rotation, global `session_version`, exact browser-session and global revoke, `__Host-ERPSESSION` production cookie contract | Session middleware/feature tests and credentialed SPA browser flows |
 | RBAC | 55 protected enterprise roles normalized into the 11 specified families, 68 atomic permissions, hierarchy/MFA/default-scope metadata, time-bounded scoped assignments and fail-closed gates | Catalogue, least-privilege, expiry and scope tests |
 | Privileged access | Mandatory MFA policy for privileged roles and immediate session/token revocation after role elevation | Mandatory-MFA feature test and session manager enforcement |
 
@@ -73,7 +73,16 @@ real Next.js portal and Laravel/PostgreSQL API to verify:
 1. invalid credentials are rejected without account disclosure;
 2. an employee-number login establishes a credentialed session and renders live protected users,
    role assignments and the enterprise role directory at `/security`;
-3. password-reset requests display the generic anti-enumeration response.
+3. an administrator provisions and activates a user, assigns a scoped role, and completes audited
+   MFA recovery through the web interface;
+4. a user enrolls TOTP from a rendered QR code, receives ten recovery codes, and disables MFA;
+5. tracked devices are listed, an individual browser session is revoked, and logout-everywhere
+   invalidates all access;
+6. password change enforces policy and invalidates the current session;
+7. password-reset requests display the generic anti-enumeration response.
+
+The administrator workflows live at `/security`. Password, MFA, recovery-code, and session
+self-service workflows live at `/account-security`.
 
 Run it with:
 
@@ -89,13 +98,14 @@ service.
 
 - Laravel Pint: passed.
 - PHPStan: passed with zero errors.
-- Laravel suite: 75 tests passed, 309 assertions.
+- Laravel suite: 77 tests passed, 321 assertions.
 - Migration fresh/seed: passed with 68 permissions and 55 roles.
 - Latest IAM migration rollback and forward migration: passed.
 - Admin ESLint: passed with zero warnings/errors.
 - Admin TypeScript: passed.
-- Admin production build: passed; `/login`, `/mfa`, `/reset-password`, and `/security` generated.
-- Chromium E2E: 3 tests passed.
+- Admin production build: passed; `/login`, `/mfa`, `/reset-password`, `/security`, and
+  `/account-security` generated.
+- Chromium E2E: 8 tests passed in parallel.
 - Database used for certification: PostgreSQL 16.14. Production should also run the same suite on
   the deployment's PostgreSQL version before release.
 

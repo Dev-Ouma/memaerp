@@ -2,6 +2,7 @@
 
 import React, { Suspense } from 'react';
 import { AuthLayout, LoginForm } from '@mema/auth';
+import { MemaLoaderScreen } from '@mema/ui';
 
 function LoginContent() {
   return (
@@ -13,7 +14,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-sm text-slate-600">Loading sign in...</div>}>
+    <Suspense fallback={<MemaLoaderScreen label="Loading sign in…" />}>
       <LoginContent />
     </Suspense>
   );

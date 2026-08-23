@@ -2,6 +2,9 @@
 @config "../../tailwind.config.js";
 @import "../../../../packages/ui/src/brand.css";
 @source "../../../../packages/ui/src/**/*.{js,ts,jsx,tsx}";
+@source "../../../../packages/auth/src/**/*.{js,ts,jsx,tsx}";
+@source "../../../../packages/forms/src/**/*.{js,ts,jsx,tsx}";
+@source "../../../../packages/tables/src/**/*.{js,ts,jsx,tsx}";
 
 /*
  * MEMA University – Student Portal

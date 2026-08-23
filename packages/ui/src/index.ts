@@ -7,3 +7,4 @@ export * from './components/stat-card';
 export * from './components/table';
 export * from './components/alert';
 export * from './components/shell';
+export * from './components/loader';

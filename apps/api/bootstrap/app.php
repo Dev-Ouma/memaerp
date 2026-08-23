@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Modules\Iam\Http\Middleware\EnsureSessionVersion;
 use App\Platform\Http\ApiErrorResponse;
 use App\Platform\Http\Middleware\EstablishRequestContext;

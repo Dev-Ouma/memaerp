@@ -8,6 +8,9 @@ import {
   Bell,
   LogOut,
   GraduationCap,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelLeft,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -46,48 +49,102 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const [pathname, setPathname] = React.useState(currentPath || '/');
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
 
+  // Sync pathname and load persisted collapse preference
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       setPathname(window.location.pathname);
+      const saved = localStorage.getItem('mema_sidebar_collapsed');
+      if (saved !== null) {
+        setIsCollapsed(saved === 'true');
+      }
     }
   }, [currentPath]);
+
+  // Keyboard shortcut: ⌘[ or Ctrl+[ or ⌘B / Ctrl+B
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === '[' || e.key === 'b')) {
+        e.preventDefault();
+        toggleCollapse();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCollapsed]);
+
+  const toggleCollapse = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mema_sidebar_collapsed', String(next));
+      }
+      return next;
+    });
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col antialiased">
       {/* Mobile backdrop */}
-      {sidebarOpen && (
+      {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden transition-opacity"
-          onClick={() => setSidebarOpen(false)}
+          onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-72 bg-mema-teal-900 text-white flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 shadow-xl border-r border-mema-teal-950',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          'fixed inset-y-0 left-0 z-50 bg-mema-teal-900 text-white flex flex-col transition-all duration-300 ease-in-out shadow-xl border-r border-mema-teal-950',
+          // Mobile visibility
+          mobileOpen ? 'translate-x-0 w-72' : '-translate-x-full lg:translate-x-0',
+          // Desktop collapsed vs expanded
+          isCollapsed ? 'lg:w-20' : 'lg:w-72'
         )}
       >
-        {/* Logo and Brand */}
-        <div className="h-18 px-6 flex items-center justify-between border-b border-mema-teal-800/80 bg-mema-teal-950/40">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-mema-teal-500 to-mema-green-600 flex items-center justify-center shadow-lg text-white font-bold">
+        {/* Logo and Brand Header */}
+        <div className={cn(
+          'h-18 px-4 flex items-center border-b border-mema-teal-800/80 bg-mema-teal-950/40 transition-all duration-300',
+          isCollapsed ? 'justify-center' : 'justify-between px-5'
+        )}>
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="h-10 w-10 min-w-[40px] rounded-xl bg-gradient-to-br from-mema-teal-500 to-mema-green-600 flex items-center justify-center shadow-lg text-white font-bold flex-shrink-0">
               <GraduationCap className="h-6 w-6" />
             </div>
-            <div>
-              <span className="font-heading text-lg font-bold tracking-tight text-white block">
-                MEMA ERP
-              </span>
-              <span className="text-xs text-mema-teal-200 block font-medium">
-                {appName}
-              </span>
-            </div>
+            {!isCollapsed && (
+              <div className="min-w-0 transition-opacity duration-200">
+                <span className="font-heading text-base font-bold tracking-tight text-white block truncate leading-tight">
+                  MEMA ERP
+                </span>
+                <span className="text-[11px] text-mema-teal-200 block font-medium truncate">
+                  {appName}
+                </span>
+              </div>
+            )}
           </div>
+
+          {/* Desktop Collapse Toggle (ChatGPT style) */}
           <button
-            onClick={() => setSidebarOpen(false)}
+            onClick={toggleCollapse}
+            title={isCollapsed ? 'Expand sidebar (⌘[)' : 'Collapse sidebar (⌘[)'}
+            className={cn(
+              'hidden lg:flex p-1.5 rounded-lg text-mema-teal-300 hover:bg-mema-teal-800 hover:text-white transition-all',
+              isCollapsed && 'absolute -right-3.5 top-6 z-10 bg-mema-teal-900 border border-mema-teal-700 shadow-md rounded-full p-1 text-white hover:bg-mema-teal-700'
+            )}
+          >
+            {isCollapsed ? (
+              <PanelLeftOpen className="h-4 w-4" />
+            ) : (
+              <PanelLeftClose className="h-4 w-4" />
+            )}
+          </button>
+
+          {/* Mobile close button */}
+          <button
+            onClick={() => setMobileOpen(false)}
             className="lg:hidden p-1.5 rounded-lg text-mema-teal-200 hover:bg-mema-teal-800 hover:text-white"
           >
             <X className="h-5 w-5" />
@@ -95,65 +152,100 @@ export function AppShell({
         </div>
 
         {/* Navigation Items */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-1.5">
-          <div className="px-3 pb-2 text-[11px] font-semibold tracking-wider text-mema-teal-300 uppercase">
-            Menu Navigation
-          </div>
+        <div className="flex-1 overflow-y-auto px-3 py-5 space-y-1.5 overflow-x-hidden">
+          {!isCollapsed && (
+            <div className="px-3 pb-2 text-[10px] font-bold tracking-wider text-mema-teal-300/80 uppercase">
+              Menu Navigation
+            </div>
+          )}
+
           {navItems.map((item) => {
             const isActive =
               pathname === item.href ||
               (item.href !== '/' && pathname.startsWith(item.href));
+
             return (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  'flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group',
-                  isActive
-                    ? 'bg-mema-teal-800 text-white font-semibold shadow-inner border border-mema-teal-700'
-                    : 'text-mema-teal-100 hover:bg-mema-teal-800/60 hover:text-white'
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className={cn(
-                      'transition-colors',
-                      isActive ? 'text-mema-green-400' : 'text-mema-teal-300 group-hover:text-white'
+              <div key={item.href} className="relative group">
+                <a
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    'flex items-center rounded-xl text-sm font-medium transition-all duration-150 relative',
+                    isCollapsed
+                      ? 'justify-center h-11 w-11 mx-auto'
+                      : 'justify-between px-3.5 py-2.5',
+                    isActive
+                      ? 'bg-mema-teal-800 text-white font-semibold shadow-inner border border-mema-teal-700'
+                      : 'text-mema-teal-100 hover:bg-mema-teal-800/60 hover:text-white'
+                  )}
+                  title={isCollapsed ? item.title : undefined}
+                >
+                  <div className={cn('flex items-center', !isCollapsed && 'gap-3 min-w-0')}>
+                    <span
+                      className={cn(
+                        'transition-colors flex-shrink-0',
+                        isActive ? 'text-mema-green-400' : 'text-mema-teal-300 group-hover:text-white'
+                      )}
+                    >
+                      {item.icon}
+                    </span>
+                    {!isCollapsed && <span className="truncate">{item.title}</span>}
+                  </div>
+
+                  {!isCollapsed && item.badge && (
+                    <span className="px-2 py-0.5 text-xs rounded-full bg-mema-green-600/90 text-white font-bold shadow-sm flex-shrink-0">
+                      {item.badge}
+                    </span>
+                  )}
+
+                  {/* Dot badge when collapsed */}
+                  {isCollapsed && item.badge && (
+                    <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-mema-green-400 ring-2 ring-mema-teal-900" />
+                  )}
+                </a>
+
+                {/* Floating Tooltip flyout on hover when collapsed */}
+                {isCollapsed && (
+                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-3 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-xl border border-slate-700 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 flex items-center gap-2">
+                    <span>{item.title}</span>
+                    {item.badge && (
+                      <span className="px-1.5 py-0.2 bg-mema-green-600 text-[10px] rounded-full font-bold">
+                        {item.badge}
+                      </span>
                     )}
-                  >
-                    {item.icon}
-                  </span>
-                  <span>{item.title}</span>
-                </div>
-                {item.badge && (
-                  <span className="px-2 py-0.5 text-xs rounded-full bg-mema-green-600/90 text-white font-bold shadow-sm">
-                    {item.badge}
-                  </span>
+                  </div>
                 )}
-              </a>
+              </div>
             );
           })}
         </div>
 
-        {/* User Card & Logout in Sidebar */}
-        <div className="p-4 border-t border-mema-teal-800/80 bg-mema-teal-950/50">
-          <div className="flex items-center gap-3 p-2 rounded-xl bg-mema-teal-800/40">
-            <div className="h-10 w-10 rounded-full bg-mema-teal-700 text-white flex items-center justify-center font-bold text-sm ring-2 ring-mema-green-500/40">
+        {/* User Profile & Logout in Sidebar */}
+        <div className="p-3 border-t border-mema-teal-800/80 bg-mema-teal-950/50">
+          <div className={cn(
+            'flex items-center rounded-xl bg-mema-teal-800/40 transition-all',
+            isCollapsed ? 'justify-center p-1.5' : 'gap-3 p-2'
+          )}>
+            <div className="h-9 w-9 min-w-[36px] rounded-full bg-mema-teal-700 text-white flex items-center justify-center font-bold text-xs ring-2 ring-mema-green-500/40 flex-shrink-0">
               {userName
                 .split(' ')
                 .map((n) => n[0])
+                .slice(0, 2)
                 .join('')}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{userName}</p>
-              <p className="text-xs text-mema-teal-300 truncate">{userIdentifier}</p>
-            </div>
+
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-white truncate leading-tight">{userName}</p>
+                <p className="text-[11px] text-mema-teal-300 truncate">{userIdentifier}</p>
+              </div>
+            )}
+
             {onLogout && (
               <button
                 onClick={onLogout}
                 title="Sign out"
-                className="p-2 rounded-lg text-mema-teal-300 hover:text-rose-300 hover:bg-rose-950/40 transition-colors"
+                className="p-1.5 rounded-lg text-mema-teal-300 hover:text-rose-300 hover:bg-rose-950/40 transition-colors flex-shrink-0"
               >
                 <LogOut className="h-4 w-4" />
               </button>
@@ -163,18 +255,34 @@ export function AppShell({
       </aside>
 
       {/* Main Content Area */}
-      <div className="lg:pl-72 flex flex-col flex-1">
+      <div
+        className={cn(
+          'flex flex-col flex-1 transition-all duration-300 ease-in-out',
+          isCollapsed ? 'lg:pl-20' : 'lg:pl-72'
+        )}
+      >
         {/* Top Navbar */}
         <header className="sticky top-0 z-30 h-16 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {/* Mobile menu trigger */}
             <button
-              onClick={() => setSidebarOpen(true)}
+              onClick={() => setMobileOpen(true)}
               className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             >
               <Menu className="h-5 w-5" />
             </button>
+
+            {/* Desktop Quick Collapse/Expand button in top bar */}
+            <button
+              onClick={toggleCollapse}
+              title={isCollapsed ? 'Expand sidebar (⌘[)' : 'Collapse sidebar (⌘[)'}
+              className="hidden lg:flex p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+            >
+              <PanelLeft className="h-5 w-5" />
+            </button>
+
             <div>
-              <h1 className="text-base sm:text-lg font-bold text-slate-900 font-heading">
+              <h1 className="text-base sm:text-lg font-bold text-slate-900 font-heading leading-tight">
                 {appName}
               </h1>
               {appSubtitle && (
@@ -262,3 +370,4 @@ export function AppShell({
     </div>
   );
 }
+

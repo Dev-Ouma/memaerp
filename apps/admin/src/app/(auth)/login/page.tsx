@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@mema/auth';
 import { ApiError } from '@mema/api-client';
-import { Input, Button, Alert, AlertTitle, AlertDescription } from '@mema/ui';
+import { Input, Button, Alert, AlertTitle, AlertDescription, MemaLoaderScreen } from '@mema/ui';
 import { 
   GraduationCap, User, Lock, Eye, EyeOff, ShieldCheck, 
   ArrowRight, ShieldAlert, Cpu, Activity, UserCheck
@@ -14,7 +14,7 @@ const demoRoles = [
   { label: 'System Admin', email: 'admin@mema.ac.ke', desc: 'Full ERP & IAM settings' },
   { label: 'Registrar', email: 'registrar@mema.ac.ke', desc: 'Admissions & programmes' },
   { label: 'Finance Officer', email: 'finance@mema.ac.ke', desc: 'Ledgers & fee statements' },
-  { label: 'Dean', email: 'dean@mema.ac.ke', desc: 'Faculty, student records' },
+  { label: 'Dean', email: 'dean.science@mema.ac.ke', desc: 'Faculty, student records' },
 ];
 
 function AdminLoginContent() {
@@ -231,7 +231,7 @@ function AdminLoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-sm text-slate-600">Loading sign in...</div>}>
+    <Suspense fallback={<MemaLoaderScreen label="Loading sign in…" />}>
       <AdminLoginContent />
     </Suspense>
   );

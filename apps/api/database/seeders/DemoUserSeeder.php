@@ -69,8 +69,8 @@ final class DemoUserSeeder extends Seeder
             [
                 'email' => 'registrar@mema.ac.ke',
                 'username' => 'registrar',
-                'given_name' => 'Daniel',
-                'family_name' => 'Mulinge',
+                'given_name' => 'Mike',
+                'family_name' => 'Wabwire',
                 'staff_no' => 'EMP-000003',
                 'role' => 'registrar-academic',
                 'scope' => Scope::institution(),
@@ -123,13 +123,22 @@ final class DemoUserSeeder extends Seeder
                 'role' => 'finance-officer',
                 'scope' => Scope::institution(),
             ],
+            [
+                'email' => 'senate@mema.ac.ke',
+                'username' => 'senate',
+                'given_name' => 'Senate',
+                'family_name' => 'Secretariat',
+                'staff_no' => 'EMP-000009',
+                'role' => 'senate-member',
+                'scope' => Scope::institution(),
+            ],
         ];
 
         foreach ($accounts as $account) {
             $this->createAccount($institution, $account);
         }
 
-        $this->command?->info(count($accounts).' demo accounts seeded (password: '.self::PASSWORD.').');
+        $this->command->info(count($accounts).' demo accounts seeded (password: '.self::PASSWORD.').');
     }
 
     /** @param array{email: string, username: string, given_name: string, family_name: string, staff_no: string, role: string, scope: Scope} $account */

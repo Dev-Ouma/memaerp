@@ -28,6 +28,10 @@ final class TermGpa extends BaseModel
         'gpa',
         'cgpa',
         'academic_standing',
+        'progression_decision',
+        'is_published',
+        'calculated_at',
+        'published_at',
     ];
 
     protected function casts(): array
@@ -37,6 +41,9 @@ final class TermGpa extends BaseModel
             'credits_earned' => 'integer',
             'gpa' => 'decimal:2',
             'cgpa' => 'decimal:2',
+            'is_published' => 'boolean',
+            'calculated_at' => 'immutable_datetime',
+            'published_at' => 'immutable_datetime',
         ];
     }
 

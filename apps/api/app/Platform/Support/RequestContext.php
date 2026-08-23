@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Platform\Support;
 
-use App\Modules\Iam\Models\User;
+use App\Modules\Iam\Contracts\Actor;
+use App\Modules\Iam\Contracts\ActorDirectory;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Http\Request;
 
@@ -27,7 +28,7 @@ final class RequestContext
 
     private ?string $institutionId = null;
 
-    private ?User $actor = null;
+    private ?Actor $actor = null;
 
     private ?string $impersonatedUserId = null;
 
@@ -37,7 +38,10 @@ final class RequestContext
 
     private ?string $userAgent = null;
 
-    public function __construct(private readonly AuthFactory $auth) {}
+    public function __construct(
+        private readonly AuthFactory $auth,
+        private readonly ActorDirectory $actors,
+    ) {}
 
     public function hydrateFromRequest(Request $request): void
     {
@@ -60,7 +64,7 @@ final class RequestContext
         $this->institutionId = $institutionId;
 
         if ($actorId !== null) {
-            $this->actor = User::query()->withTrashed()->find($actorId);
+            $this->actor = $this->actors->find($actorId);
         }
     }
 
@@ -89,7 +93,7 @@ final class RequestContext
      * member, not the person being impersonated — the trail must attribute the action to whoever
      * actually performed it.
      */
-    public function actor(): ?User
+    public function actor(): ?Actor
     {
         if ($this->actor !== null) {
             return $this->actor;
@@ -97,17 +101,17 @@ final class RequestContext
 
         $user = $this->auth->guard()->user();
 
-        return $user instanceof User ? $user : null;
+        return $user instanceof Actor ? $user : null;
     }
 
-    public function setActor(?User $actor): void
+    public function setActor(?Actor $actor): void
     {
         $this->actor = $actor;
     }
 
     public function institutionId(): ?string
     {
-        return $this->institutionId ?? $this->actor()?->institution_id;
+        return $this->institutionId ?? $this->actor()?->actorInstitutionId();
     }
 
     public function setInstitutionId(?string $institutionId): void

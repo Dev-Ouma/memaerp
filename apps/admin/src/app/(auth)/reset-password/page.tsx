@@ -4,7 +4,7 @@ import React, { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AuthLayout } from '@mema/auth';
 import { api, ApiError } from '@mema/api-client';
-import { Alert, AlertDescription, AlertTitle, Button, Input } from '@mema/ui';
+import { Alert, AlertDescription, AlertTitle, Button, Input, MemaLoaderScreen } from '@mema/ui';
 
 function ResetPasswordForm() {
   const search = useSearchParams();
@@ -46,4 +46,4 @@ function ResetPasswordForm() {
   </div></AuthLayout>;
 }
 
-export default function ResetPasswordPage() { return <Suspense fallback={<div className="p-8">Loading…</div>}><ResetPasswordForm /></Suspense>; }
+export default function ResetPasswordPage() { return <Suspense fallback={<MemaLoaderScreen label="Loading…" />}><ResetPasswordForm /></Suspense>; }

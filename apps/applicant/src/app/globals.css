@@ -2,6 +2,9 @@
 @config "../../tailwind.config.js";
 @import "../../../../packages/ui/src/brand.css";
 @source "../../../../packages/ui/src/**/*.{js,ts,jsx,tsx}";
+@source "../../../../packages/auth/src/**/*.{js,ts,jsx,tsx}";
+@source "../../../../packages/forms/src/**/*.{js,ts,jsx,tsx}";
+@source "../../../../packages/tables/src/**/*.{js,ts,jsx,tsx}";
 
 /*
  * MEMA University – Applicant Portal
@@ -38,6 +41,11 @@
   --color-white:        #FFFFFF;
   --font-family-base:   var(--font-quicksand, 'Quicksand'), var(--font-nunito, 'Nunito'), system-ui, -apple-system, sans-serif;
 }
+
+.app-nav-link { display: inline-flex; align-items: center; gap: 0.3rem; color: rgba(255,255,255,0.85); font-size: 0.82rem; font-weight: 600; padding: 0.35rem 0.8rem; border-radius: 6px; text-decoration: none; transition: all 0.2s; }
+.app-nav-link:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.app-apply-btn { display: inline-flex; align-items: center; gap: 0.35rem; background: #1E8449; color: #fff; font-size: 0.82rem; font-weight: 700; padding: 0.4rem 1.1rem; border-radius: 6px; text-decoration: none; box-shadow: 0 2px 8px rgba(30,132,73,0.35); transition: all 0.2s; }
+.app-apply-btn:hover { background: #16703d; transform: translateY(-1px); }
 
 body {
   background-color:     hsl(var(--background));

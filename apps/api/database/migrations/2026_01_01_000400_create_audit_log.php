@@ -67,7 +67,7 @@ return new class extends Migration
                  FOR VALUES FROM (%s) TO (%s)',
                 $name,
                 "'".$from->format('Y-m-d')."'",
-                "'".$to->format('Y-m-d')."'"
+                "'".$to->format('Y-m-d')."'",
             ));
         }
 

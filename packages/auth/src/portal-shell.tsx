@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AuthUserProfile } from '@mema/types';
-import { AppShell, type NavItem } from '@mema/ui';
+import { AppShell, MemaLoaderScreen, type NavItem } from '@mema/ui';
 import { useAuth } from './context';
 import { filterNavItems } from './nav';
 
@@ -37,13 +37,7 @@ export function PortalShell({
   }, [isLoading, router, user]);
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="rounded-xl border border-slate-200 bg-white px-6 py-4 text-sm text-slate-600 shadow-sm">
-          Loading your session...
-        </div>
-      </div>
-    );
+    return <MemaLoaderScreen label="Loading your session…" />;
   }
 
   if (!user) {

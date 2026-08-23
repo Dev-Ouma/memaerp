@@ -67,7 +67,7 @@ final class GradingScale extends BaseModel
     public function bandFor(float $mark): ?GradeBand
     {
         return $this->bands->first(
-            fn (GradeBand $band): bool => $mark >= (float) $band->min_mark && $mark <= (float) $band->max_mark
+            fn (GradeBand $band): bool => $mark >= (float) $band->min_mark && $mark <= (float) $band->max_mark,
         );
     }
 }

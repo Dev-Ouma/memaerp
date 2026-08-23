@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Modules\Admission\Models\Application;
+use App\Modules\Admission\Models\ProgrammeCutoff;
+use App\Modules\Admission\Models\Prospect;
 use App\Modules\Curriculum\Models\Programme;
 use App\Modules\Finance\Models\FeeStructure;
 use App\Modules\Finance\Models\Invoice;
@@ -12,6 +14,7 @@ use App\Modules\Finance\Models\Payment;
 use App\Modules\Institution\Models\AcademicYear;
 use App\Modules\Institution\Models\Campus;
 use App\Modules\Institution\Models\Institution;
+use App\Modules\Institution\Models\Intake;
 use App\Modules\Institution\Models\Term;
 use App\Modules\Student\Models\Person;
 use App\Modules\Student\Models\PersonIdentity;
@@ -27,6 +30,36 @@ final class AdmissionsAndFinanceSeeder extends Seeder
         $programme = Programme::query()->where('institution_id', $institution->id)->where('code', 'BSC-CS')->firstOrFail();
         $academicYear = AcademicYear::query()->where('institution_id', $institution->id)->where('is_current', true)->firstOrFail();
         $currentTerm = Term::query()->where('institution_id', $institution->id)->where('is_current', true)->firstOrFail();
+        $intake = Intake::query()->where('institution_id', $institution->id)->where('code', 'SEP-2026')->first();
+
+        ProgrammeCutoff::query()->updateOrCreate(
+            [
+                'institution_id' => $institution->id,
+                'programme_id' => $programme->id,
+                'academic_year_id' => $academicYear->id,
+            ],
+            [
+                'minimum_score' => 66.00,
+                'minimum_mean_grade' => 'B',
+                'is_active' => true,
+            ],
+        );
+
+        Prospect::query()->updateOrCreate(
+            [
+                'institution_id' => $institution->id,
+                'email' => 'prospect.wanjiku@example.com',
+            ],
+            [
+                'full_name' => 'Wanjiku Prospect',
+                'phone' => '+254700111222',
+                'source' => 'OPEN_DAY',
+                'campaign_code' => 'OD-2026',
+                'programme_interest_id' => $programme->id,
+                'status' => 'NEW',
+                'notes' => 'Met at Nairobi open day.',
+            ],
+        );
 
         // 1. Seed Fee Structure
         $feeStructure = FeeStructure::query()->firstOrCreate(
@@ -44,7 +77,7 @@ final class AdmissionsAndFinanceSeeder extends Seeder
                 'total_amount' => 80000.00,
                 'currency' => 'KES',
                 'is_active' => true,
-            ]
+            ],
         );
 
         // 2. Seed Sample Prospective Students / Applicants
@@ -109,7 +142,7 @@ final class AdmissionsAndFinanceSeeder extends Seeder
                     'national_id' => $appData['national_id'],
                     'primary_phone' => $appData['phone'],
                     'address' => ['city' => 'Nairobi', 'country' => 'Kenya'],
-                ]
+                ],
             );
 
             PersonIdentity::query()->firstOrCreate(
@@ -122,7 +155,7 @@ final class AdmissionsAndFinanceSeeder extends Seeder
                 [
                     'status' => 'active',
                     'started_on' => Carbon::now()->subMonths(2),
-                ]
+                ],
             );
 
             $application = Application::query()->firstOrCreate(
@@ -135,15 +168,20 @@ final class AdmissionsAndFinanceSeeder extends Seeder
                     'programme_id' => $programme->id,
                     'campus_id' => $mainCampus->id,
                     'academic_year_id' => $academicYear->id,
+                    'intake_id' => $intake?->id,
                     'status' => $appData['status'],
                     'is_fee_paid' => $appData['fee_paid'],
                     'qualification_score' => $appData['score'],
                     'secondary_school_name' => $appData['school'],
                     'mean_grade' => $appData['mean_grade'],
+                    'kcse_index_number' => 'IDX-'.$appData['national_id'],
+                    'entry_path' => 'DIRECT',
+                    'submitted_at' => $appData['status'] === 'DRAFT' ? null : Carbon::now()->subDays(14),
                     'offer_letter_ref' => 'ADM/2026/CS-'.substr($appData['app_no'], -4),
-                    'offer_issued_at' => in_array($appData['status'], ['ADMITTED', 'ACCEPTED']) ? Carbon::now()->subDays(10) : null,
+                    'offer_issued_at' => in_array($appData['status'], ['ADMITTED', 'ACCEPTED'], true) ? Carbon::now()->subDays(10) : null,
+                    'offer_expires_at' => in_array($appData['status'], ['ADMITTED', 'ACCEPTED'], true) ? Carbon::now()->addDays(20) : null,
                     'offer_accepted_at' => $appData['status'] === 'ACCEPTED' ? Carbon::now()->subDays(2) : null,
-                ]
+                ],
             );
 
             // If Accepted, generate Fee Invoice and Payment
@@ -162,7 +200,7 @@ final class AdmissionsAndFinanceSeeder extends Seeder
                         'balance' => 0.00,
                         'status' => 'FULLY_PAID',
                         'due_date' => Carbon::now()->addDays(30),
-                    ]
+                    ],
                 );
 
                 Payment::query()->firstOrCreate(
@@ -179,7 +217,7 @@ final class AdmissionsAndFinanceSeeder extends Seeder
                         'currency' => 'KES',
                         'status' => 'COMPLETED',
                         'paid_at' => Carbon::now()->subDays(1),
-                    ]
+                    ],
                 );
             }
         }

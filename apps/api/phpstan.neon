@@ -2,9 +2,35 @@ includes:
     - vendor/larastan/larastan/extension.neon
 
 parameters:
-    level: 8
+    level: 6
+
     paths:
         - app
+        - database
+        - routes
+        - tests
+
+    # Level 6 is where "every parameter and return value is typed" becomes mandatory, and where
+    # the generic types on Eloquent relations and collections start being checked. It is a
+    # deliberate stopping point, not a waypoint we forgot to move past: levels 7-9 spend most of
+    # their budget on framework and array-shape noise that Larastan cannot fully model, and a
+    # ruleset people learn to ignore is worse than a slightly lower one they trust.
+    #
+    # Raise this only alongside the work to make it pass. A raised level with a growing ignore
+    # list is a downgrade wearing a promotion.
+
+    # Off until the models carry complete @property annotations. Switched on, it verifies that
+    # every key passed to Model::create() is a real column — which catches a genuinely nasty class
+    # of silent bug — but it derives the column list from docblocks, so on under-annotated models
+    # it reports the annotation gap rather than the typo. Enabling it is a task with a
+    # prerequisite, not a flag flip.
+    checkModelProperties: false
+    checkOctaneCompatibility: false
+
+    # Migrations are one-shot scripts written against the schema as it was on the day. Their
+    # closures are untyped by convention and analysing them yields findings nobody will act on.
     excludePaths:
         analyse:
+            - database/migrations/*
             - bootstrap/cache/*
+

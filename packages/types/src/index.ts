@@ -197,7 +197,8 @@ export interface Term extends Timestamps {
 // ==========================================
 // Academic & Curriculum
 // ==========================================
-export type AwardLevel = 'CERTIFICATE' | 'DIPLOMA' | 'BACHELORS' | 'POSTGRADUATE_DIPLOMA' | 'MASTERS' | 'DOCTORATE';
+export type AwardLevel =
+  'CERTIFICATE' | 'DIPLOMA' | 'BACHELORS' | 'POSTGRADUATE_DIPLOMA' | 'MASTERS' | 'DOCTORATE';
 
 export interface Programme extends Timestamps {
   id: UUID;
@@ -215,6 +216,13 @@ export interface Programme extends Timestamps {
   /** Legacy mock field */
   credit_units_required?: number;
   is_active: boolean;
+  status?: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+  qualification_framework_code?: string | null;
+  accreditation_body?: string | null;
+  accreditation_reference?: string | null;
+  accreditation_expires_on?: string | null;
+  accreditation_warning?: boolean;
+  minimum_residency_credits?: number;
   department?: Department;
   curriculum_versions?: CurriculumVersion[];
   versions?: CurriculumVersion[];
@@ -222,13 +230,41 @@ export interface Programme extends Timestamps {
 
 export interface CurriculumVersion extends Timestamps {
   id: UUID;
+  institution_id?: UUID;
   programme_id: UUID;
   version_code: string;
-  effective_academic_year_id: UUID;
+  effective_year_id?: UUID;
+  effective_academic_year_id?: UUID;
   is_approved: boolean;
-  total_credit_units: number;
+  status?: 'DRAFT' | 'UNDER_REVIEW' | 'APPROVED' | 'SUPERSEDED';
+  graduation_credits_required?: number;
+  minimum_elective_credits?: number;
+  total_credit_units?: number;
+  senate_approval_ref?: string | null;
+  submitted_at?: string | null;
+  approved_at?: string | null;
+  locked_at?: string | null;
+  structure_hash?: string | null;
   programme?: Programme;
   curriculum_courses?: CurriculumCourse[];
+  elective_groups?: ElectiveGroup[];
+  requirements?: CoursePrerequisite[];
+  review_steps?: CurriculumReviewStep[];
+  effective_year?: { id: UUID; code: string; name: string };
+}
+
+export type CourseStatus = 'DRAFT' | 'UNDER_REVIEW' | 'ACTIVE' | 'DISCONTINUED';
+
+export interface CourseReview {
+  id: UUID;
+  course_id: UUID;
+  stage: 'DEPARTMENT_BOARD' | 'SCHOOL_BOARD';
+  sequence: number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reference: string | null;
+  comments: string | null;
+  reviewed_at: string | null;
+  reviewer?: { id: UUID; email: string } | null;
 }
 
 export interface Course extends Timestamps {
@@ -242,21 +278,33 @@ export interface Course extends Timestamps {
   /** Legacy mock field */
   credit_units?: number;
   lecture_hours: number;
+  tutorial_hours?: number;
   /** API field */
   lab_hours?: number;
   /** Legacy mock field */
   practical_hours?: number;
   description?: string | null;
+  learning_outcomes?: string | null;
+  syllabus_outline?: string | null;
+  status?: CourseStatus;
   is_active: boolean;
+  department_board_ref?: string | null;
+  school_board_ref?: string | null;
+  approved_at?: string | null;
   department?: Department;
   prerequisites?: CoursePrerequisite[];
+  reviews?: CourseReview[];
+  offerings?: CourseOffering[];
 }
 
 export interface CoursePrerequisite {
   id: UUID;
+  curriculum_version_id?: UUID | null;
   course_id: UUID;
   prerequisite_course_id: UUID;
-  is_mandatory: boolean;
+  requirement_type?: 'PREREQUISITE' | 'COREQUISITE' | 'ANTIREQUISITE';
+  is_mandatory?: boolean;
+  course?: Course;
   prerequisite_course?: Course;
 }
 
@@ -265,9 +313,51 @@ export interface CurriculumCourse {
   curriculum_version_id: UUID;
   course_id: UUID;
   year_level: number;
-  term_sequence: number;
-  is_core: boolean;
+  semester?: number;
+  term_sequence?: number;
+  course_type?: 'CORE' | 'ELECTIVE' | 'REQUIRED_AUDIT';
+  is_core?: boolean;
+  elective_group_id?: UUID | null;
+  elective_group?: ElectiveGroup | null;
   course?: Course;
+}
+
+export interface ElectiveGroup extends Timestamps {
+  id: UUID;
+  curriculum_version_id: UUID;
+  code: string;
+  name: string;
+  minimum_courses: number;
+  minimum_credits: number;
+}
+
+export interface CurriculumReviewStep extends Timestamps {
+  id: UUID;
+  curriculum_version_id: UUID;
+  stage: 'HOD' | 'DEAN' | 'ACADEMIC_BOARD' | 'SENATE';
+  sequence: number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reference: string | null;
+  comments: string | null;
+  reviewed_at: string | null;
+  reviewer?: { id: UUID; email: string } | null;
+}
+
+export interface OfferingAllocation {
+  id: UUID;
+  course_offering_id: UUID;
+  lecturer_id: UUID;
+  role: 'PRIMARY' | 'ASSISTANT';
+  workload_credits: number;
+  lecturer?: User;
+}
+
+export interface OfferingWaitlistEntry {
+  id: UUID;
+  course_offering_id: UUID;
+  student_id: UUID;
+  position: number;
+  status: 'WAITING' | 'PROMOTED' | 'WITHDRAWN';
 }
 
 export interface CourseOffering extends Timestamps {
@@ -278,20 +368,81 @@ export interface CourseOffering extends Timestamps {
   campus_id: UUID;
   lecturer_id?: UUID | null;
   section_code: string;
+  max_capacity?: number;
   capacity: number;
   enrolled_count: number;
+  waitlist_count?: number;
+  workload_credits?: number;
+  delivery_mode?: 'IN_PERSON' | 'ONLINE' | 'HYBRID';
+  status?: 'OFFERED' | 'CLOSED';
+  is_open_for_enrollment?: boolean;
   room?: string | null;
   schedule_slot?: string | null;
   course?: Course;
   term?: Term;
   campus?: Campus;
   lecturer?: User;
+  allocations?: OfferingAllocation[];
+  waitlist?: OfferingWaitlistEntry[];
+}
+
+export interface CourseDashboard {
+  active_courses: number;
+  draft_courses: number;
+  open_sections: number;
+  closed_sections: number;
+  capacity_saturation_percent: number;
+  saturated_sections: number;
+  lecturer_workload_hours: number;
 }
 
 // ==========================================
 // Student & Admissions
 // ==========================================
-export type ApplicationStatus = 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'SHORTLISTED' | 'ADMITTED' | 'ACCEPTED' | 'REJECTED' | 'MATRICULATED';
+export type ApplicationStatus =
+  | 'DRAFT'
+  | 'SUBMITTED'
+  | 'UNDER_REVIEW'
+  | 'SHORTLISTED'
+  | 'ADMITTED'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'EXPIRED'
+  | 'MATRICULATED';
+
+export interface ApplicationDocument {
+  id: UUID;
+  application_id: UUID;
+  document_type: string;
+  original_name: string;
+  mime_type: string;
+  byte_size: number;
+  verification_status: string;
+  verified_at?: string | null;
+}
+
+export interface ApplicationPayment {
+  id: UUID;
+  application_id: UUID;
+  channel: string;
+  transaction_reference: string;
+  amount: number;
+  currency: string;
+  status: string;
+  receipt_number?: string | null;
+  paid_at?: string | null;
+}
+
+export interface ApplicationReview {
+  id: UUID;
+  application_id: UUID;
+  stage: 'DOCUMENT_SCREENING' | 'COMMITTEE';
+  sequence: number;
+  status: string;
+  reference?: string | null;
+  comments?: string | null;
+  reviewed_at?: string | null;
+}
 
 export interface Application extends Timestamps {
   id: UUID;
@@ -300,18 +451,69 @@ export interface Application extends Timestamps {
   programme_id: UUID;
   campus_id: UUID;
   academic_year_id: UUID;
+  intake_id?: UUID | null;
+  study_mode_id?: UUID | null;
   application_number: string;
-  intake_code: string;
   status: ApplicationStatus;
-  submission_date?: string | null;
-  decision_date?: string | null;
+  is_fee_paid: boolean;
+  qualification_score?: number | null;
+  secondary_school_name?: string | null;
+  mean_grade?: string | null;
+  kcse_index_number?: string | null;
+  entry_path?: string;
+  offer_letter_ref?: string | null;
+  offer_qr_token?: string | null;
+  offer_issued_at?: string | null;
+  offer_expires_at?: string | null;
+  offer_accepted_at?: string | null;
+  submitted_at?: string | null;
   decision_notes?: string | null;
+  application_fee_amount?: number;
+  application_fee_currency?: string;
   person?: Person;
   programme?: Programme;
   campus?: Campus;
+  intake?: { id: UUID; code: string; name: string; status?: string };
+  documents?: ApplicationDocument[];
+  payments?: ApplicationPayment[];
+  reviews?: ApplicationReview[];
 }
 
-export type StudentStatus = 'PROSPECT' | 'APPLICANT' | 'ADMITTED' | 'ACTIVE' | 'ON_LEAVE' | 'SUSPENDED' | 'DISCONTINUED' | 'GRADUATED' | 'ALUMNUS';
+export interface AdmissionsDashboard {
+  total: number;
+  draft: number;
+  submitted: number;
+  under_review: number;
+  shortlisted: number;
+  admitted: number;
+  accepted: number;
+  rejected: number;
+  fee_paid: number;
+  prospects: number;
+}
+
+export interface AdmissionProspect {
+  id: UUID;
+  full_name: string;
+  email: string;
+  phone?: string | null;
+  source: string;
+  campaign_code?: string | null;
+  programme_interest_id?: UUID | null;
+  status: string;
+  notes?: string | null;
+}
+
+export type StudentStatus =
+  | 'PROSPECT'
+  | 'APPLICANT'
+  | 'ADMITTED'
+  | 'ACTIVE'
+  | 'ON_LEAVE'
+  | 'SUSPENDED'
+  | 'DISCONTINUED'
+  | 'GRADUATED'
+  | 'ALUMNUS';
 
 export interface Student extends Timestamps {
   id: UUID;
@@ -327,9 +529,34 @@ export interface Student extends Timestamps {
   status: StudentStatus;
   cumulative_gpa: number;
   cumulative_credits_earned: number;
+  digital_id_status?: 'INACTIVE' | 'ACTIVE' | 'REVOKED' | 'REPLACED';
+  matriculated_on?: string;
   person?: Person;
   programme?: Programme;
   campus?: Campus;
+  intake?: { id: UUID; code: string };
+  study_mode?: { id: UUID; name: string };
+}
+
+export interface StudentDashboard {
+  total: number;
+  active: number;
+  on_leave: number;
+  suspended: number;
+  graduated: number;
+  matriculation_queue: number;
+  matriculated_this_month: number;
+}
+
+export interface MatriculationQueueItem {
+  id: UUID;
+  application_number: string;
+  status: string;
+  person?: { full_name?: string; primary_email?: string };
+  programme?: { code?: string; name?: string };
+  campus?: { code?: string; name?: string };
+  intake?: { code?: string };
+  offer_accepted_at?: string | null;
 }
 
 // ==========================================

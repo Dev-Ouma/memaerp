@@ -25,12 +25,12 @@ final class AuthTest extends TestCase
         $this->seed(DemoUserSeeder::class);
     }
 
-    public function test_login_page_renders_successfully(): void
+    public function test_api_root_points_to_first_party_portals(): void
     {
-        $response = $this->get('/login');
-        $response->assertStatus(200);
-        $response->assertSee('MEMA ERP');
-        $response->assertSee('Institutional Portal');
+        $response = $this->get('/');
+        $response->assertOk();
+        $response->assertJsonPath('portals.admin', 'http://localhost:3005/login');
+        $response->assertJsonPath('portals.student', 'http://localhost:3002/login');
     }
 
     public function test_health_endpoint_returns_ok(): void

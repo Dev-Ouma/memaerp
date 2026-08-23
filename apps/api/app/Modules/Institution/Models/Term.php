@@ -22,6 +22,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonImmutable|null $add_drop_closes_at
  * @property CarbonImmutable|null $marks_entry_opens_at
  * @property CarbonImmutable|null $marks_entry_closes_at
+ * @property CarbonImmutable $starts_on
+ * @property CarbonImmutable $ends_on
  */
 final class Term extends BaseModel
 {
@@ -37,7 +39,8 @@ final class Term extends BaseModel
         'starts_on', 'ends_on',
         'registration_opens_at', 'registration_closes_at', 'add_drop_closes_at',
         'marks_entry_opens_at', 'marks_entry_closes_at',
-        'is_current',
+        'fee_payment_closes_at', 'exam_starts_on', 'exam_ends_on',
+        'study_mode_code', 'term_type', 'status', 'published_at', 'is_current',
     ];
 
     protected function casts(): array
@@ -50,6 +53,10 @@ final class Term extends BaseModel
             'add_drop_closes_at' => 'immutable_datetime',
             'marks_entry_opens_at' => 'immutable_datetime',
             'marks_entry_closes_at' => 'immutable_datetime',
+            'fee_payment_closes_at' => 'immutable_datetime',
+            'exam_starts_on' => 'date',
+            'exam_ends_on' => 'date',
+            'published_at' => 'immutable_datetime',
             'sequence' => 'integer',
             'is_current' => 'boolean',
         ];

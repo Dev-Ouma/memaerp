@@ -11,6 +11,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  MemaLoader,
 } from '@mema/ui';
 
 export interface DataTableColumn<T> {
@@ -50,8 +51,8 @@ export function DataTable<T>({
 
   if (isLoading) {
     return (
-      <div className="py-12 text-center text-sm text-slate-500" role="status">
-        Loading records...
+      <div className="flex justify-center py-12">
+        <MemaLoader size={72} label="Loading records…" />
       </div>
     );
   }

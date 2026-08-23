@@ -11,6 +11,9 @@ use App\Modules\Institution\Models\Faculty;
 use App\Modules\Institution\Models\GradeBand;
 use App\Modules\Institution\Models\GradingScale;
 use App\Modules\Institution\Models\Institution;
+use App\Modules\Institution\Models\Intake;
+use App\Modules\Institution\Models\MasterLookup;
+use App\Modules\Institution\Models\StudyMode;
 use App\Modules\Institution\Models\Term;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -49,7 +52,10 @@ final class InstitutionSeeder extends Seeder
 
         $mainCampus = Campus::query()->updateOrCreate(
             ['institution_id' => $institution->id, 'code' => 'MAIN'],
-            ['name' => 'Main Campus', 'town' => 'Nairobi', 'is_active' => true],
+            [
+                'name' => 'Main Campus', 'town' => 'Nairobi', 'is_main_campus' => true,
+                'is_active' => true, 'status' => 'ACTIVE', 'resolution_reference' => 'BOOTSTRAP-001',
+            ],
         );
 
         $structure = [
@@ -90,6 +96,8 @@ final class InstitutionSeeder extends Seeder
                     'campus_id' => $mainCampus->id,
                     'name' => $faculty['name'],
                     'is_active' => true,
+                    'status' => 'ACTIVE',
+                    'resolution_reference' => 'BOOTSTRAP-001',
                 ],
             );
 
@@ -101,11 +109,14 @@ final class InstitutionSeeder extends Seeder
                         'name' => $departmentName,
                         'cost_centre' => $departmentCode,
                         'is_active' => true,
+                        'status' => 'ACTIVE',
+                        'resolution_reference' => 'BOOTSTRAP-001',
                     ],
                 );
             }
         }
 
+        $this->seedMasterData($institution);
         $this->seedCalendar($institution);
         $this->seedGradingScale($institution);
 
@@ -121,6 +132,10 @@ final class InstitutionSeeder extends Seeder
                 'starts_on' => '2026-09-01',
                 'ends_on' => '2027-08-31',
                 'is_current' => true,
+                'status' => 'ACTIVE',
+                'senate_resolution_reference' => 'SENATE-2026-001',
+                'senate_approved_at' => '2026-06-30 12:00:00',
+                'published_at' => '2026-07-01 08:00:00',
             ],
         );
 
@@ -136,6 +151,10 @@ final class InstitutionSeeder extends Seeder
                 'add_drop_closes_at' => '2026-09-25 23:59:59',
                 'marks_entry_opens_at' => '2026-11-30 08:00:00',
                 'marks_entry_closes_at' => '2027-01-09 23:59:59',
+                'study_mode_code' => 'FULL_TIME',
+                'term_type' => 'SEMESTER',
+                'status' => 'ACTIVE',
+                'published_at' => '2026-07-01 08:00:00',
                 'is_current' => true,
             ],
             [
@@ -149,6 +168,9 @@ final class InstitutionSeeder extends Seeder
                 'add_drop_closes_at' => '2027-02-05 23:59:59',
                 'marks_entry_opens_at' => '2027-04-12 08:00:00',
                 'marks_entry_closes_at' => '2027-05-21 23:59:59',
+                'study_mode_code' => 'FULL_TIME',
+                'term_type' => 'SEMESTER',
+                'status' => 'DRAFT',
                 'is_current' => false,
             ],
         ];
@@ -158,6 +180,49 @@ final class InstitutionSeeder extends Seeder
                 ['institution_id' => $institution->id, 'code' => $term['code']],
                 [...$term, 'academic_year_id' => $year->id],
             );
+        }
+
+        Intake::query()->updateOrCreate(
+            ['institution_id' => $institution->id, 'code' => 'SEP-2026'],
+            [
+                'academic_year_id' => $year->id,
+                'name' => 'September 2026 Intake',
+                'opens_on' => '2026-01-05',
+                'closes_on' => '2026-08-14',
+                'reporting_on' => '2026-09-01',
+                'status' => 'ACTIVE',
+            ],
+        );
+    }
+
+    private function seedMasterData(Institution $institution): void
+    {
+        foreach ([
+            ['FULL_TIME', 'Full-Time'], ['PART_TIME', 'Part-Time'], ['EVENING', 'Evening'],
+            ['WEEKEND', 'Weekend'], ['ODEL', 'Open, Distance and e-Learning'],
+        ] as [$code, $name]) {
+            StudyMode::query()->updateOrCreate(
+                ['institution_id' => $institution->id, 'code' => $code],
+                ['name' => $name, 'is_active' => true],
+            );
+        }
+
+        $lookups = [
+            'NATIONALITY' => [['KE', 'Kenyan'], ['UG', 'Ugandan'], ['TZ', 'Tanzanian']],
+            'COUNTY' => [['001', 'Mombasa'], ['047', 'Nairobi']],
+            'CURRENCY' => [['KES', 'Kenyan Shilling'], ['USD', 'US Dollar']],
+            'PAYMENT_METHOD' => [['MPESA', 'M-Pesa'], ['BANK', 'Bank Transfer'], ['CARD', 'Card']],
+            'BANK' => [['KCB', 'KCB Bank Kenya'], ['EQUITY', 'Equity Bank Kenya']],
+            'STUDENT_CATEGORY' => [['GOK', 'Government Sponsored'], ['PSSP', 'Privately Sponsored']],
+        ];
+
+        foreach ($lookups as $type => $values) {
+            foreach ($values as $order => [$code, $name]) {
+                MasterLookup::query()->updateOrCreate(
+                    ['institution_id' => $institution->id, 'type' => $type, 'code' => $code],
+                    ['name' => $name, 'display_order' => $order, 'is_active' => true],
+                );
+            }
         }
     }
 

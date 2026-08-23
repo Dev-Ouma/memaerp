@@ -1,0 +1,131 @@
+name: API CI
+
+# Backend only. The Next.js apps get their own workflow when they exist; keeping them separate
+# means a frontend lint failure never blocks a database migration from being verified.
+
+on:
+  push:
+    branches: [main]
+    paths: ['apps/api/**', '.github/workflows/api-ci.yml']
+  pull_request:
+    paths: ['apps/api/**', '.github/workflows/api-ci.yml']
+
+concurrency:
+  group: api-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: apps/api
+
+env:
+  PHP_VERSION: '8.4'
+
+jobs:
+  # No database, no services — this job exists to fail fast and cheaply. Formatting, types and
+  # module boundaries are decidable from the source alone.
+  static:
+    name: Formatting, types and module boundaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, bcmath, pdo_pgsql
+          coverage: none
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          working-directory: apps/api
+
+      - name: Formatting
+        run: ./vendor/bin/pint --test
+
+      - name: Static analysis
+        run: ./vendor/bin/phpstan analyse --memory-limit=1G --no-progress --error-format=github
+
+      # The baseline is a debt ledger, not a mute button: this fails on any violation that is not
+      # already recorded in deptrac-baseline.yaml.
+      - name: Module boundaries
+        run: ./vendor/bin/deptrac analyse --config-file=deptrac.yaml --no-progress
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: memaerp
+          POSTGRES_USER: memaerp
+          POSTGRES_PASSWORD: secret
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U memaerp -d memaerp"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      # phpunit.xml pins these for local runs against docker-compose; real environment variables
+      # take precedence, which is how CI points at the service containers instead.
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: '5432'
+      DB_DATABASE: memaerp_test
+      DB_USERNAME: memaerp
+      DB_PASSWORD: secret
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: '6379'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, bcmath, pdo_pgsql
+          coverage: none
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          working-directory: apps/api
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Create the test database
+        env:
+          PGPASSWORD: secret
+        run: createdb -h 127.0.0.1 -p 5432 -U memaerp memaerp_test
+
+      # Run the migrations as their own step rather than letting the suite do it: when the schema
+      # is what broke, the failure should say so instead of surfacing as 90 unrelated test errors.
+      - name: Migrate
+        run: php artisan migrate --force
+
+      # Reference data is seeded in production too, so a seeder that breaks is a deploy that
+      # breaks. It gets the same gate as the code.
+      - name: Seed reference data
+        run: php artisan db:seed --force
+
+      - name: Run the suite
+        run: php artisan test

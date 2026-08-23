@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Iam\Providers;
 
+use App\Modules\Iam\Contracts\ActorDirectory;
 use App\Modules\Iam\Models\User;
 use App\Modules\Iam\Services\AccessControl;
+use App\Modules\Iam\Services\EloquentActorDirectory;
 use App\Modules\Iam\Services\ScopeResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
@@ -17,6 +19,7 @@ final class IamServiceProvider extends ServiceProvider
     {
         $this->app->singleton(ScopeResolver::class);
         $this->app->singleton(AccessControl::class);
+        $this->app->singleton(ActorDirectory::class, EloquentActorDirectory::class);
     }
 
     public function boot(): void

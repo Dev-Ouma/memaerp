@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server';
 const DEFAULT_PUBLIC_PATHS = ['/login', '/mfa', '/reset-password'];
 const SESSION_COOKIES = [
   'laravel_session',
+  'mema-university-erp-session',
   'mema-erp-session',
   '__Host-mema_session',
   '__Host-ERPSESSION',

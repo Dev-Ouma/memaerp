@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Enrollment\Models;
 
+use App\Modules\Course\Contracts\OfferingCapacity;
 use App\Modules\Course\Models\CourseOffering;
 use App\Modules\Examination\Models\StudentMark;
 use App\Modules\Institution\Models\Institution;
@@ -37,6 +38,29 @@ final class CourseEnrollment extends BaseModel
             'is_retake' => 'boolean',
             'enrolled_at' => 'immutable_datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        self::created(function (self $enrollment): void {
+            if ($enrollment->status === 'ENROLLED') {
+                app(OfferingCapacity::class)->increment((string) $enrollment->course_offering_id);
+            }
+        });
+        self::updated(function (self $enrollment): void {
+            $previous = $enrollment->getOriginal('status');
+            if ($previous === 'ENROLLED' && $enrollment->status === 'DROPPED') {
+                app(OfferingCapacity::class)->decrement((string) $enrollment->course_offering_id);
+            }
+            if ($previous !== 'ENROLLED' && $enrollment->status === 'ENROLLED') {
+                app(OfferingCapacity::class)->increment((string) $enrollment->course_offering_id);
+            }
+        });
+        self::deleted(function (self $enrollment): void {
+            if ($enrollment->getOriginal('status') === 'ENROLLED' || $enrollment->status === 'ENROLLED') {
+                app(OfferingCapacity::class)->decrement((string) $enrollment->course_offering_id);
+            }
+        });
     }
 
     /** @return BelongsTo<Institution, $this> */

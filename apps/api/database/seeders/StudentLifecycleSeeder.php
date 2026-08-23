@@ -32,10 +32,15 @@ final class StudentLifecycleSeeder extends Seeder
         // Get accepted applicant (Faith Mwangi)
         $acceptedApp = Application::query()
             ->where('institution_id', $institution->id)
-            ->where('status', 'ACCEPTED')
+            ->whereIn('status', ['ACCEPTED', 'MATRICULATED'])
             ->firstOrFail();
 
         // 1. Matriculate into Student record
+        $curriculumVersion = \App\Modules\Curriculum\Models\CurriculumVersion::query()
+            ->where('programme_id', $acceptedApp->programme_id)
+            ->where('status', 'APPROVED')
+            ->first();
+
         $student = Student::query()->firstOrCreate(
             [
                 'institution_id' => $institution->id,
@@ -44,6 +49,7 @@ final class StudentLifecycleSeeder extends Seeder
             [
                 'person_id' => $acceptedApp->person_id,
                 'programme_id' => $acceptedApp->programme_id,
+                'curriculum_version_id' => $curriculumVersion?->id,
                 'campus_id' => $mainCampus->id,
                 'admission_year_id' => $academicYear->id,
                 'current_year_level' => 1,
@@ -51,11 +57,45 @@ final class StudentLifecycleSeeder extends Seeder
                 'academic_standing' => 'GOOD_STANDING',
                 'status' => 'ACTIVE',
                 'matriculated_on' => Carbon::now()->subDays(30),
-            ]
+            ],
         );
 
         // Update application status to MATRICULATED
         $acceptedApp->update(['status' => 'MATRICULATED']);
+
+        // Create student user account so they can log in to student-portal
+        $studentUser = User::query()->updateOrCreate(
+            [
+                'institution_id' => $institution->id,
+                'email' => 'student@mema.ac.ke',
+            ],
+            [
+                'person_id' => $student->person_id,
+                'username' => 'student',
+                'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+                'is_active' => true,
+                'must_change_password' => false,
+                'email_verified_at' => \Carbon\CarbonImmutable::now(),
+            ],
+        );
+
+        $studentRole = \App\Modules\Iam\Models\Role::query()
+            ->where('institution_id', $institution->id)
+            ->where('code', 'student')
+            ->firstOrFail();
+
+        \App\Modules\Iam\Models\RoleAssignment::query()->firstOrCreate(
+            [
+                'user_id' => $studentUser->id,
+                'role_id' => $studentRole->id,
+                'scope_type' => \App\Platform\Support\Scope::SELF,
+            ],
+            [
+                'institution_id' => $institution->id,
+                'grant_reason' => 'Demonstration account seeded for student login',
+                'starts_at' => \Carbon\CarbonImmutable::now(),
+            ],
+        );
 
         // 2. Register for current term
         $termReg = TermRegistration::query()->firstOrCreate(
@@ -70,7 +110,7 @@ final class StudentLifecycleSeeder extends Seeder
                 'financial_clearance_status' => true,
                 'status' => 'REGISTERED',
                 'registered_at' => Carbon::now()->subDays(20),
-            ]
+            ],
         );
 
         // 3. Enroll in 4 active course offerings
@@ -94,9 +134,6 @@ final class StudentLifecycleSeeder extends Seeder
         $totalGradePoints = 0;
 
         foreach ($offerings as $i => $offering) {
-            // Increment enrolled count on offering
-            $offering->increment('enrolled_count');
-
             $enrollment = CourseEnrollment::query()->firstOrCreate(
                 [
                     'institution_id' => $institution->id,
@@ -108,7 +145,7 @@ final class StudentLifecycleSeeder extends Seeder
                     'status' => 'ENROLLED',
                     'is_retake' => false,
                     'enrolled_at' => Carbon::now()->subDays(18),
-                ]
+                ],
             );
 
             // Enter marks
@@ -127,7 +164,7 @@ final class StudentLifecycleSeeder extends Seeder
                     'is_submitted' => true,
                     'submitted_by' => $adminUser->id,
                     'approval_status' => 'SENATE_RATIFIED',
-                ]
+                ],
             );
 
             $credits = $offering->course->credits;
@@ -151,7 +188,7 @@ final class StudentLifecycleSeeder extends Seeder
                 'gpa' => $gpa,
                 'cgpa' => $gpa, // First term so CGPA = GPA
                 'academic_standing' => $gpa >= 2.0 ? 'GOOD_STANDING' : 'PROBATION',
-            ]
+            ],
         );
     }
 }

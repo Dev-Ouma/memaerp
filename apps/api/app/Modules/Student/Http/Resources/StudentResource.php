@@ -20,6 +20,16 @@ final class StudentResource extends JsonResource
             'current_year_level' => $this->resource->current_year_level,
             'current_semester' => $this->resource->current_semester,
             'matriculated_on' => $this->resource->matriculated_on?->toDateString(),
+            'intake' => $this->whenLoaded('intake', fn (): ?array => $this->resource->intake ? [
+                'id' => $this->resource->intake->id,
+                'code' => $this->resource->intake->code,
+            ] : null),
+            'study_mode' => $this->whenLoaded('studyMode', fn (): ?array => $this->resource->studyMode ? [
+                'id' => $this->resource->studyMode->id,
+                'name' => $this->resource->studyMode->name,
+            ] : null),
+            'digital_id_status' => $this->resource->digital_id_status,
+            'curriculum_version_id' => $this->resource->curriculum_version_id,
             'person' => [
                 'id' => $this->resource->person->id,
                 'given_name' => $this->resource->person->given_name,

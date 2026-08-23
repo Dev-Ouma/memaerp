@@ -52,7 +52,7 @@ final class CreateAuditPartitions extends Command
         } catch (Throwable $exception) {
             $this->error('Audit partition creation failed: '.$exception->getMessage());
             $this->line(
-                'Check audit.activity_log_default for rows in the requested range before retrying.'
+                'Check audit.activity_log_default for rows in the requested range before retrying.',
             );
 
             return self::FAILURE;

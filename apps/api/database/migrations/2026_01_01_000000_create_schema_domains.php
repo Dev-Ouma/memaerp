@@ -31,6 +31,10 @@ return new class extends Migration
         'audit',
         'cms',
         'analytics',
+        'lms',
+        'attendance',
+        'advising',
+        'attachment',
     ];
 
     public function up(): void

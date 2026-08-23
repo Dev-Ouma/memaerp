@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @config "../../tailwind.config.js";
 @source "../../../../packages/ui/src/**/*.{js,ts,jsx,tsx}";
+@source "../../../../packages/auth/src/**/*.{js,ts,jsx,tsx}";
+@source "../../../../packages/forms/src/**/*.{js,ts,jsx,tsx}";
+@source "../../../../packages/tables/src/**/*.{js,ts,jsx,tsx}";
 
 @layer base {
   :root {

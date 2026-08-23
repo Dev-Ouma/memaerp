@@ -98,6 +98,7 @@ final class PermissionCatalogue
                 'catalogue' => [
                     'view' => ['View the course catalogue', false],
                     'manage' => ['Create or amend courses', false],
+                    'approve' => ['Approve a course for the official catalogue', true],
                 ],
                 'offering' => [
                     'view' => ['View course offerings for a term', false],
@@ -109,8 +110,15 @@ final class PermissionCatalogue
             'admission' => [
                 'application' => [
                     'view' => ['View applications', false],
+                    'submit' => ['Create and submit an application', false],
                     'review' => ['Score and recommend on an application', false],
                     'decide' => ['Issue or decline an offer', true],
+                ],
+                'prospect' => [
+                    'manage' => ['Capture and manage recruitment prospects', false],
+                ],
+                'kuccps' => [
+                    'import' => ['Import KUCCPS placement lists', true],
                 ],
             ],
 
@@ -119,6 +127,8 @@ final class PermissionCatalogue
                     'view' => ['View student records', false],
                     'update' => ['Amend a student record', false],
                     'view-sensitive' => ['View government identifiers and protected fields', true],
+                    'matriculate' => ['Matriculate accepted applicants into the student registry', true],
+                    'status' => ['Change official student lifecycle status', true],
                 ],
             ],
 
@@ -166,6 +176,81 @@ final class PermissionCatalogue
                 ],
                 'transcript' => [
                     'issue' => ['Issue an official transcript', true],
+                ],
+            ],
+
+            'lms' => [
+                'sync' => [
+                    'view' => ['View LMS sync health and logs', false],
+                    'manage' => ['Trigger Moodle course and enrollment sync', true],
+                ],
+                'launch' => [
+                    'view' => ['Launch Moodle via SSO from the student portal', false],
+                ],
+            ],
+
+            'attendance' => [
+                'session' => [
+                    'manage' => ['Open and close class attendance sessions', false],
+                ],
+                'checkin' => [
+                    'self' => ['Check in to a class via QR code', false],
+                ],
+                'record' => [
+                    'view-self' => ['View own attendance record', false],
+                ],
+                'report' => [
+                    'view' => ['View course attendance registers and at-risk lists', false],
+                ],
+                'override' => [
+                    'manage' => ['Manually amend attendance records', true],
+                ],
+            ],
+
+            'advising' => [
+                'advisee' => [
+                    'view' => ['View assigned advisee portfolio and degree audits', false],
+                ],
+                'assignment' => [
+                    'manage' => ['Assign or reassign academic advisors to students', true],
+                ],
+                'notes' => [
+                    'manage' => ['Create advisory notes and interventions', false],
+                ],
+                'progress' => [
+                    'view-self' => ['View own degree progress and recommendations', false],
+                ],
+                'session' => [
+                    'request' => ['Request an advisory session with assigned advisor', false],
+                ],
+            ],
+
+            'attachment' => [
+                'organization' => [
+                    'view' => ['View host organisation registry for industrial attachment', false],
+                    'manage' => ['Register and maintain host organisations and MOU status', true],
+                ],
+                'application' => [
+                    'view-self' => ['View own attachment application and placement status', false],
+                    'submit' => ['Apply for industrial attachment placement', false],
+                    'review' => ['Review and approve student attachment applications', false],
+                ],
+                'placement' => [
+                    'manage' => ['Assign placements, confirm host acceptance and close cycles', true],
+                    'supervise' => ['Supervise assigned attachment students and site visits', false],
+                ],
+                'logbook' => [
+                    'view-self' => ['View own digital attachment logbook', false],
+                    'submit' => ['Submit weekly attachment logbook entries', false],
+                    'view' => ['View student logbooks for attachment oversight', false],
+                    'endorse' => ['Endorse logbook entries on behalf of host supervisors', false],
+                ],
+                'assessment' => [
+                    'submit' => ['Submit university supervisor attachment assessments', false],
+                    'manage' => ['Record host evaluations and finalise attachment grades', true],
+                ],
+                'report' => [
+                    'view' => ['View attachment programme dashboard and reports', false],
                 ],
             ],
 

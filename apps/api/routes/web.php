@@ -21,20 +21,19 @@ use App\Modules\Institution\Models\Department;
 use App\Modules\Institution\Models\Faculty;
 use App\Modules\Institution\Models\Term;
 use App\Modules\Student\Models\Student;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return Auth::check() ? redirect('/dashboard') : redirect('/login');
-});
-
-Route::middleware('guest')->group(function (): void {
-    Route::get('/login', function () {
-        return view('auth.login');
-    })->name('login');
-
-    Route::post('/login', [AuthController::class, 'login']);
+    return response()->json([
+        'system' => 'MEMA ERP API',
+        'message' => 'Authentication is handled by the first-party portals.',
+        'portals' => [
+            'admin' => 'http://localhost:3005/login',
+            'student' => 'http://localhost:3002/login',
+            'applicant' => 'http://localhost:3001',
+        ],
+    ]);
 });
 
 Route::middleware('auth')->group(function (): void {
@@ -92,7 +91,7 @@ Route::middleware('auth')->group(function (): void {
             'courseEnrollments',
             'studentMarks',
             'termGpas',
-            'stats'
+            'stats',
         ));
     })->name('dashboard');
 

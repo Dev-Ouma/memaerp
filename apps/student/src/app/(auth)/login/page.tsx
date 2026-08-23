@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@mema/auth';
 import { ApiError } from '@mema/api-client';
-import { Input, Button, Alert, AlertTitle, AlertDescription } from '@mema/ui';
+import { Input, Button, Alert, AlertTitle, AlertDescription, MemaLoaderScreen } from '@mema/ui';
 import { 
   GraduationCap, User, Lock, Eye, EyeOff, ShieldCheck, 
   ArrowRight, FileText, BookOpen, BarChart3, Clock 
@@ -235,7 +235,7 @@ function StudentLoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-sm text-slate-600">Loading student sign in...</div>}>
+    <Suspense fallback={<MemaLoaderScreen label="Loading student sign in…" />}>
       <StudentLoginContent />
     </Suspense>
   );

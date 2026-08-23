@@ -49,7 +49,7 @@ final class AuthController extends Controller
                 succeeded: false,
                 reason: $user ? 'INVALID_PASSWORD' : 'USER_NOT_FOUND',
                 ip: $ip,
-                userAgent: $userAgent
+                userAgent: $userAgent,
             );
 
             if ($user) {
@@ -78,7 +78,7 @@ final class AuthController extends Controller
                 succeeded: false,
                 reason: $user->isLocked() ? 'ACCOUNT_LOCKED' : 'ACCOUNT_INACTIVE',
                 ip: $ip,
-                userAgent: $userAgent
+                userAgent: $userAgent,
             );
 
             $msg = $user->isLocked()
@@ -141,7 +141,7 @@ final class AuthController extends Controller
             succeeded: true,
             reason: null,
             ip: $ip,
-            userAgent: $userAgent
+            userAgent: $userAgent,
         );
 
         // 7. Establish session if web or issue token if API.
@@ -194,7 +194,7 @@ final class AuthController extends Controller
             return response()->json(['message' => 'Logged out successfully.']);
         }
 
-        return redirect('/login');
+        return redirect('/');
     }
 
     /**
@@ -287,7 +287,7 @@ final class AuthController extends Controller
         bool $succeeded,
         ?string $reason,
         string $ip,
-        ?string $userAgent
+        ?string $userAgent,
     ): void {
         DB::table('iam.login_attempts')->insert([
             'id' => Str::uuid()->toString(),

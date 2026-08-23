@@ -8,15 +8,19 @@ use App\Modules\Iam\Models\User;
 use App\Modules\Institution\Models\Campus;
 use App\Modules\Institution\Models\Institution;
 use App\Modules\Institution\Models\Term;
+use App\Platform\Concerns\Auditable;
 use App\Platform\Contracts\ScopeAware;
 use App\Platform\Models\BaseModel;
 use App\Platform\Support\Scope;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class CourseOffering extends BaseModel implements ScopeAware
 {
+    use Auditable;
+
     /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
@@ -33,8 +37,12 @@ final class CourseOffering extends BaseModel implements ScopeAware
         'section_code',
         'max_capacity',
         'enrolled_count',
+        'waitlist_count',
+        'workload_credits',
         'delivery_mode',
+        'status',
         'is_open_for_enrollment',
+        'closed_at',
     ];
 
     /**
@@ -60,7 +68,10 @@ final class CourseOffering extends BaseModel implements ScopeAware
         return [
             'max_capacity' => 'integer',
             'enrolled_count' => 'integer',
+            'waitlist_count' => 'integer',
+            'workload_credits' => 'integer',
             'is_open_for_enrollment' => 'boolean',
+            'closed_at' => 'immutable_datetime',
         ];
     }
 
@@ -92,5 +103,17 @@ final class CourseOffering extends BaseModel implements ScopeAware
     public function lecturer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'lecturer_id');
+    }
+
+    /** @return HasMany<OfferingAllocation, $this> */
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(OfferingAllocation::class, 'course_offering_id');
+    }
+
+    /** @return HasMany<OfferingWaitlist, $this> */
+    public function waitlist(): HasMany
+    {
+        return $this->hasMany(OfferingWaitlist::class, 'course_offering_id');
     }
 }

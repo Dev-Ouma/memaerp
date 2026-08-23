@@ -1,7 +1,10 @@
 openapi: 3.1.0
 info:
   title: Mema University ERP API
-  version: 0.2.0
+  version: 0.5.0
+  license:
+    name: MIT
+    identifier: MIT
   description: >-
     Governance scaffold. Operation paths are generated from the Laravel implementation;
     undocumented handwritten production endpoints are prohibited.
@@ -108,13 +111,1346 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
         '429': { $ref: '#/components/responses/RateLimited' }
+  /institution/overview:
+    get:
+      operationId: getInstitutionOverview
+      summary: Get institutional hierarchy and current-calendar totals
+      tags: [Institution]
+      responses:
+        '200':
+          description: Institutional overview.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/InstitutionOverview' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /institution/campuses:
+    get:
+      operationId: listCampuses
+      summary: Search and paginate campuses
+      tags: [Institution]
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string, maxLength: 100 }
+        - name: active
+          in: query
+          schema: { type: boolean }
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionCollection' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createCampus
+      summary: Create a governed campus record
+      tags: [Institution]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCampus' }
+      responses:
+        '201':
+          description: Campus created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InstitutionRecordResponse' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/faculties:
+    get:
+      operationId: listFaculties
+      summary: List faculties and schools with their campus
+      tags: [Institution]
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionCollection' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createFaculty
+      summary: Create a governed faculty or school
+      tags: [Institution]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateFaculty' }
+      responses:
+        '201': { $ref: '#/components/responses/InstitutionCreated' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/departments:
+    get:
+      operationId: listDepartments
+      summary: Search departments with faculty and campus context
+      tags: [Institution]
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionCollection' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createDepartment
+      summary: Create a governed department
+      tags: [Institution]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateDepartment' }
+      responses:
+        '201': { $ref: '#/components/responses/InstitutionCreated' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/campuses/{campus}:
+    patch:
+      operationId: updateCampus
+      summary: Update, approve, or archive a campus without deleting history
+      tags: [Institution]
+      parameters: [{ $ref: '#/components/parameters/CampusId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GovernedInstitutionUpdate' }
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/faculties/{faculty}:
+    patch:
+      operationId: updateFaculty
+      summary: Update, approve, or archive a faculty, school, or centre
+      tags: [Institution]
+      parameters: [{ $ref: '#/components/parameters/FacultyId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GovernedInstitutionUpdate' }
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/departments/{department}:
+    patch:
+      operationId: updateDepartment
+      summary: Update, approve, or archive a department
+      tags: [Institution]
+      parameters: [{ $ref: '#/components/parameters/DepartmentId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GovernedInstitutionUpdate' }
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/units:
+    get:
+      operationId: listInstitutionUnits
+      summary: List the final department-to-unit hierarchy level
+      tags: [Institution]
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionCollection' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createInstitutionUnit
+      summary: Create a governed unit, centre, institute, or laboratory
+      tags: [Institution]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateInstitutionUnit' }
+      responses:
+        '201': { $ref: '#/components/responses/InstitutionCreated' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/units/{unit}:
+    patch:
+      operationId: updateInstitutionUnit
+      summary: Update, approve, or archive an organizational unit
+      tags: [Institution]
+      parameters: [{ $ref: '#/components/parameters/UnitId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GovernedInstitutionUpdate' }
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/schools:
+    get:
+      operationId: listSchools
+      summary: Compatibility view of faculties and schools
+      tags: [Institution]
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionCollection' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /institution/academic-years:
+    get:
+      operationId: listAcademicYears
+      summary: List academic years and terms
+      tags: [Institution Calendar]
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionCollection' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createAcademicYear
+      summary: Create a draft academic year
+      tags: [Institution Calendar]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateAcademicYear' }
+      responses:
+        '201': { $ref: '#/components/responses/InstitutionCreated' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/academic-years/current:
+    get:
+      operationId: getCurrentAcademicYear
+      summary: Get the single active academic year and its terms
+      tags: [Institution Calendar]
+      responses:
+        '200':
+          description: Current academic year.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/AcademicYear' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /institution/academic-years/{academicYear}/activate:
+    post:
+      operationId: activateAcademicYear
+      summary: Senate-approve, publish and make an academic year current
+      tags: [Institution Calendar]
+      parameters:
+        - name: academicYear
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [senate_resolution_reference]
+              properties:
+                senate_resolution_reference: { type: string, minLength: 5, maxLength: 128 }
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/terms:
+    post:
+      operationId: createAcademicTerm
+      summary: Configure a draft study-mode term and its date gates
+      tags: [Institution Calendar]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateTerm' }
+      responses:
+        '201': { $ref: '#/components/responses/InstitutionCreated' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/terms/{term}/activate:
+    post:
+      operationId: activateAcademicTerm
+      summary: Publish a non-overlapping current term for its study mode
+      tags: [Institution Calendar]
+      parameters:
+        - name: term
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/study-modes:
+    get:
+      operationId: listStudyModes
+      summary: List configurable study modes
+      tags: [Institution Calendar]
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionCollection' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createStudyMode
+      summary: Create a study mode used by calendar rules
+      tags: [Institution Calendar]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateStudyMode' }
+      responses:
+        '201': { $ref: '#/components/responses/InstitutionCreated' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/study-modes/{studyMode}:
+    patch:
+      operationId: updateStudyMode
+      summary: Update or deactivate a study mode
+      tags: [Institution Calendar]
+      parameters: [{ $ref: '#/components/parameters/StudyModeId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 100 }
+                description: { type: [string, 'null'], maxLength: 255 }
+                is_active: { type: boolean }
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/intakes:
+    get:
+      operationId: listIntakes
+      summary: List admissions intake windows
+      tags: [Institution Calendar]
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionCollection' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createIntake
+      summary: Configure an admissions intake window
+      tags: [Institution Calendar]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateIntake' }
+      responses:
+        '201': { $ref: '#/components/responses/InstitutionCreated' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/intakes/{intake}:
+    patch:
+      operationId: updateIntake
+      summary: Update or archive an intake window
+      tags: [Institution Calendar]
+      parameters: [{ $ref: '#/components/parameters/IntakeId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateIntake' }
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/calendar-events:
+    get:
+      operationId: listCalendarEvents
+      summary: List institutional holidays, deadlines, and calendar events
+      tags: [Institution Calendar]
+      parameters:
+        - name: academic_year_id
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionCollection' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createCalendarEvent
+      summary: Publish a holiday, critical deadline, or academic event
+      tags: [Institution Calendar]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCalendarEvent' }
+      responses:
+        '201': { $ref: '#/components/responses/InstitutionCreated' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/lookups/{type}:
+    parameters:
+      - name: type
+        in: path
+        required: true
+        schema: { type: string, maxLength: 48 }
+    get:
+      operationId: listMasterLookups
+      summary: Read Redis-cached active values for a lookup type
+      tags: [Institution Master Data]
+      responses:
+        '200':
+          description: Lookup values and retrieval timing.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/MasterLookup' }
+                  meta:
+                    type: object
+                    properties:
+                      elapsed_ms: { type: number }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      operationId: createMasterLookup
+      summary: Create a lookup value and invalidate its cache
+      tags: [Institution Master Data]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateMasterLookup' }
+      responses:
+        '201': { $ref: '#/components/responses/InstitutionCreated' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/lookups/{type}/{lookup}:
+    patch:
+      operationId: updateMasterLookup
+      summary: Update or archive a lookup value and invalidate Redis cache
+      tags: [Institution Master Data]
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema: { type: string, maxLength: 48 }
+        - $ref: '#/components/parameters/LookupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateMasterLookup' }
+      responses:
+        '200': { $ref: '#/components/responses/InstitutionRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/reports/directory:
+    get:
+      operationId: exportInstitutionDirectory
+      summary: Export the organizational master directory
+      tags: [Institution Reports]
+      parameters:
+        - name: format
+          in: query
+          schema: { type: string, enum: [pdf, csv, json], default: pdf }
+      responses:
+        '200':
+          description: PDF, CSV, or JSON directory export.
+          content:
+            application/pdf: { schema: { type: string, format: binary } }
+            text/csv: { schema: { type: string } }
+            application/json: { schema: { type: object, additionalProperties: true } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /institution/reports/calendar:
+    get:
+      operationId: exportAcademicCalendar
+      summary: Download the official academic calendar booklet
+      tags: [Institution Reports]
+      parameters:
+        - name: academic_year_id
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: University academic calendar PDF.
+          content:
+            application/pdf: { schema: { type: string, format: binary } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /curriculum/programmes:
+    get:
+      operationId: listProgrammes
+      summary: List institution programmes and version coverage
+      tags: [Curriculum]
+      parameters:
+        - { name: search, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: award_level, in: query, schema: { $ref: '#/components/schemas/AwardLevel' } }
+        - { name: department_id, in: query, schema: { type: string, format: uuid } }
+        - { name: active, in: query, schema: { type: boolean } }
+      responses:
+        '200': { $ref: '#/components/responses/ProgrammeCollection' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createProgramme
+      summary: Create a governed programme registry record
+      tags: [Curriculum]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/CreateProgramme' } }
+      responses:
+        '201': { $ref: '#/components/responses/ProgrammeRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /curriculum/programmes/{programme}:
+    parameters:
+      - $ref: '#/components/parameters/ProgrammeId'
+    get:
+      operationId: getProgrammeCurriculumTree
+      summary: Get a programme with every curriculum version
+      tags: [Curriculum]
+      responses:
+        '200': { $ref: '#/components/responses/ProgrammeRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      operationId: updateProgramme
+      summary: Update controlled programme metadata
+      tags: [Curriculum]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/UpdateProgramme' } }
+      responses:
+        '200': { $ref: '#/components/responses/ProgrammeRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /curriculum/programmes/{programme}/curricula:
+    parameters:
+      - $ref: '#/components/parameters/ProgrammeId'
+    get:
+      operationId: listCurriculumVersions
+      summary: List immutable and draft versions for one programme
+      tags: [Curriculum]
+      responses:
+        '200': { $ref: '#/components/responses/CurriculumVersionCollection' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /curriculum/courses:
+    get:
+      operationId: listCurriculumCatalogueCourses
+      summary: List active courses available to the curriculum builder
+      tags: [Curriculum]
+      responses:
+        '200': { $ref: '#/components/responses/CourseCollection' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /curriculum/versions:
+    post:
+      operationId: createCurriculumVersion
+      summary: Create a new editable curriculum version
+      tags: [Curriculum]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/CreateCurriculumVersion' } }
+      responses:
+        '201': { $ref: '#/components/responses/CurriculumVersionRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /curriculum/versions/{version}/elective-groups:
+    parameters:
+      - $ref: '#/components/parameters/CurriculumVersionId'
+    post:
+      operationId: createElectiveGroup
+      summary: Create an elective selection cluster in a draft
+      tags: [Curriculum]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/CreateElectiveGroup' } }
+      responses:
+        '201': { $ref: '#/components/responses/CurriculumChildRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/CurriculumLocked' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /curriculum/versions/{version}/elective-groups/{group}:
+    parameters:
+      - $ref: '#/components/parameters/CurriculumVersionId'
+      - { name: group, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      operationId: updateElectiveGroup
+      summary: Update an elective cluster in a draft
+      tags: [Curriculum]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/UpdateElectiveGroup' } }
+      responses:
+        '200': { $ref: '#/components/responses/CurriculumChildRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/CurriculumLocked' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    delete:
+      operationId: deleteElectiveGroup
+      summary: Remove an unused elective cluster from a draft
+      tags: [Curriculum]
+      responses:
+        '200': { $ref: '#/components/responses/MutationMessage' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/CurriculumLocked' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /curriculum/versions/{version}/courses:
+    parameters:
+      - $ref: '#/components/parameters/CurriculumVersionId'
+    post:
+      operationId: addCurriculumCourse
+      summary: Map a catalogue course into a draft semester grid
+      tags: [Curriculum]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/CreateCurriculumCourse' } }
+      responses:
+        '201': { $ref: '#/components/responses/CurriculumChildRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/CurriculumLocked' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /curriculum/versions/{version}/courses/{item}:
+    parameters:
+      - $ref: '#/components/parameters/CurriculumVersionId'
+      - { name: item, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      operationId: updateCurriculumCourse
+      summary: Reposition or reclassify a draft curriculum course
+      tags: [Curriculum]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/UpdateCurriculumCourse' } }
+      responses:
+        '200': { $ref: '#/components/responses/CurriculumChildRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/CurriculumLocked' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    delete:
+      operationId: deleteCurriculumCourse
+      summary: Remove a course and its version-scoped edges from a draft
+      tags: [Curriculum]
+      responses:
+        '200': { $ref: '#/components/responses/MutationMessage' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/CurriculumLocked' }
+  /curriculum/versions/{version}/requirements:
+    parameters:
+      - $ref: '#/components/parameters/CurriculumVersionId'
+    post:
+      operationId: addCurriculumRequirement
+      summary: Add a validated prerequisite, corequisite, or antirequisite edge
+      description: PREREQUISITE edges that introduce a directed cycle fail with ERR-CUR-CYCLE.
+      tags: [Curriculum]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/CreateCourseRequirement' } }
+      responses:
+        '201': { $ref: '#/components/responses/CurriculumChildRecord' }
+        '400': { $ref: '#/components/responses/CyclicPrerequisite' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/CurriculumLocked' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /curriculum/versions/{version}/requirements/{requirement}:
+    parameters:
+      - $ref: '#/components/parameters/CurriculumVersionId'
+      - { name: requirement, in: path, required: true, schema: { type: string, format: uuid } }
+    delete:
+      operationId: deleteCurriculumRequirement
+      summary: Remove a dependency edge from a draft
+      tags: [Curriculum]
+      responses:
+        '200': { $ref: '#/components/responses/MutationMessage' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/CurriculumLocked' }
+  /curriculum/versions/{version}/submit:
+    parameters:
+      - $ref: '#/components/parameters/CurriculumVersionId'
+    post:
+      operationId: submitCurriculumVersion
+      summary: Submit a populated draft into the four-stage review chain
+      tags: [Curriculum]
+      responses:
+        '200': { $ref: '#/components/responses/CurriculumVersionRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/CurriculumLocked' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /curriculum/versions/{version}/approve:
+    parameters:
+      - $ref: '#/components/parameters/CurriculumVersionId'
+    post:
+      operationId: approveCurriculumStage
+      summary: Record the next HOD-to-Senate approval stage
+      description: Final Senate approval validates credit integrity, writes the hash ledger, supersedes the prior active version, and locks this version.
+      tags: [Curriculum]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/ApproveCurriculumStage' } }
+      responses:
+        '200': { $ref: '#/components/responses/CurriculumVersionRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/CurriculumLocked' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /curriculum/versions/{version}/assign-cohort:
+    parameters:
+      - $ref: '#/components/parameters/CurriculumVersionId'
+    post:
+      operationId: assignCurriculumToCohort
+      summary: Assign an approved version to unassigned students in an admission cohort
+      tags: [Curriculum]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [admission_year_id]
+              properties:
+                admission_year_id: { type: string, format: uuid }
+      responses:
+        '200': { $ref: '#/components/responses/CohortAssignmentResult' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /curriculum/versions/{version}/report:
+    parameters:
+      - $ref: '#/components/parameters/CurriculumVersionId'
+      - { name: format, in: query, schema: { type: string, enum: [pdf, csv], default: pdf } }
+    get:
+      operationId: exportCurriculumHandbook
+      summary: Export the governed programme handbook
+      tags: [Curriculum]
+      responses:
+        '200':
+          description: PDF handbook or CSV semester grid.
+          content:
+            application/pdf: { schema: { type: string, format: binary } }
+            text/csv: { schema: { type: string } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /courses:
+    get:
+      operationId: listCourses
+      summary: List the master course catalogue
+      tags: [Courses]
+      parameters:
+        - { name: search, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: department_id, in: query, schema: { type: string, format: uuid } }
+        - { name: status, in: query, schema: { type: string, enum: [DRAFT, UNDER_REVIEW, ACTIVE, DISCONTINUED] } }
+        - { name: credits, in: query, schema: { type: integer, minimum: 1, maximum: 12 } }
+        - { name: active, in: query, schema: { type: boolean } }
+      responses:
+        '200': { $ref: '#/components/responses/CourseCollection' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createCourse
+      summary: Draft a master course for departmental review
+      tags: [Courses]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [department_id, code, title, credits]
+              properties:
+                department_id: { type: string, format: uuid }
+                code: { type: string, maxLength: 20 }
+                title: { type: string, maxLength: 200 }
+                credits: { type: integer, minimum: 1, maximum: 12 }
+                lecture_hours: { type: integer, minimum: 0 }
+                lab_hours: { type: integer, minimum: 0 }
+                tutorial_hours: { type: integer, minimum: 0 }
+                description: { type: string }
+                learning_outcomes: { type: string }
+                syllabus_outline: { type: string }
+      responses:
+        '201': { $ref: '#/components/responses/CourseRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /courses/dashboard:
+    get:
+      operationId: getCourseDashboard
+      summary: Departmental course and workload metrics
+      tags: [Courses]
+      responses:
+        '200':
+          description: Aggregated catalogue and offering metrics.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: object, additionalProperties: true }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /courses/lecturers:
+    get:
+      operationId: listTeachingStaff
+      summary: List users who can be allocated to a section
+      tags: [Courses]
+      responses:
+        '200': { $ref: '#/components/responses/TeachingStaffCollection' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /courses/report:
+    get:
+      operationId: exportCourseCatalogue
+      summary: Export the master course catalogue
+      tags: [Courses]
+      parameters:
+        - { name: format, in: query, schema: { type: string, enum: [pdf, csv], default: pdf } }
+      responses:
+        '200':
+          description: PDF directory or CSV catalogue.
+          content:
+            application/pdf: { schema: { type: string, format: binary } }
+            text/csv: { schema: { type: string } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /courses/offerings:
+    get:
+      operationId: listCourseOfferings
+      summary: List scoped semester offerings
+      tags: [Courses]
+      parameters:
+        - { name: term_id, in: query, schema: { type: string, format: uuid } }
+        - { name: campus_id, in: query, schema: { type: string, format: uuid } }
+        - { name: department_id, in: query, schema: { type: string, format: uuid } }
+        - { name: active_only, in: query, schema: { type: boolean } }
+      responses:
+        '200': { $ref: '#/components/responses/OfferingCollection' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createCourseOffering
+      summary: Open a campus section for an approved course
+      tags: [Courses]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [course_id, term_id, campus_id, section_code, max_capacity]
+              properties:
+                course_id: { type: string, format: uuid }
+                term_id: { type: string, format: uuid }
+                campus_id: { type: string, format: uuid }
+                section_code: { type: string, maxLength: 10 }
+                max_capacity: { type: integer, minimum: 1, maximum: 500 }
+                delivery_mode: { type: string, enum: [IN_PERSON, ONLINE, HYBRID] }
+                workload_credits: { type: integer, minimum: 0, maximum: 24 }
+      responses:
+        '201': { $ref: '#/components/responses/OfferingRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /courses/offerings/active:
+    get:
+      operationId: listActiveCourseOfferings
+      summary: List offerings currently open for enrollment
+      tags: [Courses]
+      responses:
+        '200': { $ref: '#/components/responses/OfferingCollection' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /courses/offerings/report:
+    get:
+      operationId: exportCourseOfferings
+      summary: Export the semester section allocation list
+      tags: [Courses]
+      parameters:
+        - { name: format, in: query, schema: { type: string, enum: [pdf, csv], default: pdf } }
+      responses:
+        '200':
+          description: PDF or CSV section allocation list.
+          content:
+            application/pdf: { schema: { type: string, format: binary } }
+            text/csv: { schema: { type: string } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /courses/offerings/{offering}/assign-lecturer:
+    parameters:
+      - $ref: '#/components/parameters/OfferingId'
+    post:
+      operationId: assignOfferingLecturer
+      summary: Allocate a primary or assistant lecturer
+      tags: [Courses]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lecturer_id]
+              properties:
+                lecturer_id: { type: string, format: uuid }
+                role: { type: string, enum: [PRIMARY, ASSISTANT] }
+                workload_credits: { type: integer, minimum: 0, maximum: 24 }
+      responses:
+        '200': { $ref: '#/components/responses/OfferingRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /courses/offerings/{offering}/close:
+    parameters:
+      - $ref: '#/components/parameters/OfferingId'
+    post:
+      operationId: closeCourseOffering
+      summary: Close a section for further enrollment
+      tags: [Courses]
+      responses:
+        '200': { $ref: '#/components/responses/OfferingRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /courses/offerings/{offering}/waitlist:
+    parameters:
+      - $ref: '#/components/parameters/OfferingId'
+    post:
+      operationId: joinOfferingWaitlist
+      summary: Place a student on a full section waitlist
+      tags: [Courses]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_id]
+              properties:
+                student_id: { type: string, format: uuid }
+      responses:
+        '201': { $ref: '#/components/responses/WaitlistRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /courses/{course}:
+    parameters:
+      - $ref: '#/components/parameters/CourseId'
+    get:
+      operationId: getCourse
+      summary: Get one catalogue course with prerequisites and reviews
+      tags: [Courses]
+      responses:
+        '200': { $ref: '#/components/responses/CourseRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      operationId: updateCourse
+      summary: Update a draft or published catalogue course
+      tags: [Courses]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { type: object, additionalProperties: true } }
+      responses:
+        '200': { $ref: '#/components/responses/CourseRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /courses/{course}/submit:
+    parameters:
+      - $ref: '#/components/parameters/CourseId'
+    post:
+      operationId: submitCourse
+      summary: Submit a draft course for department board review
+      tags: [Courses]
+      responses:
+        '200': { $ref: '#/components/responses/CourseRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /courses/{course}/approve:
+    parameters:
+      - $ref: '#/components/parameters/CourseId'
+    post:
+      operationId: approveCourse
+      summary: Record the next board approval
+      tags: [Courses]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stage, reference]
+              properties:
+                stage: { type: string, enum: [DEPARTMENT_BOARD, SCHOOL_BOARD] }
+                reference: { type: string, minLength: 3, maxLength: 128 }
+                comments: { type: string, maxLength: 2000 }
+      responses:
+        '200': { $ref: '#/components/responses/CourseRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /courses/{course}/prerequisites:
+    parameters:
+      - $ref: '#/components/parameters/CourseId'
+    post:
+      operationId: addCoursePrerequisite
+      summary: Add a catalogue-level course requirement
+      tags: [Courses]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [required_course_id, requirement_type]
+              properties:
+                required_course_id: { type: string, format: uuid }
+                requirement_type: { type: string, enum: [PREREQUISITE, COREQUISITE, ANTIREQUISITE] }
+      responses:
+        '201': { $ref: '#/components/responses/CurriculumChildRecord' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /courses/{course}/prerequisites/{requirement}:
+    delete:
+      operationId: deleteCoursePrerequisite
+      summary: Remove a catalogue-level course requirement
+      tags: [Courses]
+      parameters:
+        - $ref: '#/components/parameters/CourseId'
+        - { name: requirement, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { $ref: '#/components/responses/MutationMessage' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /courses/{course}/syllabus:
+    parameters:
+      - $ref: '#/components/parameters/CourseId'
+    get:
+      operationId: exportCourseSyllabus
+      summary: Download the official syllabus outline
+      tags: [Courses]
+      responses:
+        '200':
+          description: PDF syllabus outline.
+          content:
+            application/pdf: { schema: { type: string, format: binary } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 components:
   securitySchemes:
     sanctumCookie:
       type: apiKey
       in: cookie
-      name: __Host-mema_session
+      name: mema-university-erp-session
   schemas:
+    AwardLevel:
+      type: string
+      enum: [CERTIFICATE, DIPLOMA, BACHELORS, MASTERS, DOCTORATE]
+    CurriculumVersionStatus:
+      type: string
+      enum: [DRAFT, UNDER_REVIEW, APPROVED, SUPERSEDED]
+    Programme:
+      type: object
+      required: [id, institution_id, department_id, code, name, award_level, duration_years, total_credits_required, is_active]
+      properties:
+        id: { type: string, format: uuid }
+        institution_id: { type: string, format: uuid }
+        department_id: { type: string, format: uuid }
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 200 }
+        award_level: { $ref: '#/components/schemas/AwardLevel' }
+        duration_years: { type: integer, minimum: 1, maximum: 10 }
+        total_credits_required: { type: integer, minimum: 1, maximum: 1000 }
+        minimum_residency_credits: { type: integer, minimum: 0, maximum: 1000 }
+        qualification_framework_code: { type: [string, 'null'], maxLength: 50 }
+        accreditation_body: { type: [string, 'null'], maxLength: 100 }
+        accreditation_reference: { type: [string, 'null'], maxLength: 100 }
+        accreditation_expires_on: { type: [string, 'null'], format: date }
+        accreditation_warning: { type: boolean }
+        is_active: { type: boolean }
+        department: { type: [object, 'null'], additionalProperties: true }
+        versions:
+          type: array
+          items: { $ref: '#/components/schemas/CurriculumVersion' }
+    CreateProgramme:
+      type: object
+      additionalProperties: false
+      required: [department_id, code, name, award_level, duration_years, total_credits_required]
+      properties:
+        department_id: { type: string, format: uuid }
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 200 }
+        award_level: { $ref: '#/components/schemas/AwardLevel' }
+        duration_years: { type: integer, minimum: 1, maximum: 10 }
+        total_credits_required: { type: integer, minimum: 1, maximum: 1000 }
+        minimum_residency_credits: { type: integer, minimum: 0, maximum: 1000 }
+        qualification_framework_code: { type: [string, 'null'], maxLength: 50 }
+        accreditation_body: { type: [string, 'null'], maxLength: 100 }
+        accreditation_reference: { type: [string, 'null'], maxLength: 100 }
+        accreditation_expires_on: { type: [string, 'null'], format: date }
+    UpdateProgramme:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        department_id: { type: string, format: uuid }
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 200 }
+        award_level: { $ref: '#/components/schemas/AwardLevel' }
+        duration_years: { type: integer, minimum: 1, maximum: 10 }
+        total_credits_required: { type: integer, minimum: 1, maximum: 1000 }
+        minimum_residency_credits: { type: integer, minimum: 0, maximum: 1000 }
+        qualification_framework_code: { type: [string, 'null'], maxLength: 50 }
+        accreditation_body: { type: [string, 'null'], maxLength: 100 }
+        accreditation_reference: { type: [string, 'null'], maxLength: 100 }
+        accreditation_expires_on: { type: [string, 'null'], format: date }
+        is_active: { type: boolean }
+    CurriculumVersion:
+      type: object
+      required: [id, programme_id, effective_year_id, version_code, status, is_approved, graduation_credits_required]
+      properties:
+        id: { type: string, format: uuid }
+        institution_id: { type: string, format: uuid }
+        programme_id: { type: string, format: uuid }
+        effective_year_id: { type: string, format: uuid }
+        version_code: { type: string, maxLength: 50 }
+        status: { $ref: '#/components/schemas/CurriculumVersionStatus' }
+        is_approved: { type: boolean }
+        graduation_credits_required: { type: integer, minimum: 1 }
+        minimum_elective_credits: { type: integer, minimum: 0 }
+        senate_approval_ref: { type: [string, 'null'] }
+        structure_hash: { type: [string, 'null'], pattern: '^[a-f0-9]{64}$' }
+        submitted_at: { type: [string, 'null'], format: date-time }
+        approved_at: { type: [string, 'null'], format: date-time }
+        locked_at: { type: [string, 'null'], format: date-time }
+        curriculum_courses:
+          type: array
+          items: { $ref: '#/components/schemas/CurriculumCourse' }
+        elective_groups:
+          type: array
+          items: { $ref: '#/components/schemas/ElectiveGroup' }
+        requirements:
+          type: array
+          items: { $ref: '#/components/schemas/CourseRequirement' }
+        review_steps:
+          type: array
+          items: { $ref: '#/components/schemas/CurriculumReviewStep' }
+    CreateCurriculumVersion:
+      type: object
+      additionalProperties: false
+      required: [programme_id, effective_year_id, version_code, graduation_credits_required]
+      properties:
+        programme_id: { type: string, format: uuid }
+        effective_year_id: { type: string, format: uuid }
+        version_code: { type: string, maxLength: 50 }
+        graduation_credits_required: { type: integer, minimum: 1, maximum: 1000 }
+        minimum_elective_credits: { type: integer, minimum: 0, maximum: 1000 }
+    ElectiveGroup:
+      type: object
+      required: [id, curriculum_version_id, code, name, minimum_courses, minimum_credits]
+      properties:
+        id: { type: string, format: uuid }
+        curriculum_version_id: { type: string, format: uuid }
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 120 }
+        minimum_courses: { type: integer, minimum: 1, maximum: 50 }
+        minimum_credits: { type: integer, minimum: 1, maximum: 500 }
+    CreateElectiveGroup:
+      type: object
+      additionalProperties: false
+      required: [code, name, minimum_courses, minimum_credits]
+      properties:
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 120 }
+        minimum_courses: { type: integer, minimum: 1, maximum: 50 }
+        minimum_credits: { type: integer, minimum: 1, maximum: 500 }
+    UpdateElectiveGroup:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 120 }
+        minimum_courses: { type: integer, minimum: 1, maximum: 50 }
+        minimum_credits: { type: integer, minimum: 1, maximum: 500 }
+    CurriculumCourse:
+      type: object
+      required: [id, curriculum_version_id, course_id, year_level, semester, course_type]
+      properties:
+        id: { type: string, format: uuid }
+        curriculum_version_id: { type: string, format: uuid }
+        course_id: { type: string, format: uuid }
+        year_level: { type: integer, minimum: 1, maximum: 10 }
+        semester: { type: integer, minimum: 1, maximum: 4 }
+        course_type: { type: string, enum: [CORE, ELECTIVE, REQUIRED_AUDIT] }
+        elective_group_id: { type: [string, 'null'], format: uuid }
+        course: { type: object, additionalProperties: true }
+        elective_group: { type: [object, 'null'], additionalProperties: true }
+    CreateCurriculumCourse:
+      type: object
+      additionalProperties: false
+      required: [course_id, year_level, semester, course_type]
+      properties:
+        course_id: { type: string, format: uuid }
+        year_level: { type: integer, minimum: 1, maximum: 10 }
+        semester: { type: integer, minimum: 1, maximum: 4 }
+        course_type: { type: string, enum: [CORE, ELECTIVE, REQUIRED_AUDIT] }
+        elective_group_id: { type: [string, 'null'], format: uuid }
+    UpdateCurriculumCourse:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        year_level: { type: integer, minimum: 1, maximum: 10 }
+        semester: { type: integer, minimum: 1, maximum: 4 }
+        course_type: { type: string, enum: [CORE, ELECTIVE, REQUIRED_AUDIT] }
+        elective_group_id: { type: [string, 'null'], format: uuid }
+    CourseRequirement:
+      type: object
+      required: [id, course_id, prerequisite_course_id, requirement_type]
+      properties:
+        id: { type: string, format: uuid }
+        curriculum_version_id: { type: string, format: uuid }
+        course_id: { type: string, format: uuid }
+        prerequisite_course_id: { type: string, format: uuid }
+        requirement_type: { type: string, enum: [PREREQUISITE, COREQUISITE, ANTIREQUISITE] }
+        course: { type: object, additionalProperties: true }
+        prerequisite_course: { type: object, additionalProperties: true }
+    CreateCourseRequirement:
+      type: object
+      additionalProperties: false
+      required: [course_id, required_course_id, requirement_type]
+      properties:
+        course_id: { type: string, format: uuid }
+        required_course_id: { type: string, format: uuid }
+        requirement_type: { type: string, enum: [PREREQUISITE, COREQUISITE, ANTIREQUISITE] }
+    CurriculumReviewStep:
+      type: object
+      required: [id, stage, sequence, status]
+      properties:
+        id: { type: string, format: uuid }
+        stage: { type: string, enum: [HOD, DEAN, ACADEMIC_BOARD, SENATE] }
+        sequence: { type: integer, minimum: 1, maximum: 4 }
+        status: { type: string, enum: [PENDING, APPROVED, REJECTED] }
+        reference: { type: [string, 'null'] }
+        comments: { type: [string, 'null'] }
+        reviewed_at: { type: [string, 'null'], format: date-time }
+    ApproveCurriculumStage:
+      type: object
+      additionalProperties: false
+      required: [stage, reference]
+      properties:
+        stage: { type: string, enum: [HOD, DEAN, ACADEMIC_BOARD, SENATE] }
+        reference: { type: string, minLength: 3, maxLength: 128 }
+        comments: { type: [string, 'null'], maxLength: 2000 }
+    ProgrammeResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/Programme' }
+    CurriculumVersionResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/CurriculumVersion' }
+    CurriculumVersionCollectionResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/CurriculumVersion' }
+    CurriculumChildResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { type: object, additionalProperties: true }
+    MutationMessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
     ResponseMeta:
       type: object
       additionalProperties: false
@@ -157,6 +1493,208 @@ components:
     AcademicStanding:
       type: string
       enum: [GOOD_STANDING, PROBATION, SUSPENDED, DISCONTINUED]
+    InstitutionRecordStatus:
+      type: string
+      enum: [DRAFT, PENDING_APPROVAL, ACTIVE, ARCHIVED]
+    InstitutionRecord:
+      type: object
+      required: [id, code, name]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        status: { $ref: '#/components/schemas/InstitutionRecordStatus' }
+        is_active: { type: boolean }
+        resolution_reference: { type: [string, 'null'] }
+    InstitutionOverview:
+      type: object
+      required: [campuses, faculties, departments, units, intakes, current_academic_year]
+      properties:
+        campuses: { type: integer, minimum: 0 }
+        faculties: { type: integer, minimum: 0 }
+        departments: { type: integer, minimum: 0 }
+        units: { type: integer, minimum: 0 }
+        intakes: { type: integer, minimum: 0 }
+        current_academic_year:
+          oneOf:
+            - $ref: '#/components/schemas/AcademicYear'
+            - type: 'null'
+    CreateCampus:
+      type: object
+      additionalProperties: false
+      required: [code, name, status]
+      properties:
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 200 }
+        town: { type: string, maxLength: 120 }
+        status: { $ref: '#/components/schemas/InstitutionRecordStatus' }
+        resolution_reference: { type: string, maxLength: 128 }
+    CreateFaculty:
+      allOf:
+        - $ref: '#/components/schemas/CreateCampus'
+        - type: object
+          required: [campus_id]
+          properties:
+            campus_id: { type: string, format: uuid }
+    CreateDepartment:
+      allOf:
+        - $ref: '#/components/schemas/CreateCampus'
+        - type: object
+          required: [faculty_id]
+          properties:
+            faculty_id: { type: string, format: uuid }
+            cost_centre: { type: string, maxLength: 32 }
+    GovernedInstitutionUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        name: { type: string, maxLength: 200 }
+        status: { $ref: '#/components/schemas/InstitutionRecordStatus' }
+        resolution_reference: { type: [string, 'null'], maxLength: 128 }
+        head_of_unit_id: { type: [string, 'null'], format: uuid }
+    CreateInstitutionUnit:
+      type: object
+      additionalProperties: false
+      required: [department_id, code, name, status]
+      properties:
+        department_id: { type: string, format: uuid }
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 200 }
+        type: { type: string, maxLength: 32 }
+        head_of_unit_id: { type: [string, 'null'], format: uuid }
+        status: { $ref: '#/components/schemas/InstitutionRecordStatus' }
+        resolution_reference: { type: [string, 'null'], maxLength: 128 }
+    AcademicTerm:
+      type: object
+      required: [id, academic_year_id, code, name, sequence, study_mode_code, term_type, starts_on, ends_on, status, is_current]
+      properties:
+        id: { type: string, format: uuid }
+        academic_year_id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        sequence: { type: integer, minimum: 1, maximum: 6 }
+        study_mode_code: { type: string }
+        term_type: { type: string, enum: [SEMESTER, TRIMESTER, TERM, SESSION] }
+        starts_on: { type: string, format: date }
+        ends_on: { type: string, format: date }
+        status: { $ref: '#/components/schemas/InstitutionRecordStatus' }
+        is_current: { type: boolean }
+    AcademicYear:
+      type: object
+      required: [id, code, name, starts_on, ends_on, status, is_current, terms]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        starts_on: { type: string, format: date }
+        ends_on: { type: string, format: date }
+        status: { $ref: '#/components/schemas/InstitutionRecordStatus' }
+        is_current: { type: boolean }
+        senate_resolution_reference: { type: [string, 'null'] }
+        terms:
+          type: array
+          items: { $ref: '#/components/schemas/AcademicTerm' }
+    CreateAcademicYear:
+      type: object
+      additionalProperties: false
+      required: [code, name, starts_on, ends_on]
+      properties:
+        code: { type: string, maxLength: 16 }
+        name: { type: string, maxLength: 100 }
+        starts_on: { type: string, format: date }
+        ends_on: { type: string, format: date }
+    CreateTerm:
+      type: object
+      additionalProperties: false
+      required: [academic_year_id, study_mode_code, code, name, sequence, term_type, starts_on, ends_on]
+      properties:
+        academic_year_id: { type: string, format: uuid }
+        study_mode_code: { type: string }
+        code: { type: string, maxLength: 16 }
+        name: { type: string, maxLength: 100 }
+        sequence: { type: integer, minimum: 1, maximum: 6 }
+        term_type: { type: string, enum: [SEMESTER, TRIMESTER, TERM, SESSION] }
+        starts_on: { type: string, format: date }
+        ends_on: { type: string, format: date }
+        registration_opens_at: { type: string, format: date-time }
+        registration_closes_at: { type: string, format: date-time }
+    CreateStudyMode:
+      type: object
+      additionalProperties: false
+      required: [code, name]
+      properties:
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 100 }
+        description: { type: [string, 'null'], maxLength: 255 }
+    CreateIntake:
+      type: object
+      additionalProperties: false
+      required: [academic_year_id, code, name, opens_on, closes_on]
+      properties:
+        academic_year_id: { type: string, format: uuid }
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 100 }
+        opens_on: { type: string, format: date }
+        closes_on: { type: string, format: date }
+        reporting_on: { type: [string, 'null'], format: date }
+        status: { type: string, enum: [DRAFT, ACTIVE, ARCHIVED] }
+    UpdateIntake:
+      type: object
+      minProperties: 1
+      properties:
+        name: { type: string, maxLength: 100 }
+        opens_on: { type: string, format: date }
+        closes_on: { type: string, format: date }
+        reporting_on: { type: [string, 'null'], format: date }
+        status: { type: string, enum: [DRAFT, ACTIVE, ARCHIVED] }
+    CreateCalendarEvent:
+      type: object
+      additionalProperties: false
+      required: [event_type, title, starts_at]
+      properties:
+        academic_year_id: { type: [string, 'null'], format: uuid }
+        term_id: { type: [string, 'null'], format: uuid }
+        event_type: { type: string, enum: [HOLIDAY, REGISTRATION, EXAM, DEADLINE, LECTURE, CEREMONY, OTHER] }
+        title: { type: string, maxLength: 180 }
+        description: { type: [string, 'null'], maxLength: 2000 }
+        starts_at: { type: string, format: date-time }
+        ends_at: { type: [string, 'null'], format: date-time }
+        is_critical: { type: boolean }
+        is_holiday: { type: boolean }
+    MasterLookup:
+      type: object
+      required: [id, type, code, name, metadata, display_order, is_active]
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string }
+        code: { type: string }
+        name: { type: string }
+        metadata: { type: object, additionalProperties: true }
+        display_order: { type: integer, minimum: 0 }
+        is_active: { type: boolean }
+    CreateMasterLookup:
+      type: object
+      additionalProperties: false
+      required: [code, name]
+      properties:
+        code: { type: string, maxLength: 48 }
+        name: { type: string, maxLength: 160 }
+        display_order: { type: integer, minimum: 0 }
+    UpdateMasterLookup:
+      type: object
+      minProperties: 1
+      properties:
+        name: { type: string, maxLength: 160 }
+        metadata: { type: object, additionalProperties: true }
+        display_order: { type: integer, minimum: 0 }
+        is_active: { type: boolean }
+        effective_from: { type: [string, 'null'], format: date }
+        effective_to: { type: [string, 'null'], format: date }
+    InstitutionRecordResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/InstitutionRecord' }
     NamedReference:
       type: object
       additionalProperties: false
@@ -252,6 +1790,61 @@ components:
               properties:
                 pagination: { $ref: '#/components/schemas/CursorPage' }
   parameters:
+    CourseId:
+      name: course
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    OfferingId:
+      name: offering
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ProgrammeId:
+      name: programme
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    CurriculumVersionId:
+      name: version
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    CampusId:
+      name: campus
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    FacultyId:
+      name: faculty
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    DepartmentId:
+      name: department
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    UnitId:
+      name: unit
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    StudyModeId:
+      name: studyMode
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    IntakeId:
+      name: intake
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    LookupId:
+      name: lookup
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
     Cursor:
       name: cursor
       in: query
@@ -266,6 +1859,150 @@ components:
       required: true
       schema: { type: string, format: uuid }
   responses:
+    ProgrammeCollection:
+      description: Programmes visible within the caller's institution.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data:
+                type: array
+                items: { $ref: '#/components/schemas/Programme' }
+    ProgrammeRecord:
+      description: Programme registry record and its governed relations.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ProgrammeResponse' }
+    CurriculumVersionCollection:
+      description: Programme curriculum versions ordered newest first.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/CurriculumVersionCollectionResponse' }
+    CurriculumVersionRecord:
+      description: Complete curriculum version tree.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/CurriculumVersionResponse' }
+    CourseCollection:
+      description: Course catalogue entries.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data:
+                type: array
+                items: { type: object, additionalProperties: true }
+    CourseRecord:
+      description: Master course record.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data: { type: object, additionalProperties: true }
+    OfferingCollection:
+      description: Semester course offerings.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data:
+                type: array
+                items: { type: object, additionalProperties: true }
+    OfferingRecord:
+      description: Semester course offering.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data: { type: object, additionalProperties: true }
+    TeachingStaffCollection:
+      description: Teaching staff available for allocation.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data:
+                type: array
+                items: { type: object, additionalProperties: true }
+    WaitlistRecord:
+      description: Waitlist entry.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data: { type: object, additionalProperties: true }
+    CurriculumChildRecord:
+      description: Created or updated curriculum child record.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/CurriculumChildResponse' }
+    MutationMessage:
+      description: Mutation completed.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/MutationMessageResponse' }
+    CohortAssignmentResult:
+      description: Count of previously unassigned student records linked to the approved version.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [message, data]
+            properties:
+              message: { type: string }
+              data:
+                type: object
+                required: [assigned_count]
+                properties:
+                  assigned_count: { type: integer, minimum: 0 }
+    CurriculumLocked:
+      description: ERR-CUR-002 — approved and superseded curriculum versions are immutable.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    CyclicPrerequisite:
+      description: ERR-CUR-CYCLE — the proposed prerequisite introduces a directed cycle.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    InstitutionCollection:
+      description: Paginated institutional records.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data, meta]
+            properties:
+              data:
+                type: array
+                items: { $ref: '#/components/schemas/InstitutionRecord' }
+              meta:
+                type: object
+                additionalProperties: true
+    InstitutionCreated:
+      description: Institutional record created.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/InstitutionRecordResponse' }
+    InstitutionRecord:
+      description: Institutional record returned.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/InstitutionRecordResponse' }
     Unauthenticated:
       description: Authentication is required.
       content:
@@ -273,6 +2010,16 @@ components:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
     Forbidden:
       description: The caller lacks the required permission.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    BadRequest:
+      description: The request is semantically invalid.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Conflict:
+      description: The request conflicts with an existing record or lock.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }

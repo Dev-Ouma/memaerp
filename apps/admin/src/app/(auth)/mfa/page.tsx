@@ -3,7 +3,7 @@
 import React, { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthLayout, useAuth } from '@mema/auth';
-import { Alert, AlertDescription, AlertTitle, Button, Input } from '@mema/ui';
+import { Alert, AlertDescription, AlertTitle, Button, Input, MemaLoaderScreen } from '@mema/ui';
 
 function MfaForm() {
   const router = useRouter();
@@ -43,5 +43,5 @@ function MfaForm() {
 }
 
 export default function MfaPage() {
-  return <Suspense fallback={<div className="p-8">Loading verification…</div>}><MfaForm /></Suspense>;
+  return <Suspense fallback={<MemaLoaderScreen label="Loading verification…" />}><MfaForm /></Suspense>;
 }

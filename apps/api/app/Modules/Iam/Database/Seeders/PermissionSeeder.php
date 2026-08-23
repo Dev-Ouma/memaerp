@@ -44,7 +44,7 @@ final class PermissionSeeder extends Seeder
         if ($orphans->isNotEmpty()) {
             $this->command->warn(
                 'Permissions in the database but not in the catalogue (left in place; remove deliberately): '
-                .$orphans->implode(', ')
+                .$orphans->implode(', '),
             );
         }
 

@@ -70,6 +70,20 @@ final readonly class StudentRecords
         return $student;
     }
 
+    public function findVisibleByNumber(User $actor, string $studentNumber, string $permission = 'student.record.view'): Student
+    {
+        $query = $this->baseQuery()->where('student_number', $studentNumber);
+        $this->access->scopeQuery($query, $actor, $permission);
+
+        $student = $query->first();
+
+        if ($student === null) {
+            throw (new ModelNotFoundException)->setModel(Student::class, [$studentNumber]);
+        }
+
+        return $student;
+    }
+
     /** @param array<string, mixed> $attributes */
     public function update(User $actor, string $id, array $attributes, string $reason): Student
     {

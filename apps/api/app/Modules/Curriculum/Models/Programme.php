@@ -6,6 +6,7 @@ namespace App\Modules\Curriculum\Models;
 
 use App\Modules\Institution\Models\Department;
 use App\Modules\Institution\Models\Institution;
+use App\Platform\Concerns\Auditable;
 use App\Platform\Models\BaseModel;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class Programme extends BaseModel
 {
+    use Auditable;
+
     /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
@@ -31,6 +34,12 @@ final class Programme extends BaseModel
         'duration_years',
         'total_credits_required',
         'is_active',
+        'status',
+        'qualification_framework_code',
+        'accreditation_body',
+        'accreditation_reference',
+        'accreditation_expires_on',
+        'minimum_residency_credits',
     ];
 
     protected function casts(): array
@@ -39,6 +48,8 @@ final class Programme extends BaseModel
             'duration_years' => 'integer',
             'total_credits_required' => 'integer',
             'is_active' => 'boolean',
+            'accreditation_expires_on' => 'date',
+            'minimum_residency_credits' => 'integer',
         ];
     }
 

@@ -6,6 +6,7 @@ namespace App\Modules\Course\Models;
 
 use App\Modules\Institution\Models\Department;
 use App\Modules\Institution\Models\Institution;
+use App\Platform\Concerns\Auditable;
 use App\Platform\Models\BaseModel;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class Course extends BaseModel
 {
+    use Auditable;
+
     /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
@@ -32,7 +35,14 @@ final class Course extends BaseModel
         'lecture_hours',
         'lab_hours',
         'tutorial_hours',
+        'learning_outcomes',
+        'syllabus_outline',
+        'status',
         'is_active',
+        'department_board_ref',
+        'school_board_ref',
+        'approved_at',
+        'discontinued_at',
     ];
 
     protected function casts(): array
@@ -43,6 +53,8 @@ final class Course extends BaseModel
             'lab_hours' => 'integer',
             'tutorial_hours' => 'integer',
             'is_active' => 'boolean',
+            'approved_at' => 'immutable_datetime',
+            'discontinued_at' => 'immutable_datetime',
         ];
     }
 
@@ -68,5 +80,16 @@ final class Course extends BaseModel
     public function offerings(): HasMany
     {
         return $this->hasMany(CourseOffering::class);
+    }
+
+    /** @return HasMany<CourseReview, $this> */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(CourseReview::class);
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === 'ACTIVE';
     }
 }

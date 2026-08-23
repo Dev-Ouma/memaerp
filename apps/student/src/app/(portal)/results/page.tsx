@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Alert,
@@ -14,7 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@mema/ui';
-import { useAuth } from '@mema/auth';
 import { api } from '@mema/api-client';
 import { Download, CheckCircle2 } from 'lucide-react';
 import type { TermGpa } from '@mema/types';
@@ -24,21 +23,12 @@ function formatStanding(standing: TermGpa['standing']): string {
 }
 
 export default function StudentResultsPage() {
-  const { user } = useAuth();
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['exams', 'term-gpas', user?.person?.id],
-    queryFn: () => api.getTermGpas(),
-    enabled: Boolean(user),
+    queryKey: ['exams', 'my-results'],
+    queryFn: () => api.getMyResults(),
   });
 
-  const termGpas = useMemo(() => {
-    if (!data || !user?.person?.id) return [];
-    return data.filter(
-      (row) =>
-        row.student?.person_id === user.person?.id || row.student?.person?.id === user.person?.id
-    );
-  }, [data, user]);
-
+  const termGpas = data ?? [];
   const latest = termGpas[0];
 
   return (
@@ -49,13 +39,21 @@ export default function StudentResultsPage() {
             Academic Performance & Transcripts
           </h2>
           <p className="text-sm text-slate-500 mt-1">
-            Senate-approved term GPA records from{' '}
-            <code className="text-xs">GET /api/v1/exams/term-gpas</code>
+            Published results from{' '}
+            <code className="text-xs">GET /api/v1/progression/my-results</code>
           </p>
         </div>
-        <Button className="gap-2 self-start sm:self-auto bg-mema-teal-800 hover:bg-mema-teal-700 text-white">
-          <Download className="h-4 w-4" /> Download Official PDF Transcript
-        </Button>
+        {latest?.term_id ? (
+          <Button asChild className="gap-2 self-start sm:self-auto bg-mema-teal-800 hover:bg-mema-teal-700 text-white">
+            <a href={api.getResultSlipUrl(latest.term_id)} download>
+              <Download className="h-4 w-4" /> Download Latest Result Slip
+            </a>
+          </Button>
+        ) : (
+          <Button disabled className="gap-2 self-start sm:self-auto">
+            <Download className="h-4 w-4" /> Download Result Slip
+          </Button>
+        )}
       </div>
 
       {isError && (
@@ -109,10 +107,7 @@ export default function StudentResultsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Term GPA History</CardTitle>
-          <CardDescription>
-            Per-semester GPA progression for your student record. Detailed per-course marks require a
-            student-scoped marks API (pending Codex).
-          </CardDescription>
+          <CardDescription>Per-semester progression for your student record.</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -137,7 +132,14 @@ export default function StudentResultsPage() {
                       {Number(row.cumulative_gpa).toFixed(2)}
                     </p>
                   </div>
-                  <Badge variant="success">{formatStanding(row.standing)}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="success">{formatStanding(row.standing)}</Badge>
+                    <Button asChild variant="outline" size="sm">
+                      <a href={api.getResultSlipUrl(row.term_id)} download>
+                        PDF
+                      </a>
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

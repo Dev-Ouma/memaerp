@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace App\Modules\Institution\Models;
 
+use App\Platform\Concerns\Auditable;
 use App\Platform\Models\BaseModel;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class Department extends BaseModel
 {
+    use Auditable;
+
     /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
@@ -19,7 +23,7 @@ final class Department extends BaseModel
 
     protected $table = 'institution.departments';
 
-    protected $fillable = ['institution_id', 'faculty_id', 'code', 'name', 'cost_centre', 'is_active'];
+    protected $fillable = ['institution_id', 'faculty_id', 'code', 'name', 'cost_centre', 'head_of_unit_id', 'is_active', 'status', 'resolution_reference'];
 
     protected function casts(): array
     {
@@ -36,5 +40,11 @@ final class Department extends BaseModel
     public function faculty(): BelongsTo
     {
         return $this->belongsTo(Faculty::class);
+    }
+
+    /** @return HasMany<Unit, $this> */
+    public function units(): HasMany
+    {
+        return $this->hasMany(Unit::class);
     }
 }

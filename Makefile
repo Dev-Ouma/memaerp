@@ -44,10 +44,37 @@ migrate: ## Run pending migrations
 fresh: ## Rebuild the database from scratch and seed
 	cd $(API) && php artisan migrate:fresh --seed
 
+.PHONY: e2e-portals
+e2e-portals: ## Run cross-portal login smoke tests (3000, 3001, 3002, 3005)
+	npx playwright test --config=playwright.portals.config.ts
+
+.PHONY: e2e-audit
+e2e-audit: ## Run portal load/accessibility audit across all frontends
+	node scripts/e2e-audit.js
+
+.PHONY: e2e-admin
+e2e-admin: ## Run admin workflow Playwright tests (IAM, institution, curriculum, course)
+	npx playwright test --config=playwright.iam.config.ts
+
 .PHONY: test
 test: ## Run the full test suite
 	cd $(API) && php artisan test
 	pnpm test
+
+.PHONY: api-test
+api-test: ## Run the backend test suite only
+	cd $(API) && php artisan test
+
+.PHONY: api-quality
+api-quality: ## Backend formatting, static analysis and module boundaries (what CI runs)
+	cd $(API) && ./vendor/bin/pint --test
+	cd $(API) && ./vendor/bin/phpstan analyse --memory-limit=1G --no-progress
+	cd $(API) && ./vendor/bin/deptrac analyse --config-file=deptrac.yaml --no-progress
+
+.PHONY: api-baseline
+api-baseline: ## Re-record the module boundary debt ledger (only ever to shrink it)
+	cd $(API) && ./vendor/bin/deptrac analyse --config-file=deptrac.yaml --no-progress \
+		--formatter=baseline --output=deptrac-baseline.yaml
 
 .PHONY: quality
 quality: ## Formatting, static analysis and module boundary checks

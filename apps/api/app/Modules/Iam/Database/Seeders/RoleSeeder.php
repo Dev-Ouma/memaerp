@@ -62,7 +62,7 @@ final class RoleSeeder extends Seeder
             }
 
             $this->command->info(
-                count(RoleCatalogue::all()).' system roles synced for '.$institution->name.'.'
+                count(RoleCatalogue::all()).' system roles synced for '.$institution->name.'.',
             );
         });
     }

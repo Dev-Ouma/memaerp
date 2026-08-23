@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
   CardHeader,
@@ -25,312 +26,239 @@ import {
 import {
   CreditCard,
   Phone,
-  CheckCircle2,
-  Download,
   Receipt,
-  Building,
   ShieldCheck,
   Smartphone,
 } from 'lucide-react';
-import { mockInvoices, mockPayments } from '@mema/api-client';
+import { ApiError, api } from '@mema/api-client';
 
 export default function StudentFinancePage() {
+  const queryClient = useQueryClient();
+  const statement = useQuery({
+    queryKey: ['finance', 'statement'],
+    queryFn: () => api.getFinanceStatement(),
+  });
+
+  const clearance = (statement.data?.clearance ?? {}) as Record<string, number | boolean>;
+  const invoices = statement.data?.invoices ?? [];
+  const payments = statement.data?.payments ?? [];
+  const activeInvoice = invoices.find((inv) => inv.status !== 'PAID') ?? invoices[0];
+
   const [phoneNumber, setPhoneNumber] = useState('0712345678');
-  const [payAmount, setPayAmount] = useState('35000');
+  const [payAmount, setPayAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const activeInvoice = mockInvoices[0];
+  React.useEffect(() => {
+    if (activeInvoice) {
+      const bal = activeInvoice.balance_amount ?? (Number(activeInvoice.total_amount) - Number(activeInvoice.paid_amount || 0));
+      setPayAmount(String(Math.min(Number(bal), 50000)));
+    }
+  }, [activeInvoice?.id, activeInvoice?.balance_amount, activeInvoice?.total_amount, activeInvoice?.paid_amount]);
 
-  const handleMpesaPay = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleMpesaPay = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!activeInvoice) return;
     setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
+    setError(null);
+    setPaymentSuccess(false);
+    try {
+      await api.initiateMpesaPayment({
+        invoice_id: activeInvoice.id,
+        phone_number: phoneNumber,
+        amount: Number(payAmount),
+      });
       setPaymentSuccess(true);
-    }, 2000);
+      await queryClient.invalidateQueries({ queryKey: ['finance', 'statement'] });
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : 'Unable to complete payment right now.';
+      setError(message);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 font-heading">
-            Student Finance & Fee Statement
-          </h2>
-          <p className="text-sm text-slate-500 mt-1">
-            Real-time ledger, invoice breakdowns and verified payments
-          </p>
-        </div>
-        <Button variant="outline" className="gap-2 self-start sm:self-auto">
-          <Download className="h-4 w-4" /> Download Official Statement
-        </Button>
+      <div>
+        <h2 className="text-2xl font-bold text-slate-900 font-heading">Finance & Fee Statement</h2>
+        <p className="text-sm text-slate-500 mt-1">
+          Real-time ledger · invoices, receipts, and M-Pesa instant reconciliation
+        </p>
       </div>
 
-      {paymentSuccess && (
-        <Alert variant="success" className="border-emerald-300 bg-emerald-50">
-          <AlertTitle className="text-emerald-900 font-bold flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-            Payment Successful & Reconciled!
-          </AlertTitle>
-          <AlertDescription className="text-emerald-800 mt-1">
-            STK Push completed. Transaction Reference: <strong>RHK93182K2</strong>. Your student ledger has been updated and fee clearance status adjusted.
+      {statement.isError && (
+        <Alert variant="destructive">
+          <AlertTitle>Unable to load statement</AlertTitle>
+          <AlertDescription>
+            {statement.error instanceof Error ? statement.error.message : 'Unexpected error'}
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Balance Summary Cards */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertTitle>Payment failed</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {paymentSuccess && (
+        <Alert variant="success">
+          <AlertTitle>M-Pesa STK push sent</AlertTitle>
+          <AlertDescription>Check your phone to complete the payment.</AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <Card className="p-6 bg-white border-l-4 border-l-slate-800">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Total Billed (To Date)
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 text-sm">
+            <span>Outstanding Balance</span>
+            <CreditCard className="h-5 w-5 text-rose-500" />
+          </div>
+          <p className="mt-3 text-2xl font-bold text-slate-900">
+            {formatCurrency(Number(clearance.balance ?? 0))}
           </p>
-          <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-2 font-heading">
-            {formatCurrency(170000)}
-          </h3>
-          <p className="text-xs text-slate-400 mt-1">2 Invoiced Terms</p>
-        </Card>
+          <p className="text-xs text-slate-500 mt-1">Due across all open terms</p>
+        </div>
 
-        <Card className="p-6 bg-white border-l-4 border-l-mema-green-600">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Total Paid
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 text-sm">
+            <span>Total Invoiced</span>
+            <Receipt className="h-5 w-5 text-mema-teal-700" />
+          </div>
+          <p className="mt-3 text-2xl font-bold text-slate-900">
+            {formatCurrency(Number(clearance.total_invoiced ?? 0))}
           </p>
-          <h3 className="text-2xl sm:text-3xl font-bold text-emerald-600 mt-2 font-heading">
-            {formatCurrency(135000)}
-          </h3>
-          <p className="text-xs text-emerald-600 font-medium mt-1">79.4% Settled</p>
-        </Card>
+          <p className="text-xs text-slate-500 mt-1">Cumulative programme charges</p>
+        </div>
 
-        <Card className="p-6 bg-white border-l-4 border-l-rose-600">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Outstanding Balance
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 text-sm">
+            <span>Exam Clearance</span>
+            <ShieldCheck className="h-5 w-5 text-emerald-600" />
+          </div>
+          <div className="mt-3">
+            <Badge variant={clearance.is_cleared ? 'success' : 'warning'}>
+              {clearance.is_cleared ? 'Cleared for exams' : 'Balance outstanding'}
+            </Badge>
+          </div>
+          <p className="text-xs text-slate-500 mt-2">
+            Threshold: {Number(clearance.clearance_threshold_percent ?? 100)}% paid
           </p>
-          <h3 className="text-2xl sm:text-3xl font-bold text-rose-600 mt-2 font-heading">
-            {formatCurrency(activeInvoice?.balance_amount || 0)}
-          </h3>
-          <p className="text-xs text-rose-500 font-medium mt-1">Due by Sep 30, 2026</p>
-        </Card>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Invoices & Receipts */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Active Invoices Table */}
           <Card>
             <CardHeader>
-              <CardTitle>Invoices & Term Charges</CardTitle>
-              <CardDescription>
-                Detailed itemization of fees, tuition, and university levies
-              </CardDescription>
+              <CardTitle>Invoices</CardTitle>
+              <CardDescription>Term billing schedule and payment allocation</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Invoice #</TableHead>
-                    <TableHead>Term / Description</TableHead>
-                    <TableHead className="text-right">Billed</TableHead>
-                    <TableHead className="text-right">Paid</TableHead>
-                    <TableHead className="text-right">Balance</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockInvoices.map((inv) => (
-                    <TableRow key={inv.id}>
-                      <TableCell className="font-mono font-semibold text-mema-teal-900">
-                        {inv.invoice_number}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium text-slate-800">
-                          {inv.term?.name || 'Tuition & Activity Fees'}
-                        </div>
-                        <div className="text-xs text-slate-400">
-                          Due: {formatDate(inv.due_date)}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatCurrency(inv.total_amount)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-emerald-600 font-medium">
-                        {formatCurrency(inv.paid_amount)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-bold text-slate-900">
-                        {formatCurrency(inv.balance_amount)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge
-                          variant={
-                            inv.status === 'PAID'
-                              ? 'success'
-                              : inv.status === 'PARTIALLY_PAID'
-                              ? 'warning'
-                              : 'destructive'
-                          }
-                        >
-                          {inv.status.replace('_', ' ')}
-                        </Badge>
-                      </TableCell>
+              {statement.isLoading ? (
+                <p className="text-sm text-slate-500 py-8 text-center">Loading invoices…</p>
+              ) : invoices.length === 0 ? (
+                <p className="text-sm text-slate-500 py-4 text-center">No invoices issued.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Invoice #</TableHead>
+                      <TableHead>Due</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Balance</TableHead>
+                      <TableHead>Status</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {invoices.map((inv) => {
+                      const bal = inv.balance_amount ?? (Number(inv.total_amount) - Number(inv.paid_amount || 0));
+                      return (
+                        <TableRow key={inv.id}>
+                          <TableCell className="font-mono text-xs">{inv.invoice_number ?? inv.id.slice(0, 8)}</TableCell>
+                          <TableCell>{inv.due_date ? formatDate(inv.due_date) : '—'}</TableCell>
+                          <TableCell>{formatCurrency(Number(inv.total_amount ?? 0))}</TableCell>
+                          <TableCell>{formatCurrency(Number(bal ?? 0))}</TableCell>
+                          <TableCell><Badge variant={inv.status === 'PAID' ? 'success' : 'warning'}>{inv.status}</Badge></TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
 
-          {/* Payment Receipts History */}
           <Card>
             <CardHeader>
-              <CardTitle>Payment & Transaction History</CardTitle>
-              <CardDescription>
-                Automated bank and M-Pesa Daraja reconciliation records
-              </CardDescription>
+              <CardTitle>Payment History</CardTitle>
+              <CardDescription>Recorded M-Pesa and bank receipts</CardDescription>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Ref Number</TableHead>
-                    <TableHead>Method</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                    <TableHead className="text-right">Receipt</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockPayments.map((pay) => (
-                    <TableRow key={pay.id}>
-                      <TableCell className="font-mono font-bold text-slate-900">
-                        {pay.reference_number}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5 font-medium text-xs">
-                          <Smartphone className="h-4 w-4 text-emerald-600" />
-                          <span>M-Pesa Daraja</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-600">
-                        {formatDate(pay.transaction_date)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-bold text-emerald-700">
-                        {formatCurrency(pay.amount)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="success" dot>
-                          {pay.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button size="sm" variant="ghost" className="h-8 text-xs gap-1 text-mema-teal-800">
-                          <Receipt className="h-3.5 w-3.5" /> PDF
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <CardContent className="space-y-3">
+              {payments.length === 0 ? (
+                <p className="text-sm text-slate-500 py-4 text-center">No payments recorded yet.</p>
+              ) : (
+                payments.map((pay) => (
+                  <div key={pay.id} className="flex items-center justify-between rounded-xl border border-slate-200 p-4">
+                    <div>
+                      <p className="font-semibold text-slate-900">{formatCurrency(Number(pay.amount ?? 0))}</p>
+                      <p className="text-xs text-slate-500">{pay.reference_number ?? pay.id.slice(0, 8)}</p>
+                    </div>
+                    <Badge variant="success">{pay.status ?? 'COMPLETED'}</Badge>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Column: Instant M-Pesa Checkout */}
-        <div className="space-y-6">
-          <Card className="border-mema-green-600/30 shadow-lg bg-gradient-to-b from-white to-mema-green-50/20">
-            <CardHeader className="bg-mema-green-800 text-white rounded-t-xl">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-white text-lg flex items-center gap-2">
-                  <Smartphone className="h-5 w-5 text-emerald-300" />
-                  M-Pesa Express (STK Push)
-                </CardTitle>
-              </div>
-              <CardDescription className="text-emerald-100 text-xs">
-                Instant clearance on student account
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6 space-y-4">
+        <Card className="sticky top-24 h-fit">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Smartphone className="h-5 w-5 text-emerald-600" /> M-Pesa Payment
+            </CardTitle>
+            <CardDescription>Pay fees via Safaricom STK push</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!activeInvoice ? (
+              <p className="text-sm text-slate-500">No payable invoice available.</p>
+            ) : (
               <form onSubmit={handleMpesaPay} className="space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 mb-1 block">
-                    M-Pesa Mobile Number
-                  </label>
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Phone number</label>
                   <Input
-                    type="tel"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="07XXXXXXXX"
                     leftIcon={<Phone className="h-4 w-4" />}
+                    placeholder="07XXXXXXXX"
                     required
                   />
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    An STK prompt will appear on your phone to enter your PIN.
-                  </p>
                 </div>
-
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 mb-1 block">
-                    Amount (KES)
-                  </label>
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Amount (KES)</label>
                   <Input
                     type="number"
+                    min={1}
                     value={payAmount}
                     onChange={(e) => setPayAmount(e.target.value)}
-                    placeholder="Amount to pay"
                     leftIcon={<CreditCard className="h-4 w-4" />}
                     required
                   />
                 </div>
-
-                <div className="p-3 rounded-lg bg-slate-100/80 border border-slate-200 text-xs text-slate-600 space-y-1">
-                  <div className="flex justify-between">
-                    <span>Paybill Number:</span>
-                    <span className="font-mono font-bold text-slate-900">400222</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Account Number:</span>
-                    <span className="font-mono font-bold text-slate-900">CT201/0042/23</span>
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  isLoading={isProcessing}
-                  className="w-full bg-mema-green-600 hover:bg-mema-green-700 text-white font-bold py-3 shadow-md"
-                >
-                  Pay {formatCurrency(Number(payAmount) || 0)} Now
+                <Button type="submit" className="w-full gap-2" isLoading={isProcessing}>
+                  <Receipt className="h-4 w-4" /> Send STK Push
                 </Button>
+                <p className="text-3xs text-slate-400 flex items-center gap-1">
+                  <ShieldCheck className="h-3.5 w-3.5" /> Invoice {activeInvoice.invoice_number ?? activeInvoice.id.slice(0, 8)}
+                </p>
               </form>
-
-              <div className="flex items-center justify-center gap-2 pt-2 text-[11px] text-slate-500">
-                <ShieldCheck className="h-4 w-4 text-mema-green-600" />
-                <span>256-Bit Encrypted & Auto-Reconciled</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Direct Bank Deposit Accounts */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Building className="h-4 w-4 text-mema-teal-800" />
-                Direct Bank Accounts
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-xs text-slate-600">
-              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
-                <p className="font-bold text-slate-900">Kenya Commercial Bank (KCB)</p>
-                <p className="font-mono text-slate-600">Account: 1102938491</p>
-                <p className="text-[11px] text-slate-500">Branch: University Way</p>
-              </div>
-              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
-                <p className="font-bold text-slate-900">Co-operative Bank of Kenya</p>
-                <p className="font-mono text-slate-600">Account: 01129384910200</p>
-                <p className="text-[11px] text-slate-500">Branch: City Centre</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

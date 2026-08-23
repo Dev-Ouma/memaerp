@@ -137,7 +137,12 @@ final class IamSecurityFlowsTest extends TestCase
         $admin = User::query()->where('email', 'admin@mema.ac.ke')->firstOrFail();
         Sanctum::actingAs($admin);
 
-        $this->getJson('/api/v1/iam/users')->assertOk()->assertJsonPath('meta.total', 8);
+        // Derived from the database, not hard-coded: DemoUserSeeder gains an account every time
+        // a module needs a persona, and a literal here fails for reasons that have nothing to
+        // do with the endpoint under test. The role counts below stay literal on purpose — the
+        // role catalogue is a designed production artefact, so a change to it should fail loudly.
+        $seededUsers = DB::table('iam.users')->count();
+        $this->getJson('/api/v1/iam/users')->assertOk()->assertJsonPath('meta.total', $seededUsers);
         $this->getJson('/api/v1/iam/roles')->assertOk()->assertJsonCount(55, 'data');
         $this->assertCount(11, DB::table('iam.roles')->distinct()->pluck('family'));
     }
