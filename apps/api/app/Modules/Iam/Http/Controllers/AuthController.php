@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Modules\Iam\Http\Requests\LoginRequest;
 use App\Modules\Iam\Models\RoleAssignment;
 use App\Modules\Iam\Models\User;
+use App\Modules\Iam\Services\SessionManager;
+use App\Platform\Support\Uuid7;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,20 +22,23 @@ use Illuminate\Validation\ValidationException;
 
 final class AuthController extends Controller
 {
+    public function __construct(private readonly SessionManager $sessions) {}
+
     /**
      * Handle authentication for both API and Web sessions.
      */
     public function login(LoginRequest $request): JsonResponse|RedirectResponse
     {
-        $login = trim($request->input('login'));
+        $login = mb_strtolower(trim($request->string('login')->value()));
         $password = $request->input('password');
         $ip = $request->ip() ?? '127.0.0.1';
         $userAgent = $request->userAgent();
 
         // 1. Resolve user by email or username
         $user = User::query()
-            ->where('email', $login)
+            ->whereRaw('lower(email) = ?', [$login])
             ->orWhere('username', $login)
+            ->orWhereHas('person.identities', fn ($query) => $query->whereRaw('lower(identifier) = ?', [$login]))
             ->first();
 
         // 2. Validate user existence and credentials
@@ -87,7 +92,29 @@ final class AuthController extends Controller
             return back()->withErrors(['login' => $msg])->withInput($request->only('login'));
         }
 
-        // 4. Successful authentication - reset lockout counters & log
+        // 4. A configured second factor must complete before a login session is established.
+        if ($user->mfa_enabled) {
+            $challengeToken = bin2hex(random_bytes(32));
+            DB::table('iam.mfa_challenges')->insert([
+                'id' => Uuid7::generate(),
+                'institution_id' => $user->institution_id,
+                'user_id' => $user->id,
+                'token_hash' => hash('sha256', $challengeToken),
+                'expires_at' => Carbon::now()->addMinutes(10),
+                'ip_address' => substr($ip, 0, 45),
+                'user_agent' => $userAgent,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return response()->json([
+                'message' => 'Multi-factor authentication is required.',
+                'mfa_required' => true,
+                'challenge_token' => $challengeToken,
+            ], 202);
+        }
+
+        // 5. Successful authentication - reset lockout counters & log
         // Server-derived session state; see the lockout note above for why this bypasses $fillable.
         $user->forceFill([
             'failed_login_attempts' => 0,
@@ -105,7 +132,7 @@ final class AuthController extends Controller
             userAgent: $userAgent
         );
 
-        // 5. Establish session if web or issue token if API
+        // 6. Establish session if web or issue token if API.
         Auth::login($user, (bool) $request->input('remember', false));
 
         if ($request->hasSession()) {
@@ -113,11 +140,13 @@ final class AuthController extends Controller
         }
 
         if ($request->wantsJson() || $request->is('api/*')) {
-            $token = $user->createToken($request->input('device_name', 'default-device'))->plainTextToken;
+            $newToken = $user->createToken($request->input('device_name', 'default-device'));
+            $this->sessions->create($user, $request, false, $newToken->accessToken->id);
 
             return response()->json([
                 'message' => 'Authenticated successfully.',
-                'token' => $token,
+                'token' => $newToken->plainTextToken,
+                'mfa_required' => false,
                 'user' => $this->formatUserProfile($user),
             ]);
         }
@@ -168,6 +197,20 @@ final class AuthController extends Controller
         ]);
     }
 
+    public function logoutAll(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user instanceof User, 401);
+        $this->sessions->revokeAll($user, 'LOGOUT_ALL');
+        Auth::guard('web')->logout();
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
+        return response()->json(['message' => 'Signed out from every device.']);
+    }
+
     /** @return array<string, mixed> */
     private function formatUserProfile(User $user): array
     {
@@ -197,6 +240,8 @@ final class AuthController extends Controller
             'username' => $user->username,
             'is_active' => $user->is_active,
             'must_change_password' => $user->must_change_password,
+            'status' => $user->status,
+            'mfa_enabled' => $user->mfa_enabled,
             'last_login_at' => $user->last_login_at?->toISOString(),
             'person' => $user->person ? [
                 'id' => $user->person->id,

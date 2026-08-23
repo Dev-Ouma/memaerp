@@ -6,6 +6,7 @@ const SESSION_COOKIES = [
   'laravel_session',
   'mema-erp-session',
   '__Host-mema_session',
+  '__Host-ERPSESSION',
   'mema_session',
 ];
 

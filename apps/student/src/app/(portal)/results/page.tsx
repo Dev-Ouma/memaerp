@@ -1,91 +1,56 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Badge,
+  Button,
   Card,
+  CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardContent,
-  Button,
-  Badge,
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
 } from '@mema/ui';
-import {
-  Download,
-  CheckCircle2,
-} from 'lucide-react';
-import { mockRecentMarks, mockCurrentStudent } from '@mema/api-client';
-import type { StudentMark } from '@mema/types';
+import { useAuth } from '@mema/auth';
+import { api } from '@mema/api-client';
+import { Download, CheckCircle2 } from 'lucide-react';
+import type { TermGpa } from '@mema/types';
 
-type ResultMark = Partial<StudentMark> & {
-  id: string;
-  code?: string;
-  title?: string;
-  credits?: number;
-  cat?: number;
-  exam?: number;
-  total?: number;
-  grade?: string;
-  points?: number;
-};
+function formatStanding(standing: TermGpa['standing']): string {
+  return standing.replaceAll('_', ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
 export default function StudentResultsPage() {
-  const semestersData = [
-    {
-      termName: 'Year 2 · Semester 2 (Jan - Apr 2026)',
-      termGpa: 3.82,
-      cumulativeGpa: 3.82,
-      standing: 'Good Standing',
-      marks: mockRecentMarks,
-    },
-    {
-      termName: 'Year 2 · Semester 1 (Sep - Dec 2025)',
-      termGpa: 3.70,
-      cumulativeGpa: 3.74,
-      standing: 'Good Standing',
-      marks: [
-        {
-          id: 'mark-past-1',
-          code: 'CSC 202',
-          title: 'Object-Oriented Analysis & Design',
-          credits: 4,
-          cat: 26,
-          exam: 58,
-          total: 84,
-          grade: 'A',
-          points: 4.0,
-        },
-        {
-          id: 'mark-past-2',
-          code: 'MAT 201',
-          title: 'Linear Algebra for Computing',
-          credits: 3,
-          cat: 22,
-          exam: 50,
-          total: 72,
-          grade: 'B',
-          points: 3.0,
-        },
-      ],
-    },
-  ];
+  const { user } = useAuth();
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['exams', 'term-gpas', user?.person?.id],
+    queryFn: () => api.getTermGpas(),
+    enabled: Boolean(user),
+  });
+
+  const termGpas = useMemo(() => {
+    if (!data || !user?.person?.id) return [];
+    return data.filter(
+      (row) =>
+        row.student?.person_id === user.person?.id || row.student?.person?.id === user.person?.id
+    );
+  }, [data, user]);
+
+  const latest = termGpas[0];
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 font-heading">
             Academic Performance & Transcripts
           </h2>
           <p className="text-sm text-slate-500 mt-1">
-            Senate-approved examination marks, GPA progression, and degree audit
+            Senate-approved term GPA records from{' '}
+            <code className="text-xs">GET /api/v1/exams/term-gpas</code>
           </p>
         </div>
         <Button className="gap-2 self-start sm:self-auto bg-mema-teal-800 hover:bg-mema-teal-700 text-white">
@@ -93,18 +58,23 @@ export default function StudentResultsPage() {
         </Button>
       </div>
 
-      {/* Degree Progression Metrics */}
+      {isError && (
+        <Alert variant="destructive">
+          <AlertTitle>Unable to load results</AlertTitle>
+          <AlertDescription>
+            {error instanceof Error ? error.message : 'An unexpected error occurred.'}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-5">
         <Card className="p-5 bg-white border-l-4 border-l-mema-teal-800">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Cumulative GPA (CGPA)
           </p>
           <h3 className="text-3xl font-bold text-mema-teal-900 mt-2 font-heading">
-            {mockCurrentStudent.cumulative_gpa}
+            {latest ? Number(latest.cumulative_gpa).toFixed(2) : isLoading ? '…' : '—'}
           </h3>
-          <p className="text-xs text-emerald-600 font-semibold mt-1">
-            First Class Honours Classification
-          </p>
         </Card>
 
         <Card className="p-5 bg-white border-l-4 border-l-mema-green-600">
@@ -112,9 +82,8 @@ export default function StudentResultsPage() {
             Credits Earned
           </p>
           <h3 className="text-3xl font-bold text-mema-green-700 mt-2 font-heading">
-            {mockCurrentStudent.cumulative_credits_earned} / 144
+            {latest ? latest.cumulative_credits_earned : isLoading ? '…' : '—'}
           </h3>
-          <p className="text-xs text-slate-500 mt-1">68 units remaining for graduation</p>
         </Card>
 
         <Card className="p-5 bg-white border-l-4 border-l-blue-600">
@@ -122,90 +91,59 @@ export default function StudentResultsPage() {
             Academic Standing
           </p>
           <h3 className="text-2xl font-bold text-blue-900 mt-2 font-heading">
-            Good Standing
+            {latest ? formatStanding(latest.standing) : isLoading ? 'Loading…' : '—'}
           </h3>
-          <p className="text-xs text-slate-500 mt-1">Satisfied all core requirements</p>
         </Card>
 
         <Card className="p-5 bg-white border-l-4 border-l-amber-500">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Verification Hash
+            Term Records
           </p>
-          <p className="font-mono text-xs text-slate-700 mt-3 truncate">
-            0x8F92A108C23B...
-          </p>
+          <p className="text-3xl font-bold text-amber-700 mt-2 font-heading">{termGpas.length}</p>
           <p className="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
-            <CheckCircle2 className="h-3.5 w-3.5" /> Senate Immutable Hash
+            <CheckCircle2 className="h-3.5 w-3.5" /> Published GPA summaries
           </p>
         </Card>
       </div>
 
-      {/* Historical Breakdown per Semester */}
-      <div className="space-y-6">
-        {semestersData.map((sem, idx) => (
-          <Card key={idx}>
-            <CardHeader className="flex flex-row items-center justify-between pb-4 bg-slate-50/70 rounded-t-xl">
-              <div>
-                <CardTitle className="text-base text-slate-900">{sem.termName}</CardTitle>
-                <CardDescription>
-                  Semester GPA: <strong>{sem.termGpa.toFixed(2)}</strong> · Cumulative GPA: <strong>{sem.cumulativeGpa.toFixed(2)}</strong>
-                </CardDescription>
-              </div>
-              <Badge variant="success">{sem.standing}</Badge>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Course Code & Title</TableHead>
-                    <TableHead className="text-center">Credits</TableHead>
-                    <TableHead className="text-center">CAT (30)</TableHead>
-                    <TableHead className="text-center">Exam (70)</TableHead>
-                    <TableHead className="text-center">Total (100)</TableHead>
-                    <TableHead className="text-center">Grade</TableHead>
-                    <TableHead className="text-right">Grade Point</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sem.marks.map((m: ResultMark) => {
-                    const code = m.code || m.course_enrollment?.course_offering?.course?.code;
-                    const title = m.title || m.course_enrollment?.course_offering?.course?.title;
-                    const credits = m.credits || m.course_enrollment?.course_offering?.course?.credit_units || 4;
-                    const cat = m.cat ?? m.cat_score;
-                    const exam = m.exam ?? m.exam_score;
-                    const total = m.total ?? m.total_score;
-                    const grade = m.grade || m.grade_letter;
-                    const points = m.points ?? m.grade_points;
-
-                    return (
-                      <TableRow key={m.id}>
-                        <TableCell>
-                          <div className="font-semibold text-slate-900">{code}</div>
-                          <div className="text-xs text-slate-500">{title}</div>
-                        </TableCell>
-                        <TableCell className="text-center font-mono">{credits}</TableCell>
-                        <TableCell className="text-center font-mono">{cat}</TableCell>
-                        <TableCell className="text-center font-mono">{exam}</TableCell>
-                        <TableCell className="text-center font-mono font-bold text-slate-900">
-                          {total}%
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant={grade === 'A' || grade === 'B+' ? 'success' : 'default'}>
-                            {grade}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-mono font-bold text-mema-teal-900">
-                          {Number(points).toFixed(2)}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Term GPA History</CardTitle>
+          <CardDescription>
+            Per-semester GPA progression for your student record. Detailed per-course marks require a
+            student-scoped marks API (pending Codex).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="py-12 text-center text-sm text-slate-500">Loading term GPA records...</div>
+          ) : termGpas.length === 0 ? (
+            <div className="py-12 text-center text-sm text-slate-500">
+              No published term GPA records found for your account.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {termGpas.map((row) => (
+                <div
+                  key={row.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4"
+                >
+                  <div>
+                    <p className="font-semibold text-slate-900">
+                      {row.term?.name ?? `Term ${row.term_id.slice(0, 8)}`}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Term GPA {Number(row.term_gpa).toFixed(2)} · Cumulative{' '}
+                      {Number(row.cumulative_gpa).toFixed(2)}
+                    </p>
+                  </div>
+                  <Badge variant="success">{formatStanding(row.standing)}</Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

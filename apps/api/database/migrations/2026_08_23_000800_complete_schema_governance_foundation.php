@@ -85,6 +85,13 @@ return new class extends Migration
         DB::statement('CREATE INDEX file_versions_file_idx
             ON documents.file_versions (institution_id, file_id, version_number DESC)');
 
+        // login_attempts predates the universal timestamp convention and used attempted_at only.
+        // Keep attempted_at as the security-event time while adding lifecycle timestamps so the
+        // table conforms to the same operational contract as every other governed table.
+        DB::statement('ALTER TABLE iam.login_attempts
+            ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now(),
+            ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now()');
+
         $schemaList = implode(', ', array_map(
             static fn (string $schema): string => DB::getPdo()->quote($schema),
             $this->governedSchemas,
@@ -213,5 +220,8 @@ return new class extends Migration
         DB::statement('DROP TABLE IF EXISTS documents.file_versions');
         DB::statement('DROP TABLE IF EXISTS documents.files');
         DB::statement('DROP SCHEMA IF EXISTS documents');
+        DB::statement('ALTER TABLE iam.login_attempts
+            DROP COLUMN IF EXISTS created_at,
+            DROP COLUMN IF EXISTS updated_at');
     }
 };

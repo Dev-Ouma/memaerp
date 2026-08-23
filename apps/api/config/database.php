@@ -99,7 +99,7 @@ return [
             // operations which enumerate tables (db:wipe, migrate:fresh, schema:dump)
             // see the whole database, not just public. Application code still
             // fully-qualifies table names - this is not a shortcut for that.
-            'search_path' => env('DB_SEARCH_PATH', 'public,iam,institution,curriculum,course,admission,student,enrollment,finance,examination,graduation,hr,procurement,research,audit,cms,analytics'),
+            'search_path' => env('DB_SEARCH_PATH', 'public,iam,institution,curriculum,course,admission,student,enrollment,finance,examination,graduation,hr,procurement,research,audit,cms,analytics,documents'),
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 

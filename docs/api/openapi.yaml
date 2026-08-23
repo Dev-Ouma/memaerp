@@ -20,8 +20,8 @@ paths:
         Filters are allow-listed and applied after authorization scope at query level.
       tags: [Students]
       parameters:
-        - $ref: "#/components/parameters/Cursor"
-        - $ref: "#/components/parameters/PerPage"
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PerPage'
         - name: sort
           in: query
           schema:
@@ -36,10 +36,10 @@ paths:
             default: student_number
         - name: filter[status]
           in: query
-          schema: { $ref: "#/components/schemas/StudentStatus" }
+          schema: { $ref: '#/components/schemas/StudentStatus' }
         - name: filter[academic_standing]
           in: query
-          schema: { $ref: "#/components/schemas/AcademicStanding" }
+          schema: { $ref: '#/components/schemas/AcademicStanding' }
         - name: filter[programme_id]
           in: query
           schema: { type: string, format: uuid }
@@ -54,32 +54,32 @@ paths:
           description: Case-insensitive student number, name, or primary email search.
           schema: { type: string, minLength: 2, maxLength: 100 }
       responses:
-        "200":
+        '200':
           description: Scoped cursor page of students.
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/StudentCollectionResponse" }
-        "401": { $ref: "#/components/responses/Unauthenticated" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "422": { $ref: "#/components/responses/ValidationFailed" }
-        "429": { $ref: "#/components/responses/RateLimited" }
+              schema: { $ref: '#/components/schemas/StudentCollectionResponse' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
   /students/{student}:
     parameters:
-      - $ref: "#/components/parameters/StudentId"
+      - $ref: '#/components/parameters/StudentId'
     get:
       operationId: getStudent
       summary: Get one visible student record
       tags: [Students]
       responses:
-        "200":
+        '200':
           description: Student record.
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/StudentResponse" }
-        "401": { $ref: "#/components/responses/Unauthenticated" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "429": { $ref: "#/components/responses/RateLimited" }
+              schema: { $ref: '#/components/schemas/StudentResponse' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
     patch:
       operationId: updateStudent
       summary: Update controlled student lifecycle fields
@@ -93,21 +93,21 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/UpdateStudent" }
+            schema: { $ref: '#/components/schemas/UpdateStudent' }
             example:
               status: ON_LEAVE
               change_reason: Approved leave of absence for the current term.
       responses:
-        "200":
+        '200':
           description: Updated student record and audit correlation metadata.
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/StudentResponse" }
-        "401": { $ref: "#/components/responses/Unauthenticated" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "422": { $ref: "#/components/responses/ValidationFailed" }
-        "429": { $ref: "#/components/responses/RateLimited" }
+              schema: { $ref: '#/components/schemas/StudentResponse' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
 components:
   securitySchemes:
     sanctumCookie:
@@ -149,8 +149,8 @@ components:
       additionalProperties: false
       required: [error, meta]
       properties:
-        error: { $ref: "#/components/schemas/Error" }
-        meta: { $ref: "#/components/schemas/ResponseMeta" }
+        error: { $ref: '#/components/schemas/Error' }
+        meta: { $ref: '#/components/schemas/ResponseMeta' }
     StudentStatus:
       type: string
       enum: [ACTIVE, ON_LEAVE, SUSPENDED, GRADUATED, WITHDRAWN]
@@ -172,11 +172,11 @@ components:
       properties:
         id: { type: string, format: uuid }
         given_name: { type: string }
-        middle_name: { type: [string, "null"] }
+        middle_name: { type: [string, 'null'] }
         family_name: { type: string }
         full_name: { type: string }
-        primary_email: { type: [string, "null"], format: email }
-        primary_phone: { type: [string, "null"] }
+        primary_email: { type: [string, 'null'], format: email }
+        primary_phone: { type: [string, 'null'] }
     Student:
       type: object
       additionalProperties: false
@@ -198,16 +198,16 @@ components:
       properties:
         id: { type: string, format: uuid }
         student_number: { type: string }
-        status: { $ref: "#/components/schemas/StudentStatus" }
-        academic_standing: { $ref: "#/components/schemas/AcademicStanding" }
+        status: { $ref: '#/components/schemas/StudentStatus' }
+        academic_standing: { $ref: '#/components/schemas/AcademicStanding' }
         current_year_level: { type: integer, minimum: 1 }
         current_semester: { type: integer, minimum: 1 }
         matriculated_on: { type: string, format: date }
-        person: { $ref: "#/components/schemas/StudentPerson" }
-        programme: { $ref: "#/components/schemas/NamedReference" }
-        campus: { $ref: "#/components/schemas/NamedReference" }
-        department: { $ref: "#/components/schemas/NamedReference" }
-        admission_year: { $ref: "#/components/schemas/NamedReference" }
+        person: { $ref: '#/components/schemas/StudentPerson' }
+        programme: { $ref: '#/components/schemas/NamedReference' }
+        campus: { $ref: '#/components/schemas/NamedReference' }
+        department: { $ref: '#/components/schemas/NamedReference' }
+        admission_year: { $ref: '#/components/schemas/NamedReference' }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
     UpdateStudent:
@@ -218,15 +218,15 @@ components:
       properties:
         current_year_level: { type: integer, minimum: 1, maximum: 20 }
         current_semester: { type: integer, minimum: 1, maximum: 12 }
-        academic_standing: { $ref: "#/components/schemas/AcademicStanding" }
-        status: { $ref: "#/components/schemas/StudentStatus" }
+        academic_standing: { $ref: '#/components/schemas/AcademicStanding' }
+        status: { $ref: '#/components/schemas/StudentStatus' }
         change_reason: { type: string, minLength: 10, maxLength: 500 }
     CursorPage:
       type: object
       additionalProperties: false
       required: [next_cursor, per_page, has_more]
       properties:
-        next_cursor: { type: [string, "null"] }
+        next_cursor: { type: [string, 'null'] }
         per_page: { type: integer, minimum: 1, maximum: 100 }
         has_more: { type: boolean }
     StudentResponse:
@@ -234,8 +234,8 @@ components:
       additionalProperties: false
       required: [data, meta]
       properties:
-        data: { $ref: "#/components/schemas/Student" }
-        meta: { $ref: "#/components/schemas/ResponseMeta" }
+        data: { $ref: '#/components/schemas/Student' }
+        meta: { $ref: '#/components/schemas/ResponseMeta' }
     StudentCollectionResponse:
       type: object
       additionalProperties: false
@@ -243,14 +243,14 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: "#/components/schemas/Student" }
+          items: { $ref: '#/components/schemas/Student' }
         meta:
           allOf:
-            - $ref: "#/components/schemas/ResponseMeta"
+            - $ref: '#/components/schemas/ResponseMeta'
             - type: object
               required: [pagination]
               properties:
-                pagination: { $ref: "#/components/schemas/CursorPage" }
+                pagination: { $ref: '#/components/schemas/CursorPage' }
   parameters:
     Cursor:
       name: cursor
@@ -270,22 +270,22 @@ components:
       description: Authentication is required.
       content:
         application/json:
-          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
     Forbidden:
       description: The caller lacks the required permission.
       content:
         application/json:
-          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
     NotFound:
       description: The record does not exist or is outside the caller's scope.
       content:
         application/json:
-          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
     ValidationFailed:
       description: Request validation failed.
       content:
         application/json:
-          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
     RateLimited:
       description: Rate limit exceeded.
       headers:
@@ -293,4 +293,4 @@ components:
           schema: { type: integer }
       content:
         application/json:
-          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          schema: { $ref: '#/components/schemas/ErrorResponse' }

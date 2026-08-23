@@ -36,6 +36,7 @@ final class StudentController extends Controller
             'data' => StudentResource::collection($paginator->items())->resolve($request),
             'meta' => [
                 'request_id' => $this->context->requestId(),
+                'timestamp' => now()->toISOString(),
                 'pagination' => [
                     'next_cursor' => $paginator->nextCursor()?->encode(),
                     'per_page' => $paginator->perPage(),
@@ -53,7 +54,10 @@ final class StudentController extends Controller
 
         return response()->json([
             'data' => (new StudentResource($record))->resolve($request),
-            'meta' => ['request_id' => $this->context->requestId()],
+            'meta' => [
+                'request_id' => $this->context->requestId(),
+                'timestamp' => now()->toISOString(),
+            ],
         ]);
     }
 
@@ -69,7 +73,10 @@ final class StudentController extends Controller
 
         return response()->json([
             'data' => (new StudentResource($record))->resolve($request),
-            'meta' => ['request_id' => $this->context->requestId()],
+            'meta' => [
+                'request_id' => $this->context->requestId(),
+                'timestamp' => now()->toISOString(),
+            ],
         ]);
     }
 }

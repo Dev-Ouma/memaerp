@@ -41,6 +41,14 @@ function normalizeProgramme(programme: Programme): Programme {
   };
 }
 
+function normalizeCourse(course: Course): Course {
+  return {
+    ...course,
+    credit_units: course.credit_units ?? course.credits ?? 0,
+    practical_hours: course.practical_hours ?? course.lab_hours ?? 0,
+  };
+}
+
 function extractError(error: unknown): ApiError {
   if (error instanceof ApiError) {
     return error;
@@ -98,9 +106,40 @@ export class MemaApiClient {
     login: string;
     password: string;
     remember?: boolean;
-  }): Promise<void> {
+  }): Promise<{ mfa_required: boolean; challenge_token?: string }> {
     await this.getCsrfCookie().catch(() => undefined);
-    await this.client.post('/auth/login', credentials);
+    const response = await this.client.post<{ mfa_required?: boolean; challenge_token?: string }>(
+      '/auth/login', credentials
+    );
+    return {
+      mfa_required: Boolean(response.data.mfa_required),
+      challenge_token: response.data.challenge_token,
+    };
+  }
+
+  async verifyMfa(challengeToken: string, code: string): Promise<void> {
+    await this.client.post('/auth/mfa/verify', { challenge_token: challengeToken, code });
+  }
+
+  async forgotPassword(email: string): Promise<{ message: string; debug_token?: string }> {
+    const response = await this.client.post<{ message: string; debug_token?: string }>(
+      '/auth/password/forgot', { email }
+    );
+    return response.data;
+  }
+
+  async resetPassword(payload: { email: string; token: string; password: string; password_confirmation: string }): Promise<void> {
+    await this.client.post('/auth/password/reset', payload);
+  }
+
+  async getIamUsers(): Promise<{ data: Array<Record<string, unknown>>; meta: { total: number } }> {
+    const response = await this.client.get('/iam/users');
+    return response.data;
+  }
+
+  async getIamRoles(): Promise<{ data: Array<Record<string, unknown>> }> {
+    const response = await this.client.get('/iam/roles');
+    return response.data;
   }
 
   async logout(): Promise<void> {
@@ -124,7 +163,7 @@ export class MemaApiClient {
 
   async getCourses(): Promise<Course[]> {
     const res = await this.client.get<{ data: Course[] }>('/courses/');
-    return res.data.data;
+    return res.data.data.map(normalizeCourse);
   }
 
   async getOfferings(params?: {

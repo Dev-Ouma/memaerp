@@ -1,4 +1,7 @@
-import { createAuthMiddleware, authMiddlewareConfig } from '@mema/auth/middleware';
+import { createAuthMiddleware } from '@mema/auth/middleware';
 
 export const middleware = createAuthMiddleware();
-export const config = authMiddlewareConfig;
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+};

@@ -121,7 +121,7 @@ with the rest, or a second institution requires an independently versioned deplo
 
 **Decision.** One PostgreSQL 17 database with 14 domain schemas (`iam`, `institution`, `curriculum`, `course`,
 `admission`, `student`, `enrollment`, `finance`, `examination`, `graduation`, `hr`, `procurement`, `research`,
-`audit`), plus `cms` and `analytics`.
+`audit`), plus `cms` and `analytics`. The cross-cutting `documents` schema implements the governed file service described in the data architecture; it is a platform-support schema rather than a seventeenth business domain.
 
 **Reasoning.** Schemas give namespace separation, per-schema permissions and a natural extraction seam, while
 preserving cross-domain foreign keys and single-transaction integrity. Separate databases per domain would

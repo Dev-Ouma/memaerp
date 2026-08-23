@@ -18,7 +18,7 @@ final readonly class StudentRecords
 
     /**
      * @param  array<string, mixed>  $filters
-     * @return CursorPaginator<Student>
+     * @return CursorPaginator<int, Student>
      */
     public function paginate(User $actor, array $filters, string $sort, int $perPage): CursorPaginator
     {

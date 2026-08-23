@@ -6,6 +6,10 @@ namespace App\Modules\Iam\Models;
 
 use Laravel\Sanctum\PersonalAccessToken as SanctumPersonalAccessToken;
 
+/**
+ * @property string|null $institution_id
+ * @property string|null $tokenable_id
+ */
 final class PersonalAccessToken extends SanctumPersonalAccessToken
 {
     protected $table = 'iam.personal_access_tokens';
@@ -20,7 +24,7 @@ final class PersonalAccessToken extends SanctumPersonalAccessToken
 
     protected static function booted(): void
     {
-        static::creating(function (self $token): void {
+        self::creating(function (self $token): void {
             if ($token->institution_id !== null || $token->tokenable_id === null) {
                 return;
             }

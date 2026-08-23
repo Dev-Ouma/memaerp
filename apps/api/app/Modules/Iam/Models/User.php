@@ -33,6 +33,10 @@ use Laravel\Sanctum\HasApiTokens;
  * @property-read Collection<int, RoleAssignment> $roleAssignments
  * @property CarbonImmutable|null $locked_until
  * @property CarbonImmutable|null $last_login_at
+ * @property string $status
+ * @property int $session_version
+ * @property string|null $mfa_secret
+ * @property list<string>|null $mfa_recovery_codes
  */
 final class User extends Authenticatable implements Actor
 {
@@ -57,6 +61,7 @@ final class User extends Authenticatable implements Actor
     protected $fillable = [
         'institution_id', 'person_id', 'email', 'username', 'password',
         'is_active', 'must_change_password', 'password_changed_at',
+        'status',
         'mfa_enabled', 'mfa_secret', 'mfa_recovery_codes',
         'email_verified_at',
     ];
@@ -78,6 +83,7 @@ final class User extends Authenticatable implements Actor
             'email_verified_at' => 'immutable_datetime',
             'failed_login_attempts' => 'integer',
             'access_version' => 'integer',
+            'session_version' => 'integer',
         ];
     }
 
@@ -114,13 +120,22 @@ final class User extends Authenticatable implements Actor
 
     public function isLocked(): bool
     {
-        return $this->locked_until !== null && $this->locked_until->isFuture();
+        $lockedUntil = $this->getAttributeFromArray('locked_until');
+
+        return $lockedUntil !== null
+            && CarbonImmutable::parse((string) $lockedUntil)->isFuture();
     }
 
     /** A user may sign in only if the account is active, not locked, and not soft-deleted. */
     public function canAuthenticate(): bool
     {
-        return $this->is_active && ! $this->isLocked() && $this->deleted_at === null;
+        $attributes = $this->getAttributes();
+        $status = (string) ($attributes['status'] ?? 'ACTIVE');
+
+        return (bool) ($attributes['is_active'] ?? false)
+            && in_array($status, ['ACTIVE', 'PENDING'], true)
+            && ! $this->isLocked()
+            && ($attributes['deleted_at'] ?? null) === null;
     }
 
     public function auditLabel(): string

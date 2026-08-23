@@ -15,7 +15,9 @@ export interface AuthContextType {
   user: AuthUserProfile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (login: string, password: string, remember?: boolean) => Promise<void>;
+  pendingMfaChallenge: string | null;
+  login: (login: string, password: string, remember?: boolean) => Promise<{ mfaRequired: boolean }>;
+  verifyMfa: (code: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<AuthUserProfile | null>;
   can: (permission: string) => boolean;
@@ -34,6 +36,7 @@ export interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [pendingMfaChallenge, setPendingMfaChallenge] = useState<string | null>(null);
 
   const refreshSession = useCallback(async (): Promise<AuthUserProfile | null> => {
     try {
@@ -70,7 +73,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (loginValue: string, password: string, remember = false) => {
     setIsLoading(true);
     try {
-      await api.login({ login: loginValue, password, remember });
+      const result = await api.login({ login: loginValue, password, remember });
+      if (result.mfa_required && result.challenge_token) {
+        setPendingMfaChallenge(result.challenge_token);
+        return { mfaRequired: true };
+      }
+      await refreshSession();
+      return { mfaRequired: false };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyMfa = async (code: string) => {
+    if (!pendingMfaChallenge) throw new Error('No MFA challenge is active.');
+    setIsLoading(true);
+    try {
+      await api.verifyMfa(pendingMfaChallenge, code);
+      setPendingMfaChallenge(null);
       await refreshSession();
     } finally {
       setIsLoading(false);
@@ -109,13 +129,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       user,
       isLoading,
       isAuthenticated: Boolean(user),
+      pendingMfaChallenge,
       login,
+      verifyMfa,
       logout,
       refreshSession,
       can,
       hasRole,
     }),
-    [user, isLoading, refreshSession, can, hasRole]
+    [user, isLoading, pendingMfaChallenge, refreshSession, can, hasRole]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -15,6 +15,10 @@ export interface NavItem {
   href: string;
   icon: React.ReactNode;
   badge?: string | number;
+  /** Hide this item unless the user holds this permission */
+  permission?: string;
+  /** Hide unless the user holds any of these permissions */
+  anyPermission?: string[];
 }
 
 export interface AppShellProps {

@@ -9,7 +9,9 @@
 
 The accepted repository rule says that a module may reference another module only through classes in the other module's `Contracts/` directory. The existing Laravel implementation models the university data spine with ordinary Eloquent relationships whose return types and related classes directly reference models owned by other modules.
 
-Running the required boundary check reports 117 violations. Representative dependencies include:
+Running the required boundary check currently reports 126 violations. The count may rise as
+module implementation proceeds, but the root cause and required governance decision remain the
+same. Representative dependencies include:
 
 - Admission → Student `Person`, Curriculum `Programme`, and Institution master data.
 - Student → Curriculum `Programme`, Institution master data, and Enrollment registrations.
@@ -44,4 +46,4 @@ Approve Option B for the single-database modular monolith, with all of the follo
 
 ## Decision needed
 
-Architecture governance must approve Option A or Option B before the 117 violations can be resolved honestly. Until then, `composer stan`, Pint, frontend lint, frontend type-checking, and frontend production builds can remain blocking gates; Deptrac remains intentionally red as evidence of this unresolved decision.
+Architecture governance must approve Option A or Option B before the 126 current violations can be resolved honestly. Until then, `composer stan`, Pint, frontend lint, frontend type-checking, and frontend production builds can remain blocking gates; Deptrac remains intentionally red as evidence of this unresolved decision.

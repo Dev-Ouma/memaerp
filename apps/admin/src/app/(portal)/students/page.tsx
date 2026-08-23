@@ -1,92 +1,47 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
+  Badge,
+  Button,
   Card,
+  CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardContent,
-  Button,
-  Badge,
   Input,
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
+  personDisplayName,
+  programmeLabel,
 } from '@mema/ui';
-import { Search, Filter, Eye, Download } from 'lucide-react';
-import { mockCurrentStudent } from '@mema/api-client';
+import { DataTable } from '@mema/tables';
+import { api } from '@mema/api-client';
+import { Download, Eye, Filter, Search } from 'lucide-react';
+import type { Student } from '@mema/types';
 
 export default function AdminStudentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['enrollment', 'students'],
+    queryFn: () => api.getStudents(),
+  });
 
-  const students = [
-    mockCurrentStudent,
-    {
-      id: 'stud-02',
-      institution_id: 'inst-01',
-      person_id: 'pers-02',
-      programme_id: 'prog-01',
-      campus_id: 'camp-01',
-      student_number: 'CT201/0043/23',
-      admission_term_id: 'term-sem1-2023',
-      current_year_level: 3,
-      current_term_sequence: 1,
-      status: 'ACTIVE' as const,
-      cumulative_gpa: 3.45,
-      cumulative_credits_earned: 72,
-      created_at: '2023-09-01T00:00:00Z',
-      updated_at: '2026-08-20T00:00:00Z',
-      person: {
-        id: 'pers-02',
-        institution_id: 'inst-01',
-        first_name: 'Grace',
-        last_name: 'Mutiso',
-        national_id_number: '38920183',
-        gender: 'FEMALE' as const,
-        nationality: 'Kenyan',
-        created_at: '2023-09-01T00:00:00Z',
-        updated_at: '2026-08-20T00:00:00Z',
-      },
-      programme: mockCurrentStudent.programme,
-      campus: mockCurrentStudent.campus,
-    },
-    {
-      id: 'stud-03',
-      institution_id: 'inst-01',
-      person_id: 'pers-03',
-      programme_id: 'prog-02',
-      campus_id: 'camp-01',
-      student_number: 'SE201/0012/24',
-      admission_term_id: 'term-sem1-2024',
-      current_year_level: 2,
-      current_term_sequence: 1,
-      status: 'ACTIVE' as const,
-      cumulative_gpa: 3.91,
-      cumulative_credits_earned: 40,
-      created_at: '2024-09-01T00:00:00Z',
-      updated_at: '2026-08-20T00:00:00Z',
-      person: {
-        id: 'pers-03',
-        institution_id: 'inst-01',
-        first_name: 'Kevin',
-        last_name: 'Kiprono',
-        gender: 'MALE' as const,
-        created_at: '2024-09-01T00:00:00Z',
-        updated_at: '2026-08-20T00:00:00Z',
-      },
-      programme: {
-        ...mockCurrentStudent.programme,
-        id: 'prog-02',
-        code: 'BSC-SE',
-        title: 'BSc in Software Engineering',
-      },
-      campus: mockCurrentStudent.campus,
-    },
-  ];
+  const students = useMemo(() => {
+    const rows = data ?? [];
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return rows;
+
+    return rows.filter((student) => {
+      const haystack = [
+        student.student_number,
+        personDisplayName(student.person),
+        programmeLabel(student.programme ?? { code: 'unknown', title: 'Unknown programme' }),
+      ]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [data, searchTerm]);
 
   return (
     <div className="space-y-8">
@@ -104,13 +59,12 @@ export default function AdminStudentsPage() {
         </Button>
       </div>
 
-      {/* Filter Bar */}
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <div className="flex-1 w-full">
           <Input
             placeholder="Search by student number, national ID, or student name..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(event) => setSearchTerm(event.target.value)}
             leftIcon={<Search className="h-4 w-4" />}
           />
         </div>
@@ -119,63 +73,101 @@ export default function AdminStudentsPage() {
         </Button>
       </div>
 
-      {/* Students Table */}
       <Card>
         <CardHeader>
           <CardTitle>Matriculated Student Registry</CardTitle>
           <CardDescription>
-            Single canonical person spine across applicant, student, and alumnus lifecycles
+            Loaded from <code className="text-xs">GET /api/v1/enrollment/students</code>
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Student ID</TableHead>
-                <TableHead>Full Name</TableHead>
-                <TableHead>Programme</TableHead>
-                <TableHead className="text-center">Year / Sem</TableHead>
-                <TableHead className="text-center">CGPA</TableHead>
-                <TableHead className="text-center">Credits</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {students.map((st) => (
-                <TableRow key={st.id}>
-                  <TableCell className="font-mono font-bold text-mema-teal-900">
-                    {st.student_number}
-                  </TableCell>
-                  <TableCell className="font-semibold text-slate-900">
-                    {st.person?.first_name} {st.person?.last_name}
-                  </TableCell>
-                  <TableCell className="text-xs font-medium text-slate-800">
-                    {st.programme?.title}
-                  </TableCell>
-                  <TableCell className="text-center font-mono text-xs">
-                    Yr {st.current_year_level} · Sem {st.current_term_sequence}
-                  </TableCell>
-                  <TableCell className="text-center font-mono font-bold text-slate-900">
-                    {st.cumulative_gpa.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-center font-mono text-xs font-semibold text-slate-700">
-                    {st.cumulative_credits_earned}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="success" dot>
-                      {st.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button size="sm" variant="ghost" className="h-8 text-xs gap-1 text-mema-teal-800">
-                      <Eye className="h-3.5 w-3.5" /> View Profile
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <DataTable<Student>
+            isLoading={isLoading}
+            isError={isError}
+            errorMessage={error instanceof Error ? error.message : undefined}
+            data={students}
+            getRowKey={(student) => student.id}
+            emptyMessage="No students found for the current search."
+            columns={[
+              {
+                key: 'student_number',
+                header: 'Student ID',
+                cell: (student) => (
+                  <span className="font-mono font-bold text-mema-teal-900">
+                    {student.student_number}
+                  </span>
+                ),
+              },
+              {
+                key: 'name',
+                header: 'Full Name',
+                cell: (student) => (
+                  <span className="font-semibold text-slate-900">
+                    {personDisplayName(student.person)}
+                  </span>
+                ),
+              },
+              {
+                key: 'programme',
+                header: 'Programme',
+                cell: (student) => (
+                  <span className="text-xs font-medium text-slate-800">
+                    {student.programme ? programmeLabel(student.programme) : '—'}
+                  </span>
+                ),
+              },
+              {
+                key: 'year',
+                header: 'Year / Sem',
+                className: 'text-center',
+                cell: (student) => (
+                  <span className="font-mono text-xs">
+                    Yr {student.current_year_level} · Sem {student.current_term_sequence}
+                  </span>
+                ),
+              },
+              {
+                key: 'cgpa',
+                header: 'CGPA',
+                className: 'text-center',
+                cell: (student) => (
+                  <span className="font-mono font-bold text-slate-900">
+                    {Number(student.cumulative_gpa).toFixed(2)}
+                  </span>
+                ),
+              },
+              {
+                key: 'credits',
+                header: 'Credits',
+                className: 'text-center',
+                cell: (student) => (
+                  <span className="font-mono text-xs font-semibold text-slate-700">
+                    {student.cumulative_credits_earned}
+                  </span>
+                ),
+              },
+              {
+                key: 'status',
+                header: 'Status',
+                className: 'text-center',
+                cell: (student) => (
+                  <Badge variant="success" dot>
+                    {student.status}
+                  </Badge>
+                ),
+              },
+              {
+                key: 'actions',
+                header: 'Action',
+                className: 'text-right',
+                cell: () => (
+                  <Button size="sm" variant="ghost" className="h-8 text-xs gap-1 text-mema-teal-800">
+                    <Eye className="h-3.5 w-3.5" /> View Profile
+                  </Button>
+                ),
+              },
+            ]}
+          />
         </CardContent>
       </Card>
     </div>

@@ -219,9 +219,6 @@ return new class extends Migration
     {
         DB::statement('DROP VIEW IF EXISTS finance.invoice_ledger_balances');
         DB::statement('DROP VIEW IF EXISTS finance.student_balances');
-        DB::statement('DROP FUNCTION IF EXISTS finance.assert_balanced_journal_trigger()');
-        DB::statement('DROP FUNCTION IF EXISTS finance.prevent_posted_journal_mutation()');
-        DB::statement('DROP FUNCTION IF EXISTS finance.prevent_immutable_finance_mutation()');
         DB::statement('DROP TABLE IF EXISTS finance.reconciliation_exceptions');
         DB::statement('DROP TABLE IF EXISTS finance.receipts');
         DB::statement('DROP TABLE IF EXISTS finance.payment_allocations');
@@ -229,6 +226,9 @@ return new class extends Migration
         DB::statement('DROP TABLE IF EXISTS finance.journal_entries');
         DB::statement('DROP TABLE IF EXISTS finance.journals');
         DB::statement('DROP TABLE IF EXISTS finance.ledger_accounts');
+        DB::statement('DROP FUNCTION IF EXISTS finance.assert_balanced_journal_trigger()');
+        DB::statement('DROP FUNCTION IF EXISTS finance.prevent_posted_journal_mutation()');
+        DB::statement('DROP FUNCTION IF EXISTS finance.prevent_immutable_finance_mutation()');
     }
 
     private function createImmutabilityTriggers(): void

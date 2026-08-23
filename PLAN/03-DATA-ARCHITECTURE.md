@@ -6,7 +6,7 @@
 
 ## 1. Schema organisation
 
-One PostgreSQL 17 database, 16 schemas. Each maps to a bounded context and is owned by exactly one module group.
+One PostgreSQL 17 database, 16 domain/application schemas plus the cross-cutting `documents` schema. Each domain schema maps to a bounded context and is owned by exactly one module group; `documents` is a governed platform service used through its contract.
 
 ```mermaid
 flowchart TB

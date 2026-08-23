@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { AuthUserProfile } from '@mema/types';
 import { AppShell, type NavItem } from '@mema/ui';
 import { useAuth } from './context';
+import { filterNavItems } from './nav';
 
 export interface PortalShellProps {
   appName: string;
@@ -27,7 +28,7 @@ export function PortalShell({
   children,
 }: PortalShellProps) {
   const router = useRouter();
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, isLoading, can } = useAuth();
 
   if (isLoading) {
     return (
@@ -45,6 +46,7 @@ export function PortalShell({
 
   const displayName = user.person?.full_name ?? user.username;
   const roleLabel = user.roles[0]?.role_name ?? 'Signed in user';
+  const visibleNavItems = filterNavItems(navItems, can);
 
   return (
     <AppShell
@@ -53,7 +55,7 @@ export function PortalShell({
       userName={displayName}
       userRole={roleLabel}
       userIdentifier={resolveIdentifier(user)}
-      navItems={navItems}
+      navItems={visibleNavItems}
       onLogout={async () => {
         await logout();
         router.replace('/login');

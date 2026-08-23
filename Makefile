@@ -65,3 +65,14 @@ fix: ## Auto-fix formatting
 .PHONY: fresh-restore-test
 fresh-restore-test: ## Gate 0 requirement: prove a backup restores, and time it
 	./scripts/restore-drill.sh
+
+.PHONY: backup
+backup: ## Create a checksummed PostgreSQL custom-format backup
+	./scripts/database-backup.sh
+
+.PHONY: database-verify
+database-verify: ## Verify migrations, rollback safety, and database architecture tests
+	cd $(API) && php artisan migrate:fresh --seed
+	cd $(API) && php artisan test --testsuite=Feature --filter=DatabaseArchitectureTest
+	cd $(API) && php artisan migrate:rollback --step=4
+	cd $(API) && php artisan migrate

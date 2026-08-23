@@ -71,7 +71,7 @@ return new class extends Migration
         DB::statement('REVOKE UPDATE, DELETE, TRUNCATE ON audit.activity_log FROM PUBLIC');
 
         DB::statement(<<<'SQL'
-            CREATE VIEW audit.partition_health AS
+            CREATE OR REPLACE VIEW audit.partition_health AS
             SELECT
                 child_ns.nspname AS schema_name,
                 child.relname AS partition_name,

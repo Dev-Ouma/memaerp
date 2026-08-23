@@ -38,8 +38,8 @@ export function LoginForm({
     setError(null);
 
     try {
-      await login(loginValue.trim(), password);
-      router.replace(nextPath);
+      const result = await login(loginValue.trim(), password);
+      router.replace(result.mfaRequired ? `/mfa?next=${encodeURIComponent(nextPath)}` : nextPath);
     } catch (err) {
       const message =
         err instanceof ApiError

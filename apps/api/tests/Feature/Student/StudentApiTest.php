@@ -89,7 +89,7 @@ final class StudentApiTest extends TestCase
         $this->actingAs($registrar)
             ->getJson('/api/v1/students?filter[unknown]=value')
             ->assertUnprocessable()
-            ->assertJsonValidationErrors('filter');
+            ->assertJsonValidationErrors('filter', 'error.fields');
     }
 
     #[Test]
@@ -136,7 +136,7 @@ final class StudentApiTest extends TestCase
                 'change_reason' => 'No actual student field was supplied.',
             ])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors('record');
+            ->assertJsonValidationErrors('record', 'error.fields');
     }
 
     private function makeStudent(

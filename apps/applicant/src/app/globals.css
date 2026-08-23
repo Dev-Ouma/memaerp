@@ -1,25 +1,16 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@import "tailwindcss";
+@config "../../tailwind.config.js";
+@source "../../../../packages/ui/src/**/*.{js,ts,jsx,tsx}";
 
-@layer base {
-  :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --primary: 194 78% 18%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 146 63% 32%;
-    --secondary-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 194 78% 18%;
-    --radius: 0.75rem;
-  }
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --primary: #0a3e50;
+  --primary-foreground: #ffffff;
 }
 
 body {
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }

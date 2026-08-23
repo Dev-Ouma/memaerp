@@ -45,6 +45,8 @@ export interface AuthUserProfile {
   username: string;
   is_active: boolean;
   must_change_password: boolean;
+  status: string;
+  mfa_enabled: boolean;
   last_login_at: string | null;
   person: AuthPersonSummary | null;
   institution: { id: UUID; code: string; name: string } | null;
@@ -235,9 +237,15 @@ export interface Course extends Timestamps {
   department_id: UUID;
   code: string;
   title: string;
-  credit_units: number;
+  /** API field */
+  credits?: number;
+  /** Legacy mock field */
+  credit_units?: number;
   lecture_hours: number;
-  practical_hours: number;
+  /** API field */
+  lab_hours?: number;
+  /** Legacy mock field */
+  practical_hours?: number;
   description?: string | null;
   is_active: boolean;
   department?: Department;
