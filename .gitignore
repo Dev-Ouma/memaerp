@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+vendor/
+.pnpm-store/
+
+# Build output
+.next/
+out/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+
+# Environment — never commit real secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Laravel
+apps/api/storage/*.key
+apps/api/storage/logs/*
+apps/api/storage/framework/cache/data/*
+apps/api/storage/framework/sessions/*
+apps/api/storage/framework/views/*
+apps/api/public/storage
+apps/api/public/hot
+apps/api/bootstrap/cache/*
+!apps/api/bootstrap/cache/.gitkeep
+
+# Testing
+coverage/
+.phpunit.result.cache
+.phpunit.cache/
+
+# Editors & OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# Aider
+.aider*
+
+# Local docker volumes
+docker/data/
+
+# Agent observations
+skill-observations/
+

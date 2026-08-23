@@ -3,7 +3,7 @@
 - **System Name:** Integrated University Enterprise Resource Planning & Student Information Management System (MEMA ERP / UMIS)
 - **Version:** 1.0.0-PROD-SPEC
 - **Date:** 21 August 2026
-- **Architecture Style:** Modular Monolith with Domain-Driven Design (DDD), PostgreSQL 18 ACID Storage, NestJS + Fastify Backend, Next.js 15 App Router Frontend, Redis Job Queue & Cache.
+- **Architecture Style:** Modular Monolith with Domain-Driven Design (DDD), PostgreSQL 17 ACID Storage, **Laravel 12 / PHP 8.4** Backend, Next.js 15 App Router Frontend, Redis Job Queue & Cache. See ADR-001.
 - **Brand Palette:** Primary `#0A3E50` (Deep Teal), Secondary `#1E8449` (Forest Green), Accent `#0A3E50`, Surface `#FFFFFF`, Canvas `#F8FAFC`.
 
 ---

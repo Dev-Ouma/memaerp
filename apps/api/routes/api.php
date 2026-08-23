@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| API Routes - MEMA ERP Monolith Hub
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'healthy',
+        'system' => 'MEMA ERP API',
+        'timestamp' => now()->toIso8601String(),
+    ]);
+});
+
+// Load Module API Routes
+require app_path('Modules/Iam/Routes/api.php');
+require app_path('Modules/Curriculum/Routes/api.php');
+require app_path('Modules/Course/Routes/api.php');
+require app_path('Modules/Enrollment/Routes/api.php');
+require app_path('Modules/Examination/Routes/api.php');

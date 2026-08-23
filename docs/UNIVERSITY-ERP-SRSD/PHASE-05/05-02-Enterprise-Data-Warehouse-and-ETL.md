@@ -27,7 +27,7 @@ Orchestrates the institutional data lakehouse and warehouse: automated CDC (Chan
 - Automated data transformation (dbt pipelines) and cleansing
 - Historical point-in-time snapshot archiving (Slowly Changing Dimensions Type 2)
 - Data catalog with column-level lineage and automated data dictionary
-- Analytical query engine integration (ClickHouse / Snowflake / PostgreSQL DW)
+- Analytical query engine: PostgreSQL star-schema warehouse (ADR-011 — ClickHouse deferred, with a documented reversal trigger)
 
 ### 4.2 Out-of-Scope
 - Core transactional operational modifications (which are performed in Phases 01-04 source modules).
@@ -58,7 +58,7 @@ graph TD
     E --> F[Performance Feedback & Telemetry Logging]
 ```
 ### Workflow Step-by-Step Execution:
-1. **Data / Event Ingestion:** Real-time streaming events (Kafka/RabbitMQ) or batch ETL pipelines ingest records from all ERP sub-systems.
+1. **Data / Event Ingestion:** Domain events published via the transactional outbox onto Laravel queues (Redis), plus scheduled batch ETL from the read replica, ingest records from all ERP sub-systems.
 2. **Transformation & Processing:** Data is cleansed, transformed, enriched, and stored in dimensional star-schema or vector memory.
 3. **Model Evaluation & Logic:** Predictive heuristics, ML models, or rule engines evaluate incoming signals against thresholds.
 4. **Trigger & Delivery:** Generates notifications, triggers advisor intervention workflows, or outputs secure verification tokens.
@@ -86,7 +86,7 @@ graph TD
 | Sub-Module ID | Sub-Module Name | Core Responsibility |
 |---|---|---|
 | **SUB-02-01** | Core Service Engine | High-performance runtime service powering enterprise data warehouse & analytical pipelines. |
-| **SUB-02-02** | API & Integration Layer | Secure REST/gRPC/GraphQL interfaces and webhook handlers. |
+| **SUB-02-02** | API & Integration Layer | Secure REST/JSON interfaces (OpenAPI 3.1) and signed webhook handlers. |
 | **SUB-02-03** | Analytics & Telemetry Monitor | Operational telemetry, metrics collection, and alerting. |
 
 ## 11. Features

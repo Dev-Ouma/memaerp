@@ -12,21 +12,19 @@ automatically past the due date.
 
 ## Tier 1 — Blocking before Sprint 1
 
-### D-001 · Backend platform — Laravel or NestJS? ⚠ **MOST IMPORTANT**
+### D-001 · Backend platform — Laravel or NestJS? ✅ **RESOLVED 23 Aug 2026**
 
-**The conflict.** The client engineering brief (22 Aug 2026) specifies **Laravel / PHP 8.4**. The existing
-`docs/…/00-SYSTEM-ARCHITECTURE.md` §2 specifies **NestJS + Fastify on Node.js 22**. These are incompatible
-and neither document acknowledges the other. Related conflicts travel with it: Tailwind vs "Zero Tailwind
+**The conflict was.** The client engineering brief (22 Aug 2026) specified **Laravel / PHP 8.4**. The existing
+`docs/…/00-SYSTEM-ARCHITECTURE.md` §2 specified **NestJS + Fastify on Node.js 22**. These were incompatible
+and neither document acknowledged the other. Related conflicts travelled with it: Tailwind vs "Zero Tailwind
 Overhead" CSS Modules, and Kubernetes/Kafka/GraphQL (assumed by the SRSD, explicitly excluded by the brief).
 
-**Proceeding on:** Laravel 12 / PHP 8.4, per ADR-001 — the brief is the later, more deliberate statement, the
-SRSD is 96% stack-agnostic, Laravel's built-ins cover a large share of ERP plumbing, and PHP/Laravel is
-substantially easier for the client to staff after handover.
+**Resolution.** The client confirmed **Laravel 12 / PHP 8.4** on 23 August 2026, before Sprint 1 and before
+any application code was written. ADR-001 is now ACCEPTED and binding. The related conflicts resolve with it:
+Tailwind 4 + shadcn/ui per ADR-005, and Kubernetes/Kafka/GraphQL remain excluded per ADR-011.
 
-**Cost of late reversal:** low before Sprint 1 (~15% of this plan), **severe after Sprint 4** — the entire
-Phase 0 platform would be rebuilt.
-
-**Needed from:** Mema University ICT Director + Engineering Lead. **A one-line confirmation is sufficient.**
+**Downstream actions completed:** `docs/…/00-SYSTEM-ARCHITECTURE.md` §2–§3 rewritten to the Laravel baseline
+(defect D-01 closed); backend scaffolding built on Laravel 12.
 
 ---
 
@@ -183,7 +181,7 @@ the notification abstraction.
 
 | # | Decision | Owner | Due | Status |
 |---|---|---|---|---|
-| D-001 | Backend platform | ICT Director | Before Sprint 1 | **OPEN — highest priority** |
+| D-001 | Backend platform | ICT Director | Before Sprint 1 | ✅ **RESOLVED 23 Aug 2026 — Laravel 12 / PHP 8.4** |
 | D-002 | Post-handover ownership | ICT Director | Before Sprint 1 | OPEN |
 | D-003 | Financial year end | Bursar | Before Sprint 1 | OPEN |
 | D-004 | Legacy inventory + access | ICT Director | Phase 0 week 1 | OPEN |

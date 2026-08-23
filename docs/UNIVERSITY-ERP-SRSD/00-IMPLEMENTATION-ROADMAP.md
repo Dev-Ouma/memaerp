@@ -41,7 +41,8 @@ PHASE 05 (Months 20–24): Data Warehouse, BI, AI Assistant & Public Services
 - **Sprint 16–18 (Month 6):** Marks Entry Workflow, Moderation, Grade Calculation, GPA/CGPA Engine, Progression Rules, Exam Cards, Degree Audit, Graduation Clearance, Official Transcripts, and Unified Student Portal.
 
 **Phase 1 Gate Criteria:**
-1. Zero data anomalies during mock student lifecycle progression run (Applicant $ightarrow$ Graduate).
+1. Zero data anomalies during mock student lifecycle progression run (Applicant $
+ightarrow$ Graduate).
 2. Payment gateway auto-reconciliation rate $> 99.8\%$.
 3. Sub-second response time for course registration under simulated load of 5,000 concurrent students.
 
@@ -81,7 +82,7 @@ PHASE 05 (Months 20–24): Data Warehouse, BI, AI Assistant & Public Services
 ### Phase 05: Intelligence, Integration & Advanced Platform Services (Months 20–24)
 *Goal: Deploy data warehousing, AI capabilities, predictive retention models, native mobile apps, and public credential verification.*
 
-- **Sprint 58–60 (Month 20):** Universal Integration Hub, Partner REST/GraphQL APIs, Outbound Webhooks, Universal Event Bus.
+- **Sprint 58–60 (Month 20):** Universal Integration Hub, Partner REST APIs (OpenAPI 3.1), Outbound Webhooks, Universal Event Bus.
 - **Sprint 61–63 (Month 21):** Enterprise Data Warehouse (Star/Snowflake Schema), Daily Automated ETL Pipelines, VC & Executive KPI Dashboards.
 - **Sprint 64–66 (Month 22):** Multi-Factor Student Retention Early Warning System (Predictive At-Risk Alerting Engine), Conversational AI Student Assistant.
 - **Sprint 67–69 (Month 23):** Multi-Channel Notification Engine (Email/SMS/Push/WhatsApp), Public Online Verification Portal for Certificates & QR verification.
@@ -94,6 +95,6 @@ PHASE 05 (Months 20–24): Data Warehouse, BI, AI Assistant & Public Services
 | Risk Factor | Probability | Impact | Mitigation Strategy |
 |---|---|---|---|
 | **Data Migration Corruption from Legacy Systems** | High | Critical | Dual-run staging period, automated checksum validation, immutable staging tables, and pre-migration sanitization scripts. |
-| **Peak Registration Server Degradation** | Medium | Critical | Distributed Redis lock manager, read-replica queries, horizontal auto-scaling of stateless NestJS pods, and queue-based checkout. |
+| **Peak Registration Server Degradation** | Medium | Critical | Distributed Redis lock manager, read-replica queries, horizontal scale-out of stateless Laravel application containers, and queue-based checkout. |
 | **Unauthorized Grade Tampering** | Low | Catastrophic | Cryptographic hash chaining on grade submissions, multi-tier approval locks, immutable PostgreSQL audit triggers, and field-level permission checks. |
 | **User Adoption Resistance** | Medium | High | Phase-specific training bootcamps, role-tailored user manuals, integrated interactive product tours, and intuitive WCAG 2.2 AA compliant UI. |

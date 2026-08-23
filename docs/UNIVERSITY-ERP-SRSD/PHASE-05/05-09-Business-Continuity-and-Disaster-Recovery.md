@@ -58,7 +58,7 @@ graph TD
     E --> F[Performance Feedback & Telemetry Logging]
 ```
 ### Workflow Step-by-Step Execution:
-1. **Data / Event Ingestion:** Real-time streaming events (Kafka/RabbitMQ) or batch ETL pipelines ingest records from all ERP sub-systems.
+1. **Data / Event Ingestion:** Domain events published via the transactional outbox onto Laravel queues (Redis), plus scheduled batch ETL from the read replica, ingest records from all ERP sub-systems.
 2. **Transformation & Processing:** Data is cleansed, transformed, enriched, and stored in dimensional star-schema or vector memory.
 3. **Model Evaluation & Logic:** Predictive heuristics, ML models, or rule engines evaluate incoming signals against thresholds.
 4. **Trigger & Delivery:** Generates notifications, triggers advisor intervention workflows, or outputs secure verification tokens.
@@ -86,7 +86,7 @@ graph TD
 | Sub-Module ID | Sub-Module Name | Core Responsibility |
 |---|---|---|
 | **SUB-09-01** | Core Service Engine | High-performance runtime service powering backup orchestration, failover & dr playbooks. |
-| **SUB-09-02** | API & Integration Layer | Secure REST/gRPC/GraphQL interfaces and webhook handlers. |
+| **SUB-09-02** | API & Integration Layer | Secure REST/JSON interfaces (OpenAPI 3.1) and signed webhook handlers. |
 | **SUB-09-03** | Analytics & Telemetry Monitor | Operational telemetry, metrics collection, and alerting. |
 
 ## 11. Features

@@ -7,9 +7,9 @@ the **trigger condition** that would justify revisiting it. An ADR is superseded
 
 ---
 
-## ⚠ ADR-001 — Backend platform: Laravel 12 / PHP 8.4
+## ADR-001 — Backend platform: Laravel 12 / PHP 8.4
 
-**Status:** PROPOSED — **requires explicit client confirmation before Sprint 1**
+**Status:** **ACCEPTED** — confirmed by the client on 23 August 2026, before Sprint 1
 **Supersedes:** the NestJS/Node.js baseline in `docs/UNIVERSITY-ERP-SRSD/00-SYSTEM-ARCHITECTURE.md` §2
 
 ### Context — there is a genuine conflict in the record
@@ -54,13 +54,28 @@ Adopt **Laravel 12 on PHP 8.4** as the backend platform. The NestJS baseline is 
   generated TypeScript clients), which arguably gives stronger guarantees than a shared-language monorepo,
   because the contract is enforced rather than assumed.
 
-### If this decision is wrong
+### Confirmation
 
-If the client confirms NestJS instead, the impact is contained: this plan's phases, module ordering, gates,
-data architecture, RBAC model, integration design and delivery governance all hold. Sections that change are
-ADR-001/002/003, the backend half of [`02-REPOSITORY-STRUCTURE.md`](02-REPOSITORY-STRUCTURE.md), and the
-PHP-specific tooling in [`07-DEVOPS-AND-ENVIRONMENTS.md`](07-DEVOPS-AND-ENVIRONMENTS.md) — roughly 15% of
-the plan. **Confirm before Sprint 1; after Sprint 4 the cost becomes severe.**
+The client confirmed Laravel 12 / PHP 8.4 on **23 August 2026**, before any application code was written, so
+the reversal cost described below was never incurred. This ADR is now binding: changing the backend platform
+requires a superseding ADR, not an edit to this one.
+
+*Recorded for the history:* had the answer been NestJS, the impact would have been contained — phases, module
+ordering, gates, data architecture, RBAC model, integration design and delivery governance all hold
+independently of the backend. Only ADR-001/002/003, the backend half of
+[`02-REPOSITORY-STRUCTURE.md`](02-REPOSITORY-STRUCTURE.md) and the PHP-specific tooling in
+[`07-DEVOPS-AND-ENVIRONMENTS.md`](07-DEVOPS-AND-ENVIRONMENTS.md) would have changed — roughly 15% of the plan
+at this point, rising to severe after Sprint 4.
+
+### Version pinning
+
+| Component | Pinned version | Note |
+|---|---|---|
+| PHP | **8.4.x** | Docker images pin 8.4. Local machines may run 8.5; CI builds against 8.4 so 8.5-only syntax cannot land. |
+| Laravel | **12.x** | |
+| PostgreSQL | **17.x** | ADR-003. The SRSD said 18; 17 is the current stable major with pgvector and PgBouncer support proven. |
+| Redis | **7.x** | |
+| Node (frontend toolchain only) | **22 LTS** | Not a backend runtime. |
 
 ---
 
