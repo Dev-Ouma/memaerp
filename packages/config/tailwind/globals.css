@@ -3,33 +3,63 @@
 
 @source "../../packages/ui/src/**/*.{js,ts,jsx,tsx}";
 
-@layer base {
-  :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 194 78% 18%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 146 63% 32%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 194 78% 18%;
-    --radius: 0.75rem;
-  }
+/*
+ * MEMA University – Shared Design Token Foundation
+ * Brand: Primary #0A3E50 · Secondary #1E8449 · Accent #E67E22
+ * Font:  Quicksand (primary) · Nunito (fallback)
+ */
+
+:root {
+  /* ── Semantic colour tokens (HSL) ───────────────────────────── */
+  --background:          210 40% 98%;      /* #f8fafc */
+  --foreground:          222 47% 11%;      /* #0f172a */
+
+  --card:                0 0% 100%;
+  --card-foreground:     222 47% 11%;
+
+  --popover:             0 0% 100%;
+  --popover-foreground:  222 47% 11%;
+
+  /* Primary  = #0A3E50  (194°, 78%, 18%) */
+  --primary:             194 78% 18%;
+  --primary-foreground:  0 0% 100%;
+
+  /* Secondary = #1E8449  (146°, 63%, 32%) */
+  --secondary:           146 63% 32%;
+  --secondary-foreground: 0 0% 100%;
+
+  /* Muted */
+  --muted:               210 40% 96%;
+  --muted-foreground:    215 16% 47%;
+
+  /* Accent = #E67E22  (28°, 79%, 52%) */
+  --accent:              28 79% 52%;
+  --accent-foreground:   0 0% 100%;
+
+  --destructive:         0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border:              214 32% 91%;
+  --input:               214 32% 91%;
+  --ring:                194 78% 18%;
+  --radius:              0.75rem;
+
+  /* ── Raw brand hex values (for inline styles / plain CSS) ───── */
+  --color-primary:       #0A3E50;
+  --color-primary-dark:  #072d3a;
+  --color-secondary:     #1E8449;
+  --color-accent:        #E67E22;
+  --color-white:         #FFFFFF;
+
+  /* ── Typography ─────────────────────────────────────────────── */
+  --font-family-base:    var(--font-quicksand, 'Quicksand'), var(--font-nunito, 'Nunito'), system-ui, -apple-system, sans-serif;
 }
 
 body {
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
+  background-color:    hsl(var(--background));
+  color:               hsl(var(--foreground));
+  font-family:         var(--font-family-base);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

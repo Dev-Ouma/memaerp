@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Iam\Services;
 
+use App\Modules\Iam\Models\Role;
 use App\Modules\Iam\Models\User;
 use App\Platform\Support\Uuid7;
 use Carbon\CarbonImmutable;
@@ -56,7 +57,10 @@ final class SessionManager
     private function timeouts(User $user): array
     {
         $families = $user->activeAssignments()->pluck('role.family');
-        if ($families->intersect(['system', 'executive'])->isNotEmpty()) {
+        if ($families->intersect([
+            Role::FAMILY_SYSTEM_ADMIN, Role::FAMILY_EXECUTIVE,
+            Role::FAMILY_FINANCE, Role::FAMILY_EXAMINATION,
+        ])->isNotEmpty()) {
             return [15, 4];
         }
         if ($families->intersect(['administrative', 'academic'])->isNotEmpty()) {

@@ -39,6 +39,26 @@ final class Role extends BaseModel
 
     public const string FAMILY_SYSTEM = 'system';
 
+    public const string FAMILY_ACADEMIC_ADMIN = 'academic_admin';
+
+    public const string FAMILY_EXAMINATION = 'examination';
+
+    public const string FAMILY_FINANCE = 'finance';
+
+    public const string FAMILY_PROCUREMENT = 'procurement';
+
+    public const string FAMILY_STUDENT_LIFECYCLE = 'student_lifecycle';
+
+    public const string FAMILY_STUDENT_AFFAIRS = 'student_affairs';
+
+    public const string FAMILY_LIBRARY = 'library';
+
+    public const string FAMILY_GOVERNANCE = 'governance';
+
+    public const string FAMILY_CONTINUING_ED = 'continuing_education';
+
+    public const string FAMILY_SYSTEM_ADMIN = 'system_admin';
+
     protected $table = 'iam.roles';
 
     protected $fillable = [

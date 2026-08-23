@@ -25,6 +25,7 @@ final class RoleSeeder extends Seeder
     {
         Institution::query()->each(function (Institution $institution): void {
             foreach (RoleCatalogue::all() as $definition) {
+                $family = self::normalizedFamily($definition['code']);
                 $role = Role::query()->updateOrCreate(
                     [
                         'institution_id' => $institution->getKey(),
@@ -33,10 +34,10 @@ final class RoleSeeder extends Seeder
                     [
                         'name' => $definition['name'],
                         'description' => $definition['description'],
-                        'family' => $definition['family'],
+                        'family' => $family,
                         'is_system' => true,
-                        'hierarchy_level' => self::hierarchyLevel($definition['code'], $definition['family']),
-                        'is_mfa_mandatory' => self::requiresMfa($definition['code'], $definition['family']),
+                        'hierarchy_level' => self::hierarchyLevel($definition['code'], $family),
+                        'is_mfa_mandatory' => self::requiresMfa($definition['code'], $family),
                         'default_scope_type' => $definition['default_scope'],
                     ],
                 );
@@ -73,7 +74,7 @@ final class RoleSeeder extends Seeder
             'dvc-academic', 'dvc-finance', 'dvc-research', 'registrar-academic', 'bursar', 'ict-security' => 2,
             'dean', 'campus-director', 'exam-officer', 'dean-of-students', 'librarian', 'election-commissioner', 'senate-member' => 3,
             'head-of-department', 'deputy-dean', 'deputy-registrar', 'graduate-school-admin' => 4,
-            default => $family === Role::FAMILY_STUDENT ? 10 : 6,
+            default => $family === Role::FAMILY_STUDENT_LIFECYCLE ? 10 : 6,
         };
     }
 
@@ -93,5 +94,27 @@ final class RoleSeeder extends Seeder
             'procurement-manager', 'tender-committee', 'librarian', 'election-commissioner',
             'returning-officer', 'pdc-coordinator',
         ], true);
+    }
+
+    private static function normalizedFamily(string $code): string
+    {
+        return match ($code) {
+            'vice-chancellor', 'vc-designee', 'dvc-academic', 'dvc-finance', 'dvc-research',
+            'dean', 'deputy-dean', 'campus-director' => Role::FAMILY_EXECUTIVE,
+            'exam-officer', 'exam-admin', 'exam-coordinator', 'exam-examiner', 'marks-processor',
+            'results-officer', 'exam-board-secretary' => Role::FAMILY_EXAMINATION,
+            'bursar', 'finance-officer', 'student-finance-accountant', 'payments-accountant',
+            'budget-accountant', 'budget-officer', 'finance-examiner', 'cashier' => Role::FAMILY_FINANCE,
+            'procurement-manager', 'procurement-officer', 'tender-committee' => Role::FAMILY_PROCUREMENT,
+            'student', 'applicant', 'graduate', 'alumni' => Role::FAMILY_STUDENT_LIFECYCLE,
+            'dean-of-students', 'student-affairs-officer', 'accommodation-officer',
+            'counselling-officer' => Role::FAMILY_STUDENT_AFFAIRS,
+            'librarian', 'assistant-librarian' => Role::FAMILY_LIBRARY,
+            'election-commissioner', 'returning-officer', 'senate-member', 'auditor',
+            'hr-officer', 'content-editor' => Role::FAMILY_GOVERNANCE,
+            'pdc-coordinator', 'trainer' => Role::FAMILY_CONTINUING_ED,
+            'system-admin', 'ict-security', 'user-support' => Role::FAMILY_SYSTEM_ADMIN,
+            default => Role::FAMILY_ACADEMIC_ADMIN,
+        };
     }
 }

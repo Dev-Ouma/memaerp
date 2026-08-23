@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @config "../../tailwind.config.js";
+@import "../../../../packages/ui/src/brand.css";
 @source "../../../../packages/ui/src/**/*.{js,ts,jsx,tsx}";
 
 /* ─── Design Tokens ──────────────────────────────────────────────────────── */

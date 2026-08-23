@@ -14,17 +14,22 @@ const nunito = Nunito({
   display: 'swap',
 });
 
+export const metadata = {
+  title: 'MEMA Student Portal — University Information System',
+  description: 'Official Mema University Student Information & Lifecycle Portal',
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${quicksand.variable} ${nunito.variable}`}>
-      <head>
-        <title>MEMA Student Portal — University Information System</title>
-        <meta
-          name="description"
-          content="Official Mema University Student Information & Lifecycle Portal"
-        />
-      </head>
-      <body className="font-sans antialiased">
+      <body
+        style={{
+          fontFamily: "var(--font-quicksand,'Quicksand'),var(--font-nunito,'Nunito'),system-ui,-apple-system,sans-serif",
+          margin: 0,
+          padding: 0,
+          WebkitFontSmoothing: 'antialiased' as const,
+        }}
+      >
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

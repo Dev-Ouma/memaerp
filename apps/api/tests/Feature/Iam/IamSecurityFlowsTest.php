@@ -81,6 +81,7 @@ final class IamSecurityFlowsTest extends TestCase
         ])->assertOk();
 
         $this->assertTrue(Hash::check('A-New-Secure-Password-2026!', $user->fresh()->password));
+        $this->assertSame('argon2id', password_get_info($user->fresh()->password)['algoName']);
         $this->assertDatabaseCount('iam.personal_access_tokens', 0);
         $this->assertDatabaseHas('iam.password_history', ['user_id' => $user->id]);
     }
@@ -125,6 +126,7 @@ final class IamSecurityFlowsTest extends TestCase
 
         $this->getJson('/api/v1/iam/users')->assertOk()->assertJsonPath('meta.total', 8);
         $this->getJson('/api/v1/iam/roles')->assertOk()->assertJsonCount(55, 'data');
+        $this->assertCount(11, DB::table('iam.roles')->distinct()->pluck('family'));
     }
 
     public function test_privileged_role_requires_mfa_when_policy_is_enabled(): void

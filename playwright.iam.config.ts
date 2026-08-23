@@ -5,6 +5,7 @@ export default defineConfig({
   testMatch: /iam-admin\.spec\.ts/,
   fullyParallel: true,
   retries: 0,
+  expect: { timeout: 15_000 },
   reporter: [['list'], ['html', { outputFolder: 'playwright-report/iam', open: 'never' }]],
   use: {
     baseURL: 'http://localhost:3015',

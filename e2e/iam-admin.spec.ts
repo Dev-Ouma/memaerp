@@ -2,6 +2,10 @@ import { expect, test } from '@playwright/test';
 import { AdminLoginPage } from './pages/admin-login-page';
 
 test.describe('MOD-00-01 IAM administration', () => {
+  test.beforeEach(async ({ page }) => {
+    page.on('pageerror', (error) => console.error(`Browser page error: ${error.message}`));
+  });
+
   test('rejects invalid credentials without disclosing account details', async ({ page }) => {
     const login = new AdminLoginPage(page);
     await login.goto();
