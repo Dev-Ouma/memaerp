@@ -9,6 +9,7 @@ import {
   Users,
   CircleDollarSign,
   Shield,
+  ShieldCheck,
 } from 'lucide-react';
 import { PortalShell } from '@mema/auth';
 import type { NavItem } from '@mema/ui';
@@ -56,6 +57,11 @@ const adminNavItems: NavItem[] = [
     href: '/security',
     icon: <Shield className="h-5 w-5" />,
     anyPermission: ['iam.role.view', 'audit.log.view'],
+  },
+  {
+    title: 'My Security',
+    href: '/account-security',
+    icon: <ShieldCheck className="h-5 w-5" />,
   },
 ];
 

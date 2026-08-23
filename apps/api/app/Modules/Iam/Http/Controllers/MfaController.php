@@ -67,7 +67,10 @@ final class MfaController extends Controller
             $request->session()->put('iam_session_version', $user->session_version);
         }
         $newToken = $user->createToken($validated['device_name'] ?? 'Web browser');
-        $this->sessions->create($user, $request, true, $newToken->accessToken->id);
+        $trackedSession = $this->sessions->create($user, $request, true, $newToken->accessToken->id);
+        if ($request->hasSession()) {
+            $request->session()->put('iam_user_session_id', $trackedSession['id']);
+        }
 
         return response()->json([
             'message' => 'Multi-factor authentication completed.',

@@ -154,7 +154,10 @@ final class AuthController extends Controller
 
         if ($request->wantsJson() || $request->is('api/*')) {
             $newToken = $user->createToken($request->input('device_name', 'default-device'));
-            $this->sessions->create($user, $request, false, $newToken->accessToken->id);
+            $trackedSession = $this->sessions->create($user, $request, false, $newToken->accessToken->id);
+            if ($request->hasSession()) {
+                $request->session()->put('iam_user_session_id', $trackedSession['id']);
+            }
 
             return response()->json([
                 'message' => 'Authenticated successfully.',

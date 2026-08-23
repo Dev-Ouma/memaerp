@@ -32,6 +32,43 @@ export class ApiError extends Error {
   }
 }
 
+export interface IamRoleSummary {
+  id: string;
+  code: string;
+  name: string;
+  family: string;
+  is_system: boolean;
+  is_mfa_mandatory: boolean;
+  default_scope_type: 'institution' | 'campus' | 'faculty' | 'department' | 'self';
+  permissions_count: number;
+  assignments_count: number;
+}
+
+export interface IamUserSummary {
+  id: string;
+  email: string;
+  username: string | null;
+  name: string | null;
+  status: 'PENDING' | 'ACTIVE' | 'LOCKED' | 'SUSPENDED' | 'DEACTIVATED';
+  is_active: boolean;
+  mfa_enabled: boolean;
+  last_login_at: string | null;
+  roles: Array<{ id: string; code: string; name: string; scope_type: string; scope_id: string | null }>;
+}
+
+export interface IamSession {
+  id: string;
+  device_name: string;
+  ip_address: string;
+  user_agent: string | null;
+  mfa_verified: boolean;
+  last_activity_at: string;
+  idle_expires_at: string;
+  absolute_expires_at: string;
+  revoked_at: string | null;
+  revoked_reason: string | null;
+}
+
 function normalizeProgramme(programme: Programme): Programme {
   return {
     ...programme,
@@ -135,14 +172,77 @@ export class MemaApiClient {
     await this.client.post('/auth/password/reset', payload);
   }
 
-  async getIamUsers(): Promise<{ data: Array<Record<string, unknown>>; meta: { total: number } }> {
+  async getIamUsers(): Promise<{ data: IamUserSummary[]; meta: { total: number } }> {
     const response = await this.client.get('/iam/users');
     return response.data;
   }
 
-  async getIamRoles(): Promise<{ data: Array<Record<string, unknown>> }> {
+  async getIamRoles(): Promise<{ data: IamRoleSummary[] }> {
     const response = await this.client.get('/iam/roles');
     return response.data;
+  }
+
+  async createIamUser(payload: {
+    given_name: string;
+    family_name: string;
+    email: string;
+    username: string;
+    identity_type: 'APPLICANT' | 'STUDENT' | 'EMPLOYEE' | 'ALUMNI';
+    identifier: string;
+    password: string;
+  }): Promise<{ message: string; data: { id: string } }> {
+    const response = await this.client.post('/iam/users', payload);
+    return response.data;
+  }
+
+  async updateIamUserStatus(userId: string, status: IamUserSummary['status'], reason: string): Promise<void> {
+    await this.client.patch(`/iam/users/${userId}/status`, { status, reason });
+  }
+
+  async assignIamRole(userId: string, payload: {
+    role_id: string;
+    scope_type: 'institution' | 'campus' | 'faculty' | 'department' | 'self';
+    scope_id?: string;
+    starts_at?: string;
+    ends_at?: string;
+    reason: string;
+  }): Promise<void> {
+    await this.client.post(`/iam/users/${userId}/roles`, payload);
+  }
+
+  async resetIamUserMfa(userId: string, reason: string): Promise<void> {
+    await this.client.post(`/iam/users/${userId}/mfa-reset`, { reason });
+  }
+
+  async changePassword(payload: { current_password: string; password: string; password_confirmation: string }): Promise<void> {
+    await this.client.post('/auth/password/change', payload);
+  }
+
+  async logoutAll(): Promise<void> {
+    await this.client.post('/auth/logout-all');
+  }
+
+  async setupMfa(): Promise<{ secret: string; provisioning_uri: string }> {
+    const response = await this.client.post('/auth/mfa/setup');
+    return response.data;
+  }
+
+  async confirmMfa(code: string): Promise<{ message: string; recovery_codes: string[] }> {
+    const response = await this.client.post('/auth/mfa/confirm', { code });
+    return response.data;
+  }
+
+  async disableMfa(password: string): Promise<void> {
+    await this.client.delete('/auth/mfa', { data: { password } });
+  }
+
+  async getSessions(): Promise<{ data: IamSession[] }> {
+    const response = await this.client.get('/auth/sessions');
+    return response.data;
+  }
+
+  async revokeSession(sessionId: string): Promise<void> {
+    await this.client.delete(`/auth/sessions/${sessionId}`);
   }
 
   async logout(): Promise<void> {

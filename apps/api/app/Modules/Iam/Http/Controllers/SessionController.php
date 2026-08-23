@@ -27,11 +27,16 @@ final class SessionController extends Controller
     {
         $user = $request->user();
         abort_unless($user instanceof User, 401);
+        $tracked = DB::table('iam.user_sessions')->where('id', $session)->where('user_id', $user->id)->first();
+        abort_if($tracked === null || $tracked->revoked_at !== null, 404);
         $changed = DB::table('iam.user_sessions')->where('id', $session)->where('user_id', $user->id)
             ->whereNull('revoked_at')->update([
                 'revoked_at' => now(), 'revoked_reason' => 'USER_REVOKED', 'updated_at' => now(),
             ]);
         abort_if($changed === 0, 404);
+        if ($tracked->token_id !== null) {
+            DB::table('iam.personal_access_tokens')->where('id', $tracked->token_id)->delete();
+        }
 
         return response()->json(['message' => 'Session revoked.']);
     }

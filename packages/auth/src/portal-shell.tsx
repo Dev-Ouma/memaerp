@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AuthUserProfile } from '@mema/types';
 import { AppShell, type NavItem } from '@mema/ui';
@@ -29,6 +29,12 @@ export function PortalShell({
 }: PortalShellProps) {
   const router = useRouter();
   const { user, logout, isLoading, can } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace('/login');
+    }
+  }, [isLoading, router, user]);
 
   if (isLoading) {
     return (

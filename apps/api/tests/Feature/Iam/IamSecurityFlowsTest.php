@@ -119,6 +119,18 @@ final class IamSecurityFlowsTest extends TestCase
         $this->assertDatabaseCount('iam.personal_access_tokens', 0);
     }
 
+    public function test_revoking_a_tracked_browser_session_invalidates_its_cookie_session(): void
+    {
+        $login = $this->postJson('/api/v1/auth/login', [
+            'login' => 'auditor@mema.ac.ke', 'password' => 'password123', 'device_name' => 'Audit laptop',
+        ])->assertOk();
+        $sessionId = (string) DB::table('iam.user_sessions')->where('device_name', 'Audit laptop')->value('id');
+        $login->assertSessionHas('iam_user_session_id', $sessionId);
+
+        $this->deleteJson("/api/v1/auth/sessions/{$sessionId}")->assertOk();
+        $this->getJson('/api/v1/auth/me')->assertUnauthorized()->assertJsonPath('error.code', 'SESSION_REVOKED');
+    }
+
     public function test_authorized_admin_can_view_live_users_and_roles(): void
     {
         $admin = User::query()->where('email', 'admin@mema.ac.ke')->firstOrFail();
