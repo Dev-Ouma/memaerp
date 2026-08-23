@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Modules\Iam\Models\User;
 use App\Modules\Iam\Database\Seeders\PermissionSeeder;
 use App\Modules\Iam\Database\Seeders\RoleSeeder;
+use App\Modules\Iam\Models\User;
 use App\Modules\Institution\Database\Seeders\InstitutionSeeder;
 use Database\Seeders\DemoUserSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 final class AuthTest extends TestCase

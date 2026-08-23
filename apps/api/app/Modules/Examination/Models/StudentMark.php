@@ -8,11 +8,13 @@ use App\Modules\Enrollment\Models\CourseEnrollment;
 use App\Modules\Iam\Models\User;
 use App\Modules\Institution\Models\Institution;
 use App\Platform\Models\BaseModel;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class StudentMark extends BaseModel
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'examination.student_marks';

@@ -50,7 +50,7 @@ return new class extends Migration
         ");
 
         // A role's permission set changed: everyone holding that role is affected.
-        DB::unprepared("
+        DB::unprepared('
             CREATE OR REPLACE FUNCTION iam.bump_access_version_for_role()
             RETURNS trigger LANGUAGE plpgsql AS $$
             DECLARE
@@ -66,7 +66,7 @@ return new class extends Migration
             CREATE TRIGGER permission_role_bump_access_version
             AFTER INSERT OR UPDATE OR DELETE ON iam.permission_role
             FOR EACH ROW EXECUTE FUNCTION iam.bump_access_version_for_role();
-        ");
+        ');
     }
 
     public function down(): void

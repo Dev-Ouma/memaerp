@@ -14,9 +14,9 @@ namespace App\Platform\Support;
 final readonly class ResolvedScopes
 {
     /**
-     * @param list<string> $campusIds
-     * @param list<string> $facultyIds
-     * @param list<string> $departmentIds
+     * @param  list<string>  $campusIds
+     * @param  list<string>  $facultyIds
+     * @param  list<string>  $departmentIds
      */
     public function __construct(
         public bool $institutionWide,

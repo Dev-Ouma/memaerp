@@ -21,8 +21,8 @@ interface AuditRecorder
     /**
      * Record a change to a model. Returns the id of the audit entry.
      *
-     * @param array<string, mixed>|null $old
-     * @param array<string, mixed>|null $new
+     * @param  array<string, mixed>|null  $old
+     * @param  array<string, mixed>|null  $new
      */
     public function record(
         string $event,
@@ -36,7 +36,7 @@ interface AuditRecorder
     /**
      * Record something that is not a model change — a sign-in, a denied permission, an export.
      *
-     * @param array<string, mixed> $details
+     * @param  array<string, mixed>  $details
      */
     public function recordEvent(
         string $event,

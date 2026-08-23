@@ -7,6 +7,8 @@ namespace App\Modules\Course\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Course\Models\Course;
 use App\Modules\Course\Models\CourseOffering;
+use App\Modules\Iam\Models\User;
+use App\Modules\Institution\Models\Department;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -46,8 +48,14 @@ final class CourseController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            abort(401);
+        }
+
         $validated = $request->validate([
-            'department_id' => ['required', 'uuid', 'exists:'.\App\Modules\Institution\Models\Department::class.',id'],
+            'department_id' => ['required', 'uuid', 'exists:'.Department::class.',id'],
             'code' => ['required', 'string', 'max:32'],
             'title' => ['required', 'string', 'max:200'],
             'description' => ['nullable', 'string'],
@@ -59,7 +67,7 @@ final class CourseController extends Controller
 
         $course = Course::query()->create(array_merge(
             $validated,
-            ['institution_id' => $request->user()->institution_id]
+            ['institution_id' => $user->institution_id]
         ));
 
         return response()->json([

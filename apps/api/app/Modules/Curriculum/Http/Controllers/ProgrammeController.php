@@ -6,6 +6,8 @@ namespace App\Modules\Curriculum\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Curriculum\Models\Programme;
+use App\Modules\Iam\Models\User;
+use App\Modules\Institution\Models\Department;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -43,8 +45,14 @@ final class ProgrammeController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            abort(401);
+        }
+
         $validated = $request->validate([
-            'department_id' => ['required', 'uuid', 'exists:'.\App\Modules\Institution\Models\Department::class.',id'],
+            'department_id' => ['required', 'uuid', 'exists:'.Department::class.',id'],
             'code' => ['required', 'string', 'max:32'],
             'name' => ['required', 'string', 'max:200'],
             'award_level' => ['required', 'string', 'in:CERTIFICATE,DIPLOMA,BACHELORS,MASTERS,DOCTORATE'],
@@ -54,7 +62,7 @@ final class ProgrammeController extends Controller
 
         $programme = Programme::query()->create(array_merge(
             $validated,
-            ['institution_id' => $request->user()->institution_id]
+            ['institution_id' => $user->institution_id]
         ));
 
         return response()->json([

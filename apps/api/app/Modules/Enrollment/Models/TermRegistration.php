@@ -8,12 +8,14 @@ use App\Modules\Institution\Models\Institution;
 use App\Modules\Institution\Models\Term;
 use App\Modules\Student\Models\Student;
 use App\Platform\Models\BaseModel;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class TermRegistration extends BaseModel
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'enrollment.term_registrations';

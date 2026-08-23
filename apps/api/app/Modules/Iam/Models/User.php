@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Modules\Iam\Models;
 
+use App\Modules\Iam\Contracts\Actor;
 use App\Modules\Institution\Models\Institution;
 use App\Modules\Student\Models\Person;
 use App\Platform\Concerns\Auditable;
 use App\Platform\Concerns\HasUuid7;
 use App\Platform\Support\Scope;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -28,12 +31,17 @@ use Laravel\Sanctum\HasApiTokens;
  * concepts is what forces institutions to create "j.doe2@" accounts and lose the thread.
  *
  * @property-read Collection<int, RoleAssignment> $roleAssignments
+ * @property CarbonImmutable|null $locked_until
+ * @property CarbonImmutable|null $last_login_at
  */
-final class User extends Authenticatable
+final class User extends Authenticatable implements Actor
 {
     use Auditable;
     use HasApiTokens;
+
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
+
     use HasUuid7;
     use Notifiable;
     use SoftDeletes;
@@ -113,6 +121,18 @@ final class User extends Authenticatable
     public function canAuthenticate(): bool
     {
         return $this->is_active && ! $this->isLocked() && $this->deleted_at === null;
+    }
+
+    public function auditLabel(): string
+    {
+        return $this->email ?? $this->username ?? (string) $this->getAuthIdentifier();
+    }
+
+    public function actorInstitutionId(): ?string
+    {
+        $institutionId = $this->getAttribute('institution_id');
+
+        return is_string($institutionId) ? $institutionId : null;
     }
 
     /** @param Builder<$this> $query */

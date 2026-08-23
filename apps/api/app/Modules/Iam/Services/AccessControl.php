@@ -89,7 +89,7 @@ final readonly class AccessControl
      *
      * @template TModel of Model
      *
-     * @param Builder<TModel> $query
+     * @param  Builder<TModel>  $query
      * @return Builder<TModel>
      */
     public function scopeQuery(Builder $query, ?User $user, string $permission): Builder
@@ -186,7 +186,7 @@ final readonly class AccessControl
      *
      * @template TModel of Model
      *
-     * @param Builder<TModel> $query
+     * @param  Builder<TModel>  $query
      * @return Builder<TModel>
      */
     private function constrainToInstitution(Builder $query, User $user, Model $model): Builder

@@ -38,8 +38,8 @@ final readonly class AuditRecorder implements AuditRecorderContract
     /**
      * Record a change to a model.
      *
-     * @param array<string, mixed>|null $old
-     * @param array<string, mixed>|null $new
+     * @param  array<string, mixed>|null  $old
+     * @param  array<string, mixed>|null  $new
      */
     public function record(
         string $event,
@@ -78,7 +78,7 @@ final readonly class AuditRecorder implements AuditRecorderContract
     /**
      * Record something that is not a model change — a sign-in, a denied permission, an export.
      *
-     * @param array<string, mixed> $details
+     * @param  array<string, mixed>  $details
      */
     public function recordEvent(
         string $event,
@@ -117,7 +117,7 @@ final readonly class AuditRecorder implements AuditRecorderContract
             'id' => $id,
             'occurred_at' => now(),
 
-            'actor_id' => $actor?->getKey(),
+            'actor_id' => $actor?->getAuthIdentifier(),
             // Denormalised so the trail stays readable after an account is renamed or removed.
             'actor_label' => $actor?->auditLabel(),
             'on_behalf_of_id' => $this->context->impersonatedUserId(),
@@ -135,8 +135,8 @@ final readonly class AuditRecorder implements AuditRecorderContract
     }
 
     /**
-     * @param array<string, mixed>|null $old
-     * @param array<string, mixed>|null $new
+     * @param  array<string, mixed>|null  $old
+     * @param  array<string, mixed>|null  $new
      * @return list<string>
      */
     private function changedColumns(?array $old, ?array $new): array

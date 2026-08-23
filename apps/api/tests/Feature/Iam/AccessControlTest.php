@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Iam;
 
+use App\Modules\Iam\Models\Permission;
 use App\Modules\Iam\Models\Role;
 use App\Modules\Iam\Models\RoleAssignment;
 use App\Modules\Iam\Services\AccessControl;
+use App\Modules\Iam\Services\ScopeResolver;
 use App\Modules\Institution\Models\Department;
 use App\Modules\Institution\Models\Faculty;
 use App\Platform\Support\Scope;
@@ -170,7 +172,7 @@ final class AccessControlTest extends TestCase
         $science = Faculty::query()->where('code', 'FSCI')->firstOrFail();
         $dean = $this->userWithRole('dean', Scope::faculty($science->id));
 
-        $resolved = app(\App\Modules\Iam\Services\ScopeResolver::class)
+        $resolved = app(ScopeResolver::class)
             ->resolve($dean, 'examination.marks.approve');
 
         $scienceDepartments = Department::query()
@@ -197,7 +199,7 @@ final class AccessControlTest extends TestCase
 
         $dean = $this->userWithRole('dean', Scope::faculty($science->id));
 
-        $resolved = app(\App\Modules\Iam\Services\ScopeResolver::class)
+        $resolved = app(ScopeResolver::class)
             ->resolve($dean, 'examination.marks.approve');
 
         $healthDepartments = Department::query()
@@ -222,7 +224,7 @@ final class AccessControlTest extends TestCase
         $cs = Department::query()->where('code', 'CS')->firstOrFail();
         $hod = $this->userWithRole('head-of-department', Scope::department($cs->id));
 
-        $resolved = app(\App\Modules\Iam\Services\ScopeResolver::class)
+        $resolved = app(ScopeResolver::class)
             ->resolve($hod, 'examination.marks.verify');
 
         $this->assertSame([$cs->id], $resolved->departmentIds);
@@ -236,7 +238,7 @@ final class AccessControlTest extends TestCase
         $cs = Department::query()->where('code', 'CS')->firstOrFail();
         $hod = $this->userWithRole('head-of-department', Scope::department($cs->id));
 
-        $resolved = app(\App\Modules\Iam\Services\ScopeResolver::class)
+        $resolved = app(ScopeResolver::class)
             ->resolve($hod, 'student.record.view');
 
         $this->assertFalse(
@@ -251,7 +253,7 @@ final class AccessControlTest extends TestCase
     {
         $user = $this->userWithNoRoles();
 
-        $resolved = app(\App\Modules\Iam\Services\ScopeResolver::class)
+        $resolved = app(ScopeResolver::class)
             ->resolve($user, 'finance.payment.reverse');
 
         // Empty must mean "denied everywhere". Callers that treat it as "unrestricted" is the
@@ -301,7 +303,7 @@ final class AccessControlTest extends TestCase
     #[Test]
     public function no_seeded_role_holds_every_permission(): void
     {
-        $total = \App\Modules\Iam\Models\Permission::query()->count();
+        $total = Permission::query()->count();
 
         foreach (Role::query()->withCount('permissions')->get() as $role) {
             $this->assertLessThan(

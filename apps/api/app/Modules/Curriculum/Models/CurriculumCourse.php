@@ -6,11 +6,13 @@ namespace App\Modules\Curriculum\Models;
 
 use App\Modules\Course\Models\Course;
 use App\Platform\Models\BaseModel;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class CurriculumCourse extends BaseModel
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'curriculum.curriculum_courses';

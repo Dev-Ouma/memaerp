@@ -6,6 +6,7 @@ namespace App\Modules\Iam\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Iam\Http\Requests\LoginRequest;
+use App\Modules\Iam\Models\RoleAssignment;
 use App\Modules\Iam\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -131,8 +132,10 @@ final class AuthController extends Controller
     {
         $user = $request->user();
 
-        if ($user && method_exists($user, 'currentAccessToken') && $user->currentAccessToken()) {
-            $user->currentAccessToken()->delete();
+        if ($user instanceof User) {
+            if ($request->bearerToken() !== null) {
+                $user->currentAccessToken()->delete();
+            }
         }
 
         Auth::guard('web')->logout();
@@ -154,10 +157,9 @@ final class AuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
-        /** @var User $user */
         $user = $request->user();
 
-        if (! $user) {
+        if (! $user instanceof User) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
@@ -166,6 +168,7 @@ final class AuthController extends Controller
         ]);
     }
 
+    /** @return array<string, mixed> */
     private function formatUserProfile(User $user): array
     {
         $user->loadMissing(['person.identities', 'institution', 'roleAssignments.role.permissions']);
@@ -179,7 +182,11 @@ final class AuthController extends Controller
         ]);
 
         $permissions = $user->roleAssignments
-            ->flatMap(fn ($ra) => $ra->role?->permissions ?? [])
+            ->flatMap(function (RoleAssignment $assignment): array {
+                $role = $assignment->role;
+
+                return $role === null ? [] : $role->permissions->all();
+            })
             ->pluck('name')
             ->unique()
             ->values();

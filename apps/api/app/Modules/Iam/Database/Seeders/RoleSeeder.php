@@ -57,7 +57,7 @@ final class RoleSeeder extends Seeder
                 $role->permissions()->sync($permissionIds->values()->all());
             }
 
-            $this->command?->info(
+            $this->command->info(
                 count(RoleCatalogue::all()).' system roles synced for '.$institution->name.'.'
             );
         });

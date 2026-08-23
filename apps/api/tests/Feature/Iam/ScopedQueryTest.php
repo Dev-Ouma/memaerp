@@ -11,6 +11,7 @@ use App\Modules\Institution\Models\Campus;
 use App\Modules\Institution\Models\Department;
 use App\Modules\Institution\Models\Faculty;
 use App\Modules\Institution\Models\Term;
+use App\Modules\Student\Models\Student;
 use App\Platform\Support\Scope;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use LogicException;
@@ -155,7 +156,7 @@ final class ScopedQueryTest extends TestCase
         $this->assertSame(
             0,
             $this->access
-                ->scopeQuery(\App\Modules\Student\Models\Student::query(), $lecturer, 'student.record.view')
+                ->scopeQuery(Student::query(), $lecturer, 'student.record.view')
                 ->count(),
         );
     }

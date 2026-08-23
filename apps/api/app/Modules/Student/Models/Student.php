@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\Student\Models;
 
 use App\Modules\Curriculum\Models\Programme;
+use App\Modules\Enrollment\Models\TermRegistration;
 use App\Modules\Institution\Models\AcademicYear;
 use App\Modules\Institution\Models\Campus;
 use App\Modules\Institution\Models\Institution;
 use App\Platform\Contracts\ScopeAware;
 use App\Platform\Models\BaseModel;
 use App\Platform\Support\Scope;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -18,7 +20,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class Student extends BaseModel implements ScopeAware
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
+
     use SoftDeletes;
 
     protected $table = 'student.students';
@@ -97,9 +101,9 @@ final class Student extends BaseModel implements ScopeAware
         return $this->belongsTo(AcademicYear::class, 'admission_year_id');
     }
 
-    /** @return HasMany<\App\Modules\Enrollment\Models\TermRegistration, $this> */
+    /** @return HasMany<TermRegistration, $this> */
     public function termRegistrations(): HasMany
     {
-        return $this->hasMany(\App\Modules\Enrollment\Models\TermRegistration::class);
+        return $this->hasMany(TermRegistration::class);
     }
 }

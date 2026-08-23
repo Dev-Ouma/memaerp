@@ -8,6 +8,7 @@ use App\Modules\Institution\Models\Institution;
 use App\Platform\Concerns\Auditable;
 use App\Platform\Models\BaseModel;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -22,10 +23,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * transcript, a payslip and an alumni record simultaneously.
  *
  * Every module that needs a human being points at this table. None of them re-implement names.
+ *
+ * @property-read string $full_name
  */
 final class Person extends BaseModel
 {
     use Auditable;
+
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'student.persons';
@@ -52,6 +57,7 @@ final class Person extends BaseModel
         ];
     }
 
+    /** @return Attribute<string, never> */
     protected function fullName(): Attribute
     {
         return Attribute::get(fn (): string => implode(' ', array_filter([

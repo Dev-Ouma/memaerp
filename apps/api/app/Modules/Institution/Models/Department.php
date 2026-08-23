@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\Modules\Institution\Models;
 
 use App\Platform\Models\BaseModel;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class Department extends BaseModel
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
+
     use SoftDeletes;
 
     protected $table = 'institution.departments';

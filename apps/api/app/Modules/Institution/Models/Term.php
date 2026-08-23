@@ -8,6 +8,7 @@ use App\Platform\Concerns\Auditable;
 use App\Platform\Models\BaseModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -15,10 +16,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * A term carries the calendar windows that gate behaviour across the system. Registration does
  * not open because an administrator flipped a switch — it opens because the term says so. Any
  * module needing "is this action allowed right now?" asks the term, never a boolean elsewhere.
+ *
+ * @property CarbonImmutable|null $registration_opens_at
+ * @property CarbonImmutable|null $registration_closes_at
+ * @property CarbonImmutable|null $add_drop_closes_at
+ * @property CarbonImmutable|null $marks_entry_opens_at
+ * @property CarbonImmutable|null $marks_entry_closes_at
  */
 final class Term extends BaseModel
 {
     use Auditable;
+
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'institution.terms';

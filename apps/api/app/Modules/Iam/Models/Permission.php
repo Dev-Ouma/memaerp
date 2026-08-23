@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Iam\Models;
 
 use App\Platform\Models\BaseModel;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  */
 final class Permission extends BaseModel
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'iam.permissions';

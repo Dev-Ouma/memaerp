@@ -8,11 +8,13 @@ use App\Modules\Institution\Models\Institution;
 use App\Modules\Institution\Models\Term;
 use App\Modules\Student\Models\Student;
 use App\Platform\Models\BaseModel;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class TermGpa extends BaseModel
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'examination.term_gpas';

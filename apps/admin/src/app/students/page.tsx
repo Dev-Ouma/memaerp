@@ -79,10 +79,11 @@ export default function AdminStudentsPage() {
         updated_at: '2026-08-20T00:00:00Z',
       },
       programme: {
+        ...mockCurrentStudent.programme,
         id: 'prog-02',
         code: 'BSC-SE',
         title: 'BSc in Software Engineering',
-      } as any,
+      },
       campus: mockCurrentStudent.campus,
     },
   ];

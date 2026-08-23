@@ -109,7 +109,7 @@ final class InstitutionSeeder extends Seeder
         $this->seedCalendar($institution);
         $this->seedGradingScale($institution);
 
-        $this->command?->info('Mema University structure seeded.');
+        $this->command->info('Mema University structure seeded.');
     }
 
     private function seedCalendar(Institution $institution): void

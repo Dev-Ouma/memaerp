@@ -10,6 +10,7 @@ use App\Platform\Models\BaseModel;
 use App\Platform\Support\Scope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -25,6 +26,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 final class RoleAssignment extends BaseModel
 {
     use Auditable;
+
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'iam.role_assignments';
@@ -87,7 +90,7 @@ final class RoleAssignment extends BaseModel
      * Only assignments in force right now. Every authorization read goes through this — an
      * expired grant must be invisible, not merely flagged.
      *
-     * @param Builder<$this> $query
+     * @param  Builder<$this>  $query
      */
     public function scopeActive(Builder $query, ?CarbonImmutable $at = null): void
     {

@@ -84,11 +84,19 @@ export default function ApplicantPortalPage() {
       </div>
 
       {/* Step Content */}
+      <div className="sr-only">
+        <h1>Mema University Online Application Wizard</h1>
+      </div>
+
       <Card className="shadow-lg border-slate-200">
         {step === 1 && (
           <div>
             <CardHeader>
-              <CardTitle>Step 1: Personal & Contact Information</CardTitle>
+              <CardTitle asChild>
+                <h2 className="text-xl font-bold text-slate-900">
+                  Step 1: Personal & Contact Information
+                </h2>
+              </CardTitle>
               <CardDescription>
                 Provide your official names as they appear on your National ID or Passport
               </CardDescription>

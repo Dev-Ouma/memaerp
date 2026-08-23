@@ -11,11 +11,13 @@ use App\Modules\Institution\Models\Term;
 use App\Platform\Contracts\ScopeAware;
 use App\Platform\Models\BaseModel;
 use App\Platform\Support\Scope;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class CourseOffering extends BaseModel implements ScopeAware
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'course.course_offerings';

@@ -7,12 +7,14 @@ namespace App\Modules\Curriculum\Models;
 use App\Modules\Institution\Models\AcademicYear;
 use App\Modules\Institution\Models\Institution;
 use App\Platform\Models\BaseModel;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class CurriculumVersion extends BaseModel
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'curriculum.curriculum_versions';

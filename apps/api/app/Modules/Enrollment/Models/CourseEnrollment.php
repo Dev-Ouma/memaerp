@@ -5,15 +5,18 @@ declare(strict_types=1);
 namespace App\Modules\Enrollment\Models;
 
 use App\Modules\Course\Models\CourseOffering;
+use App\Modules\Examination\Models\StudentMark;
 use App\Modules\Institution\Models\Institution;
 use App\Modules\Student\Models\Student;
 use App\Platform\Models\BaseModel;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 final class CourseEnrollment extends BaseModel
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'enrollment.course_enrollments';
@@ -60,9 +63,9 @@ final class CourseEnrollment extends BaseModel
         return $this->belongsTo(CourseOffering::class);
     }
 
-    /** @return HasOne<\App\Modules\Examination\Models\StudentMark, $this> */
+    /** @return HasOne<StudentMark, $this> */
     public function mark(): HasOne
     {
-        return $this->hasOne(\App\Modules\Examination\Models\StudentMark::class);
+        return $this->hasOne(StudentMark::class);
     }
 }

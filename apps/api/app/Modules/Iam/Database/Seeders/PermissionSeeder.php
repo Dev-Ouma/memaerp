@@ -42,12 +42,12 @@ final class PermissionSeeder extends Seeder
         $orphans = Permission::query()->whereNotIn('name', $catalogueNames)->pluck('name');
 
         if ($orphans->isNotEmpty()) {
-            $this->command?->warn(
+            $this->command->warn(
                 'Permissions in the database but not in the catalogue (left in place; remove deliberately): '
                 .$orphans->implode(', ')
             );
         }
 
-        $this->command?->info(count($rows).' permissions synced.');
+        $this->command->info(count($rows).' permissions synced.');
     }
 }

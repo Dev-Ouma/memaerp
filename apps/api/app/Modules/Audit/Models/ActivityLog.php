@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Audit\Models;
 
 use App\Modules\Audit\Contracts\AuditEvent;
+use App\Modules\Audit\Services\AuditRecorder;
 use App\Platform\Concerns\HasUuid7;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,7 @@ use LogicException;
 /**
  * A read model over the append-only audit trail.
  *
- * Writes do NOT go through this class — {@see \App\Modules\Audit\Services\AuditRecorder} inserts
+ * Writes do NOT go through this class — {@see AuditRecorder} inserts
  * directly, because it must participate in the caller's transaction without Eloquent events
  * firing more audit records. Update and delete are blocked here as well as in the database; the
  * database trigger is the real guarantee, this is just an earlier, clearer error.
@@ -86,7 +87,7 @@ final class ActivityLog extends Model
      * Everything that happened under one request or job — the thread that turns a list of rows
      * into a story when someone asks what actually happened.
      *
-     * @param Builder<$this> $query
+     * @param  Builder<$this>  $query
      */
     public function scopeInCorrelation(Builder $query, string $correlationId): void
     {

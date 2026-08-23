@@ -21,6 +21,19 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { mockRecentMarks, mockCurrentStudent } from '@mema/api-client';
+import type { StudentMark } from '@mema/types';
+
+type ResultMark = Partial<StudentMark> & {
+  id: string;
+  code?: string;
+  title?: string;
+  credits?: number;
+  cat?: number;
+  exam?: number;
+  total?: number;
+  grade?: string;
+  points?: number;
+};
 
 export default function StudentResultsPage() {
   const semestersData = [
@@ -154,7 +167,7 @@ export default function StudentResultsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sem.marks.map((m: any) => {
+                  {sem.marks.map((m: ResultMark) => {
                     const code = m.code || m.course_enrollment?.course_offering?.course?.code;
                     const title = m.title || m.course_enrollment?.course_offering?.course?.title;
                     const credits = m.credits || m.course_enrollment?.course_offering?.course?.credit_units || 4;

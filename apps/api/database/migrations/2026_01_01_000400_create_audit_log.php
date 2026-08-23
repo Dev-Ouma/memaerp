@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * MOD-00-04 — Append-only audit governance.
@@ -61,14 +60,14 @@ return new class extends Migration
         for ($i = -1; $i <= 12; $i++) {
             $from = $start->modify("{$i} month");
             $to = $from->modify('+1 month');
-            $name = 'activity_log_' . $from->format('Y_m');
+            $name = 'activity_log_'.$from->format('Y_m');
 
             DB::statement(sprintf(
                 'CREATE TABLE IF NOT EXISTS audit.%s PARTITION OF audit.activity_log
                  FOR VALUES FROM (%s) TO (%s)',
                 $name,
-                "'" . $from->format('Y-m-d') . "'",
-                "'" . $to->format('Y-m-d') . "'"
+                "'".$from->format('Y-m-d')."'",
+                "'".$to->format('Y-m-d')."'"
             ));
         }
 

@@ -10,13 +10,16 @@ use App\Modules\Institution\Models\Campus;
 use App\Modules\Institution\Models\Institution;
 use App\Modules\Student\Models\Person;
 use App\Platform\Models\BaseModel;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class Application extends BaseModel
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
+
     use SoftDeletes;
 
     protected $table = 'admission.applications';

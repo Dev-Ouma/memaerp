@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Iam\Support;
 
 use App\Modules\Iam\Models\Role;
+use App\Modules\Iam\Models\RoleAssignment;
 use App\Platform\Support\Scope;
 
 /**
@@ -12,7 +13,7 @@ use App\Platform\Support\Scope;
  *
  * `default_scope` is guidance for the granting UI, not enforcement — a Head of Department is
  * granted at DEPARTMENT scope because that is what the title means, but the scope actually
- * applied lives on the individual {@see \App\Modules\Iam\Models\RoleAssignment}.
+ * applied lives on the individual {@see RoleAssignment}.
  *
  * Note what is NOT here: a role holding every permission. The nearest thing, `system-admin`,
  * deliberately excludes marks approval and payroll approval. Whoever administers the system must

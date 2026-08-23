@@ -9,6 +9,7 @@ use App\Platform\Models\BaseModel;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -24,6 +25,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 final class GradingScale extends BaseModel
 {
     use Auditable;
+
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'institution.grading_scales';
@@ -50,7 +53,7 @@ final class GradingScale extends BaseModel
     /**
      * The scale in force on a given date — the only correct way to resolve a scale for a mark.
      *
-     * @param Builder<$this> $query
+     * @param  Builder<$this>  $query
      */
     public function scopeEffectiveOn(Builder $query, CarbonInterface $date): void
     {

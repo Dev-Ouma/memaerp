@@ -7,11 +7,13 @@ namespace App\Modules\Finance\Models;
 use App\Modules\Institution\Models\Institution;
 use App\Modules\Student\Models\Person;
 use App\Platform\Models\BaseModel;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class Payment extends BaseModel
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'finance.payments';

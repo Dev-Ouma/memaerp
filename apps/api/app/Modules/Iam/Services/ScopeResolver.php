@@ -66,9 +66,9 @@ final readonly class ScopeResolver
         foreach ($grants as $grant) {
             match ($grant->type) {
                 Scope::SELF => $includesSelf = true,
-                Scope::CAMPUS => $campusIds[] = $grant->id,
-                Scope::FACULTY => $facultyIds[] = $grant->id,
-                Scope::DEPARTMENT => $departmentIds[] = $grant->id,
+                Scope::CAMPUS => $grant->id === null ? null : $campusIds[] = $grant->id,
+                Scope::FACULTY => $grant->id === null ? null : $facultyIds[] = $grant->id,
+                Scope::DEPARTMENT => $grant->id === null ? null : $departmentIds[] = $grant->id,
                 default => null,
             };
         }
