@@ -35,6 +35,9 @@ final class RoleSeeder extends Seeder
                         'description' => $definition['description'],
                         'family' => $definition['family'],
                         'is_system' => true,
+                        'hierarchy_level' => self::hierarchyLevel($definition['code'], $definition['family']),
+                        'is_mfa_mandatory' => self::requiresMfa($definition['code'], $definition['family']),
+                        'default_scope_type' => $definition['default_scope'],
                     ],
                 );
 
@@ -61,5 +64,34 @@ final class RoleSeeder extends Seeder
                 count(RoleCatalogue::all()).' system roles synced for '.$institution->name.'.'
             );
         });
+    }
+
+    private static function hierarchyLevel(string $code, string $family): int
+    {
+        return match ($code) {
+            'vice-chancellor', 'vc-designee', 'system-admin' => 1,
+            'dvc-academic', 'dvc-finance', 'dvc-research', 'registrar-academic', 'bursar', 'ict-security' => 2,
+            'dean', 'campus-director', 'exam-officer', 'dean-of-students', 'librarian', 'election-commissioner', 'senate-member' => 3,
+            'head-of-department', 'deputy-dean', 'deputy-registrar', 'graduate-school-admin' => 4,
+            default => $family === Role::FAMILY_STUDENT ? 10 : 6,
+        };
+    }
+
+    private static function requiresMfa(string $code, string $family): bool
+    {
+        if ($family === Role::FAMILY_EXECUTIVE) {
+            return true;
+        }
+
+        return in_array($code, [
+            'system-admin', 'ict-security', 'registrar-academic', 'deputy-registrar',
+            'admissions-officer', 'dean', 'deputy-dean', 'head-of-department',
+            'exam-officer', 'exam-admin', 'exam-coordinator', 'exam-examiner',
+            'marks-processor', 'results-officer', 'exam-board-secretary', 'bursar',
+            'finance-officer', 'student-finance-accountant', 'payments-accountant',
+            'budget-accountant', 'budget-officer', 'finance-examiner', 'cashier',
+            'procurement-manager', 'tender-committee', 'librarian', 'election-commissioner',
+            'returning-officer', 'pdc-coordinator',
+        ], true);
     }
 }

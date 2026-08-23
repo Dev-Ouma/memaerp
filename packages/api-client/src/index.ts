@@ -81,6 +81,9 @@ export class MemaApiClient {
     this.client = axios.create({
       baseURL,
       withCredentials: true,
+      // First-party portals run on separate localhost ports/subdomains. Axios otherwise omits
+      // the X-XSRF-TOKEN header for these credentialed cross-origin requests.
+      withXSRFToken: true,
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',

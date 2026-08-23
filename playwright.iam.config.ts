@@ -1,0 +1,16 @@
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './e2e',
+  testMatch: /iam-admin\.spec\.ts/,
+  fullyParallel: true,
+  retries: 0,
+  reporter: [['list'], ['html', { outputFolder: 'playwright-report/iam', open: 'never' }]],
+  use: {
+    baseURL: 'http://localhost:3015',
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+  },
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+});

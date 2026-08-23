@@ -43,17 +43,17 @@ module.exports = {
             900: "#114528",
             950: "#072614",
           },
-          gold: {
-            50: "#FEF9EB",
-            100: "#FDF1CC",
-            200: "#FBE199",
-            300: "#F8CD5F",
-            400: "#F5BA2F",
-            500: "#E09C0D",
-            600: "#B7791F", // Warning Gold
-            700: "#925A12",
-            800: "#764713",
-            900: "#633B13",
+          accent: {
+            50: "#FEF5EC",
+            100: "#FDE8D3",
+            200: "#FBD0A7",
+            300: "#F8B275",
+            400: "#F29445",
+            500: "#E67E22", // Accent Warm Orange
+            600: "#CB6514",
+            700: "#9F4A0F",
+            800: "#803B13",
+            900: "#683313",
           },
         },
         primary: {
@@ -91,8 +91,8 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "-apple-system", "sans-serif"],
-        heading: ["var(--font-outfit)", "system-ui", "sans-serif"],
+        sans: ["var(--font-quicksand)", "var(--font-nunito)", "system-ui", "-apple-system", "sans-serif"],
+        heading: ["var(--font-quicksand)", "var(--font-nunito)", "system-ui", "sans-serif"],
       },
       boxShadow: {
         'card-subtle': '0 1px 3px 0 rgba(10, 62, 80, 0.05), 0 1px 2px -1px rgba(10, 62, 80, 0.05)',

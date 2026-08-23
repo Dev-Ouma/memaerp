@@ -9,6 +9,7 @@ use App\Modules\Iam\Models\Role;
 use App\Modules\Iam\Models\RoleAssignment;
 use App\Modules\Iam\Models\User;
 use App\Modules\Iam\Services\PasswordPolicy;
+use App\Modules\Iam\Services\SessionManager;
 use App\Modules\Student\Models\Person;
 use App\Modules\Student\Models\PersonIdentity;
 use Illuminate\Http\JsonResponse;
@@ -19,7 +20,10 @@ use Illuminate\Support\Facades\Hash;
 
 final class IamAdminController extends Controller
 {
-    public function __construct(private readonly PasswordPolicy $passwordPolicy) {}
+    public function __construct(
+        private readonly PasswordPolicy $passwordPolicy,
+        private readonly SessionManager $sessions,
+    ) {}
 
     public function users(Request $request): JsonResponse
     {
@@ -132,8 +136,31 @@ final class IamAdminController extends Controller
             'granted_by' => $actor->id, 'grant_reason' => $validated['reason'],
         ]);
         $user->increment('access_version');
+        $user->refresh();
+        $this->sessions->revokeAll($user, 'ROLE_ELEVATED');
 
         return response()->json(['message' => 'Role assigned.', 'data' => ['id' => $assignment->id]], 201);
+    }
+
+    public function resetMfa(Request $request, User $user): JsonResponse
+    {
+        Gate::authorize('iam.user.reset-password');
+        $actor = $this->actor($request);
+        abort_unless($user->institution_id === $actor->institution_id, 404);
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'min:8', 'max:500'],
+        ]);
+
+        $user->auditReason($validated['reason'])->forceFill([
+            'mfa_enabled' => false,
+            'mfa_secret' => null,
+            'mfa_recovery_codes' => null,
+        ])->save();
+        DB::table('iam.mfa_challenges')->where('user_id', $user->id)->delete();
+        $user->refresh();
+        $this->sessions->revokeAll($user, 'MFA_ADMIN_RESET');
+
+        return response()->json(['message' => 'Multi-factor authentication reset. The user must enroll again.']);
     }
 
     private function actor(Request $request): User

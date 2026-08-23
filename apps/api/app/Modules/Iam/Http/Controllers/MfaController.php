@@ -61,9 +61,10 @@ final class MfaController extends Controller
         DB::table('iam.mfa_challenges')->where('id', $challenge->id)->update([
             'consumed_at' => now(), 'updated_at' => now(),
         ]);
-        Auth::login($user);
+        Auth::guard('web')->login($user);
         if ($request->hasSession()) {
             $request->session()->regenerate();
+            $request->session()->put('iam_session_version', $user->session_version);
         }
         $newToken = $user->createToken($validated['device_name'] ?? 'Web browser');
         $this->sessions->create($user, $request, true, $newToken->accessToken->id);
@@ -79,7 +80,10 @@ final class MfaController extends Controller
     {
         $user = $this->user($request);
         $secret = $this->totp->generateSecret();
-        $request->session()->put('mfa_setup_secret', $secret);
+        // Persist the pending secret encrypted by the model cast. It is not an active factor
+        // until confirm() verifies a code, and this also supports bearer-token API clients that
+        // do not have a Laravel cookie session.
+        $user->forceFill(['mfa_secret' => $secret, 'mfa_enabled' => false])->save();
 
         return response()->json([
             'secret' => $secret,
@@ -90,12 +94,12 @@ final class MfaController extends Controller
     public function confirm(Request $request): JsonResponse
     {
         $validated = $request->validate(['code' => ['required', 'digits:6']]);
-        $secret = $request->session()->get('mfa_setup_secret');
+        $user = $this->user($request);
+        $secret = $user->mfa_secret;
         if (! is_string($secret) || ! $this->totp->verify($secret, $validated['code'])) {
             throw ValidationException::withMessages(['code' => ['The authentication code is invalid.']]);
         }
         $plainCodes = collect(range(1, 10))->map(fn (): string => strtoupper(Str::random(5).'-'.Str::random(5)))->all();
-        $user = $this->user($request);
         $user->forceFill([
             'mfa_enabled' => true,
             'mfa_secret' => $secret,
@@ -104,8 +108,9 @@ final class MfaController extends Controller
                 $plainCodes,
             ),
         ])->save();
-        $request->session()->forget('mfa_setup_secret');
-        $request->session()->regenerate();
+        if ($request->hasSession()) {
+            $request->session()->regenerate();
+        }
 
         return response()->json(['message' => 'MFA is enabled.', 'recovery_codes' => $plainCodes]);
     }
@@ -116,7 +121,9 @@ final class MfaController extends Controller
         unset($validated);
         $user = $this->user($request);
         $user->forceFill(['mfa_enabled' => false, 'mfa_secret' => null, 'mfa_recovery_codes' => null])->save();
-        $request->session()->regenerate();
+        if ($request->hasSession()) {
+            $request->session()->regenerate();
+        }
 
         return response()->json(['message' => 'MFA is disabled.']);
     }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Iam\Http\Middleware\EnsureSessionVersion;
 use App\Platform\Http\ApiErrorResponse;
 use App\Platform\Http\Middleware\EstablishRequestContext;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Prepended, so the correlation id exists before authentication runs — a failed sign-in
         // and the audit record describing it must share one.
         $middleware->prepend(EstablishRequestContext::class);
+        $middleware->alias(['iam.session' => EnsureSessionVersion::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (AuthenticationException $exception, Request $request) {

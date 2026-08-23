@@ -10,7 +10,7 @@ use Laravel\Sanctum\PersonalAccessToken as SanctumPersonalAccessToken;
  * @property string|null $institution_id
  * @property string|null $tokenable_id
  */
-final class PersonalAccessToken extends SanctumPersonalAccessToken
+class PersonalAccessToken extends SanctumPersonalAccessToken
 {
     protected $table = 'iam.personal_access_tokens';
 

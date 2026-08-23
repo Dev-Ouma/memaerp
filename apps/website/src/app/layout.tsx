@@ -1,119 +1,109 @@
 import React from 'react';
 import './globals.css';
-import { GraduationCap, ArrowRight, User, Home, Shield, FileText } from 'lucide-react';
+import { GraduationCap, Home, BookOpen, Users, Shield, FileText, ArrowRight, Phone } from 'lucide-react';
+import { Quicksand, Nunito } from 'next/font/google';
+
+const quicksand = Quicksand({
+  subsets: ['latin'],
+  variable: '--font-quicksand',
+  display: 'swap',
+});
+
+const nunito = Nunito({
+  subsets: ['latin'],
+  variable: '--font-nunito',
+  display: 'swap',
+});
 
 export const metadata = {
   title: 'Mema University — Inspiring Innovation & Academic Excellence',
   description: 'Mema University official portal, accredited programmes, admissions, and research.',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen flex flex-col bg-slate-50 text-slate-900 antialiased">
-        {/* Navigation Bar */}
-        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-8 h-20 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <a href="http://localhost:3000" className="flex items-center gap-3 group">
-                <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-mema-teal-700 to-mema-green-600 flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform duration-300">
-                  <GraduationCap className="h-7 w-7" />
-                </div>
-                <div>
-                  <span className="font-heading font-bold text-xl text-mema-teal-900 tracking-tight block">
-                    MEMA UNIVERSITY
-                  </span>
-                  <span className="text-[11px] text-mema-teal-700 block font-semibold tracking-wider uppercase">
-                    Excellence in Research & Technology
-                  </span>
-                </div>
-              </a>
-            </div>
+    <html lang="en" className={`${quicksand.variable} ${nunito.variable}`}>
+      <head>
+        <style>{`
+          .nav-link { display:inline-flex;align-items:center;gap:0.35rem;color:rgba(255,255,255,0.85);font-size:0.875rem;font-weight:600;padding:0.4rem 0.85rem;border-radius:6px;text-decoration:none;transition:all 0.2s; }
+          .nav-link:hover { background:rgba(255,255,255,0.1);color:#fff; }
+          .portal-link { display:inline-flex;align-items:center;gap:0.35rem;color:rgba(255,255,255,0.85);font-size:0.78rem;font-weight:600;padding:0.4rem 0.9rem;border-radius:6px;border:1px solid rgba(255,255,255,0.2);text-decoration:none;background:transparent;transition:all 0.2s; }
+          .portal-link:hover { background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.4);color:#fff; }
+          .apply-nav-btn { display:inline-flex;align-items:center;gap:0.4rem;color:#fff;font-size:0.85rem;font-weight:700;padding:0.5rem 1.25rem;border-radius:6px;background:#E67E22;text-decoration:none;box-shadow:0 2px 10px rgba(230,126,34,0.4);transition:all 0.2s; }
+          .apply-nav-btn:hover { background:#d0691a;transform:translateY(-1px);box-shadow:0 4px 16px rgba(230,126,34,0.5); }
+          .footer-link { font-size:0.82rem;color:rgba(255,255,255,0.6);text-decoration:none;transition:color 0.2s; }
+          .footer-link:hover { color:#fff; }
+        `}</style>
+      </head>
+      <body style={{ margin: 0, padding: 0, fontFamily: "var(--font-quicksand, 'Quicksand', 'Nunito', sans-serif)" }}>
 
-            <nav className="hidden lg:flex items-center gap-6 text-sm font-semibold text-slate-700">
-              <a href="http://localhost:3000" className="flex items-center gap-1.5 text-mema-teal-800 hover:text-mema-teal-900 transition-colors">
-                <Home className="h-4 w-4" /> Home
-              </a>
-              <a href="#programmes" className="hover:text-mema-teal-800 transition-colors">Programmes</a>
-              <a href="#admissions" className="hover:text-mema-teal-800 transition-colors">Admissions</a>
-              <a href="#campuses" className="hover:text-mema-teal-800 transition-colors">Campuses</a>
+        {/* STICKY NAVBAR */}
+        <header style={{ position:'sticky', top:0, zIndex:100, background:'rgba(10,62,80,0.97)', backdropFilter:'blur(12px)', borderBottom:'1px solid rgba(255,255,255,0.1)', boxShadow:'0 2px 20px rgba(0,0,0,0.2)' }}>
+          <div style={{ maxWidth:'1280px', margin:'0 auto', padding:'0 2rem', height:'72px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'1rem' }}>
+
+            <a href="http://localhost:3000" style={{ display:'flex', alignItems:'center', gap:'0.75rem', textDecoration:'none' }}>
+              <div style={{ width:'44px', height:'44px', borderRadius:'10px', background:'linear-gradient(135deg, #1E8449, #E67E22)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <GraduationCap style={{ width:'24px', height:'24px', color:'#fff' }} />
+              </div>
+              <div>
+                <div style={{ fontWeight:900, fontSize:'1rem', color:'#fff', letterSpacing:'0.05em', lineHeight:1.1 }}>MEMA UNIVERSITY</div>
+                <div style={{ fontWeight:600, fontSize:'0.65rem', color:'rgba(255,255,255,0.6)', textTransform:'uppercase', letterSpacing:'0.1em' }}>Excellence in Research &amp; Technology</div>
+              </div>
+            </a>
+
+            <nav style={{ display:'flex', alignItems:'center', gap:'0.25rem' }}>
+              <a href="http://localhost:3000" className="nav-link"><Home style={{ width:'0.9rem', height:'0.9rem' }} /> Home</a>
+              <a href="#programmes" className="nav-link"><BookOpen style={{ width:'0.9rem', height:'0.9rem' }} /> Programmes</a>
+              <a href="#" className="nav-link">About</a>
+              <a href="#" className="nav-link">Research</a>
             </nav>
 
-            <div className="flex items-center gap-2 sm:gap-3">
-              <a
-                href="http://localhost:3002"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-mema-teal-900 hover:text-mema-teal-700 px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-100/80 transition-all"
-              >
-                <User className="h-3.5 w-3.5 text-mema-teal-600" /> Student Portal
-              </a>
-
-              <a
-                href="http://localhost:3005"
-                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-100/80 transition-all"
-              >
-                <Shield className="h-3.5 w-3.5 text-slate-600" /> Staff Portal
-              </a>
-
-              <a
-                href="http://localhost:3001"
-                className="inline-flex items-center gap-1.5 text-xs font-bold bg-mema-green-600 hover:bg-mema-green-700 text-white px-4 py-2.5 rounded-lg shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-200"
-              >
-                <FileText className="h-3.5 w-3.5" /> Apply Now <ArrowRight className="h-3.5 w-3.5" />
-              </a>
+            <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
+              <a href="http://localhost:3002" className="portal-link"><Users style={{ width:'0.8rem', height:'0.8rem' }} /> Students</a>
+              <a href="http://localhost:3005" className="portal-link"><Shield style={{ width:'0.8rem', height:'0.8rem' }} /> Staff</a>
+              <a href="http://localhost:3001" className="apply-nav-btn"><FileText style={{ width:'0.85rem', height:'0.85rem' }} /> Apply Now <ArrowRight style={{ width:'0.85rem', height:'0.85rem' }} /></a>
             </div>
           </div>
         </header>
 
-        {/* Content */}
-        <main className="flex-1">{children}</main>
+        <main>{children}</main>
 
-        {/* Footer */}
-        <footer className="bg-mema-teal-950 text-white pt-16 pb-12 border-t border-mema-teal-900">
-          <div className="max-w-7xl mx-auto px-4 sm:px-8 grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <GraduationCap className="h-6 w-6 text-mema-green-400" />
-                <span className="font-heading font-bold text-lg">MEMA UNIVERSITY</span>
+        {/* FOOTER */}
+        <footer style={{ background:'#051c24', color:'#fff', paddingTop:'4rem', paddingBottom:'2rem', borderTop:'1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ maxWidth:'1280px', margin:'0 auto', padding:'0 2rem 3rem', display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:'3rem' }}>
+            <div>
+              <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', marginBottom:'1rem' }}>
+                <GraduationCap style={{ width:'1.5rem', height:'1.5rem', color:'#E67E22' }} />
+                <span style={{ fontWeight:900, fontSize:'1rem', letterSpacing:'0.05em' }}>MEMA UNIVERSITY</span>
               </div>
-              <p className="text-xs text-mema-teal-200 leading-relaxed">
-                Pioneering education, computer sciences, and transformative research in East Africa.
-              </p>
+              <p style={{ fontSize:'0.83rem', color:'rgba(255,255,255,0.6)', lineHeight:1.7, margin:'0 0 1rem' }}>Pioneering education, computing, and transformative research in East Africa since 2008.</p>
+              <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.8rem', color:'rgba(255,255,255,0.6)' }}>
+                <Phone style={{ width:'0.8rem', height:'0.8rem' }} /> +254 20 892 000
+              </div>
             </div>
-
             <div>
-              <h4 className="font-bold text-sm text-white mb-3">Academic Schools</h4>
-              <ul className="space-y-2 text-xs text-mema-teal-200">
-                <li>Faculty of Computing & IT</li>
-                <li>School of Business & Economics</li>
-                <li>School of Engineering</li>
-                <li>Postgraduate Studies</li>
+              <h4 style={{ fontWeight:700, fontSize:'0.85rem', color:'#fff', marginBottom:'1rem', textTransform:'uppercase', letterSpacing:'0.08em', marginTop:0 }}>Academic Schools</h4>
+              <ul style={{ listStyle:'none', padding:0, margin:0, display:'flex', flexDirection:'column', gap:'0.6rem' }}>
+                {['Faculty of Computing & IT','School of Business & Economics','School of Engineering','Postgraduate Studies'].map((s,i) => <li key={i} style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.6)' }}>{s}</li>)}
               </ul>
             </div>
-
             <div>
-              <h4 className="font-bold text-sm text-white mb-3">Quick Portals</h4>
-              <ul className="space-y-2 text-xs text-mema-teal-200">
-                <li><a href="http://localhost:3002" className="hover:underline">Student Information Portal</a></li>
-                <li><a href="http://localhost:3005" className="hover:underline">ERP Administration (Staff)</a></li>
-                <li><a href="http://localhost:3001" className="hover:underline">Applicant Online System</a></li>
-                <li><a href="#" className="hover:underline">E-Learning / Moodle Sync</a></li>
+              <h4 style={{ fontWeight:700, fontSize:'0.85rem', color:'#fff', marginBottom:'1rem', textTransform:'uppercase', letterSpacing:'0.08em', marginTop:0 }}>Quick Portals</h4>
+              <ul style={{ listStyle:'none', padding:0, margin:0, display:'flex', flexDirection:'column', gap:'0.6rem' }}>
+                <li><a href="http://localhost:3002" className="footer-link">Student Information Portal</a></li>
+                <li><a href="http://localhost:3005" className="footer-link">ERP Administration</a></li>
+                <li><a href="http://localhost:3001" className="footer-link">Applicant Online System</a></li>
               </ul>
             </div>
-
             <div>
-              <h4 className="font-bold text-sm text-white mb-3">Contact & Inquiries</h4>
-              <p className="text-xs text-mema-teal-200">Main Campus, Nairobi</p>
-              <p className="text-xs text-mema-teal-200 mt-1">Tel: +254 20 892 000</p>
-              <p className="text-xs text-mema-teal-200 mt-1">Email: info@mema.ac.ke</p>
+              <h4 style={{ fontWeight:700, fontSize:'0.85rem', color:'#fff', marginBottom:'1rem', textTransform:'uppercase', letterSpacing:'0.08em', marginTop:0 }}>Contact</h4>
+              <p style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.6)', margin:'0 0 0.4rem' }}>Main Campus, Nairobi, Kenya</p>
+              <p style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.6)', margin:'0 0 0.4rem' }}>Tel: +254 20 892 000</p>
+              <p style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.6)', margin:0 }}>info@mema.ac.ke</p>
             </div>
           </div>
-
-          <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-8 border-t border-mema-teal-900 text-center text-xs text-mema-teal-300">
-            <p>© {new Date().getFullYear()} Mema University. Commission for University Education (CUE) Accredited.</p>
+          <div style={{ maxWidth:'1280px', margin:'0 auto', padding:'2rem 2rem 0', borderTop:'1px solid rgba(255,255,255,0.08)', textAlign:'center', fontSize:'0.78rem', color:'rgba(255,255,255,0.4)' }}>
+            © {new Date().getFullYear()} Mema University. Commission for University Education (CUE) Accredited. All Rights Reserved.
           </div>
         </footer>
       </body>

@@ -15,7 +15,7 @@ Route::prefix('v1/auth')->group(function (): void {
     Route::post('/password/forgot', [PasswordController::class, 'forgot'])->middleware('throttle:5,1')->name('api.auth.password.forgot');
     Route::post('/password/reset', [PasswordController::class, 'reset'])->middleware('throttle:5,1')->name('api.auth.password.reset');
 
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'iam.session'])->group(function (): void {
         Route::post('/logout', [AuthController::class, 'logout'])->name('api.auth.logout');
         Route::post('/logout-all', [AuthController::class, 'logoutAll'])->name('api.auth.logout-all');
         Route::get('/me', [AuthController::class, 'me'])->name('api.auth.me');
@@ -28,10 +28,11 @@ Route::prefix('v1/auth')->group(function (): void {
     });
 });
 
-Route::prefix('v1/iam')->middleware('auth:sanctum')->group(function (): void {
+Route::prefix('v1/iam')->middleware(['auth:sanctum', 'iam.session'])->group(function (): void {
     Route::get('/users', [IamAdminController::class, 'users']);
     Route::post('/users', [IamAdminController::class, 'storeUser']);
     Route::patch('/users/{user}/status', [IamAdminController::class, 'updateStatus']);
+    Route::post('/users/{user}/mfa-reset', [IamAdminController::class, 'resetMfa']);
     Route::post('/users/{user}/roles', [IamAdminController::class, 'assignRole']);
     Route::get('/roles', [IamAdminController::class, 'roles']);
 });

@@ -27,7 +27,7 @@ final class RoleCatalogue
      */
     public static function all(): array
     {
-        return [
+        $roles = [
             [
                 'code' => 'system-admin',
                 'name' => 'System Administrator',
@@ -256,5 +256,74 @@ final class RoleCatalogue
                 ],
             ],
         ];
+
+        return array_merge($roles, self::extendedDirectory());
+    }
+
+    /**
+     * Enterprise directory roles required by MOD-00-01. These deliberately reuse the nearest
+     * least-privilege permission bundle; institutions may create custom roles but may not mutate
+     * these system definitions.
+     *
+     * @return list<array{code: string, name: string, family: string, description: string, default_scope: string, permissions: list<string>}>
+     */
+    private static function extendedDirectory(): array
+    {
+        $read = ['institution.structure.view', 'institution.calendar.view', 'analytics.dashboard.view'];
+        $academic = array_merge($read, ['curriculum.programme.view', 'course.catalogue.view', 'course.offering.view', 'student.record.view', 'examination.marks.view']);
+        $finance = array_merge($read, ['student.record.view', 'finance.invoice.view', 'finance.payment.view']);
+        $student = ['institution.calendar.view', 'student.record.view', 'finance.invoice.view', 'finance.payment.view', 'examination.marks.view'];
+
+        $definitions = [
+            ['vc-designee', 'Vice Chancellor Designee', Role::FAMILY_EXECUTIVE, Scope::INSTITUTION, $academic],
+            ['dvc-academic', 'Deputy Vice Chancellor - Academic & Student Affairs', Role::FAMILY_EXECUTIVE, Scope::INSTITUTION, $academic],
+            ['dvc-finance', 'Deputy Vice Chancellor - Finance & Administration', Role::FAMILY_EXECUTIVE, Scope::INSTITUTION, $finance],
+            ['dvc-research', 'Deputy Vice Chancellor - Research & Innovation', Role::FAMILY_EXECUTIVE, Scope::INSTITUTION, array_merge($read, ['research.grant.view'])],
+            ['deputy-dean', 'Deputy Dean', Role::FAMILY_ACADEMIC, Scope::FACULTY, $academic],
+            ['campus-director', 'Institute / Campus Director', Role::FAMILY_EXECUTIVE, Scope::CAMPUS, $read],
+            ['deputy-registrar', 'Deputy Academic Registrar', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, $academic],
+            ['graduate-school-admin', 'Graduate School Administrator', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, $academic],
+            ['programme-coordinator', 'Programme Coordinator', Role::FAMILY_ACADEMIC, Scope::DEPARTMENT, $academic],
+            ['academic-advisor', 'Academic Advisor / Mentor', Role::FAMILY_ACADEMIC, Scope::SELF, $academic],
+            ['trainer', 'Skills & Workshop Trainer', Role::FAMILY_ACADEMIC, Scope::SELF, ['course.catalogue.view', 'course.offering.view', 'examination.marks.enter']],
+            ['exam-admin', 'Examination Administrator', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, ['student.record.view', 'examination.marks.view', 'examination.marks.moderate']],
+            ['exam-coordinator', 'Faculty / Department Exam Coordinator', Role::FAMILY_ADMINISTRATIVE, Scope::FACULTY, ['student.record.view', 'examination.marks.view', 'examination.marks.verify']],
+            ['exam-examiner', 'Internal / External Examiner', Role::FAMILY_ACADEMIC, Scope::SELF, ['course.offering.view', 'examination.marks.view', 'examination.marks.enter']],
+            ['marks-processor', 'Central Marks Processing Officer', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, ['student.record.view', 'examination.marks.view', 'examination.marks.moderate']],
+            ['results-officer', 'Results Compilation & Transcripts Officer', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, ['student.record.view', 'examination.marks.view', 'graduation.transcript.issue']],
+            ['exam-board-secretary', 'Senate Examination Board Secretary', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, ['examination.marks.view', 'examination.marks.publish']],
+            ['student-finance-accountant', 'Student Finance Accountant', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, $finance],
+            ['payments-accountant', 'Payments & Disbursements Accountant', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, array_merge($finance, ['finance.payment.record'])],
+            ['budget-accountant', 'Budget & Planning Accountant', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, $finance],
+            ['budget-officer', 'Budget Control Officer', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, $finance],
+            ['finance-examiner', 'Internal Financial Auditor / Examiner', Role::FAMILY_SYSTEM, Scope::INSTITUTION, $finance],
+            ['cashier', 'University Cashier / Point of Sale', Role::FAMILY_ADMINISTRATIVE, Scope::CAMPUS, ['student.record.view', 'finance.invoice.view', 'finance.payment.view', 'finance.payment.record']],
+            ['procurement-manager', 'Head of Procurement & Supply Chain', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, ['procurement.requisition.approve', 'procurement.purchase-order.issue']],
+            ['procurement-officer', 'Procurement / Purchasing Officer', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, ['procurement.requisition.create']],
+            ['tender-committee', 'Tender & Evaluation Committee Member', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, ['procurement.requisition.approve']],
+            ['graduate', 'Graduating Candidate', Role::FAMILY_STUDENT, Scope::SELF, $student],
+            ['alumni', 'University Alumni', Role::FAMILY_STUDENT, Scope::SELF, ['student.record.view', 'graduation.transcript.issue']],
+            ['dean-of-students', 'Dean of Students', Role::FAMILY_EXECUTIVE, Scope::INSTITUTION, array_merge($read, ['student.record.view'])],
+            ['student-affairs-officer', 'Student Affairs & Welfare Officer', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, ['student.record.view']],
+            ['accommodation-officer', 'Hostels & Accommodation Officer', Role::FAMILY_ADMINISTRATIVE, Scope::CAMPUS, ['student.record.view']],
+            ['counselling-officer', 'Guidance & Counselling Officer', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, ['student.record.view-sensitive']],
+            ['librarian', 'University Librarian', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, $read],
+            ['assistant-librarian', 'Assistant Librarian / Cataloguer', Role::FAMILY_ADMINISTRATIVE, Scope::CAMPUS, $read],
+            ['election-commissioner', 'University Election Commissioner', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, $read],
+            ['returning-officer', 'Student Union Election Returning Officer', Role::FAMILY_ADMINISTRATIVE, Scope::CAMPUS, $read],
+            ['senate-member', 'Senate Committee Member', Role::FAMILY_EXECUTIVE, Scope::INSTITUTION, $academic],
+            ['pdc-coordinator', 'Professional Development Centre Coordinator', Role::FAMILY_ADMINISTRATIVE, Scope::INSTITUTION, $read],
+            ['ict-security', 'ICT Security Officer', Role::FAMILY_SYSTEM, Scope::INSTITUTION, ['iam.user.view', 'iam.user.suspend', 'iam.role.view', 'audit.log.view']],
+            ['user-support', 'ICT Helpdesk & User Support', Role::FAMILY_SYSTEM, Scope::INSTITUTION, ['iam.user.view', 'iam.user.reset-password']],
+        ];
+
+        return array_values(array_map(
+            static fn (array $definition): array => [
+                'code' => $definition[0], 'name' => $definition[1], 'family' => $definition[2],
+                'description' => $definition[1].' enterprise system role.',
+                'default_scope' => $definition[3], 'permissions' => $definition[4],
+            ],
+            $definitions,
+        ));
     }
 }

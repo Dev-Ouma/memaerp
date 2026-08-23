@@ -100,6 +100,10 @@ return [
             // see the whole database, not just public. Application code still
             // fully-qualifies table names - this is not a shortcut for that.
             'search_path' => env('DB_SEARCH_PATH', 'public,iam,institution,curriculum,course,admission,student,enrollment,finance,examination,graduation,hr,procurement,research,audit,cms,analytics,documents'),
+            // Eloquent serializes dates in the application timezone (UTC). Pinning the database
+            // session to UTC prevents TIMESTAMPTZ values from shifting when PostgreSQL runs in a
+            // regional server timezone, which would break lockout and expiry decisions.
+            'timezone' => env('DB_TIMEZONE', 'UTC'),
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 

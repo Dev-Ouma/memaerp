@@ -1,6 +1,19 @@
 import React from 'react';
 import './globals.css';
 import { GraduationCap } from 'lucide-react';
+import { Quicksand, Nunito } from 'next/font/google';
+
+const quicksand = Quicksand({
+  subsets: ['latin'],
+  variable: '--font-quicksand',
+  display: 'swap',
+});
+
+const nunito = Nunito({
+  subsets: ['latin'],
+  variable: '--font-nunito',
+  display: 'swap',
+});
 
 export const metadata = {
   title: 'Admissions & Online Application — Mema University',
@@ -13,8 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen flex flex-col bg-slate-50 text-slate-900 antialiased">
+    <html lang="en" className={`${quicksand.variable} ${nunito.variable}`}>
+      <body className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans antialiased">
         {/* Header */}
         <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-8 h-18 flex items-center justify-between">

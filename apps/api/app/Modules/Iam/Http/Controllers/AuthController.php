@@ -92,7 +92,19 @@ final class AuthController extends Controller
             return back()->withErrors(['login' => $msg])->withInput($request->only('login'));
         }
 
-        // 4. A configured second factor must complete before a login session is established.
+        // 4. Privileged roles may not authenticate until MFA has been enrolled.
+        $mandatoryMfa = $user->activeAssignments()
+            ->contains(fn (RoleAssignment $assignment): bool => (bool) $assignment->role?->is_mfa_mandatory);
+        if (config('iam.enforce_mandatory_mfa') && $mandatoryMfa && ! $user->mfa_enabled) {
+            $this->recordLoginAttempt($user, $login, false, 'MFA_ENROLLMENT_REQUIRED', $ip, $userAgent);
+
+            return response()->json([
+                'message' => 'Multi-factor authentication enrollment is required for this role. Contact ICT support.',
+                'code' => 'MFA_ENROLLMENT_REQUIRED',
+            ], 403);
+        }
+
+        // 5. A configured second factor must complete before a login session is established.
         if ($user->mfa_enabled) {
             $challengeToken = bin2hex(random_bytes(32));
             DB::table('iam.mfa_challenges')->insert([
@@ -114,7 +126,7 @@ final class AuthController extends Controller
             ], 202);
         }
 
-        // 5. Successful authentication - reset lockout counters & log
+        // 6. Successful authentication - reset lockout counters & log
         // Server-derived session state; see the lockout note above for why this bypasses $fillable.
         $user->forceFill([
             'failed_login_attempts' => 0,
@@ -132,11 +144,12 @@ final class AuthController extends Controller
             userAgent: $userAgent
         );
 
-        // 6. Establish session if web or issue token if API.
+        // 7. Establish session if web or issue token if API.
         Auth::login($user, (bool) $request->input('remember', false));
 
         if ($request->hasSession()) {
             $request->session()->regenerate();
+            $request->session()->put('iam_session_version', $user->session_version);
         }
 
         if ($request->wantsJson() || $request->is('api/*')) {

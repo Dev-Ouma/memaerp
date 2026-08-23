@@ -290,7 +290,7 @@ final class AccessControlTest extends TestCase
     {
         $roles = Role::query()->with('permissions')->get();
 
-        $this->assertCount(15, $roles);
+        $this->assertCount(55, $roles);
 
         foreach ($roles as $role) {
             $this->assertNotEmpty(

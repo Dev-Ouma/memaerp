@@ -102,7 +102,7 @@ final readonly class ScopeResolver
         return sprintf(
             'iam:scopes:%s:v%d:%s',
             $user->getKey(),
-            $user->access_version,
+            (int) ($user->getAttributes()['access_version'] ?? 1),
             $permission,
         );
     }

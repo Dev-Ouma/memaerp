@@ -11,6 +11,9 @@ return new class extends Migration
     {
         DB::statement("ALTER TABLE iam.users ADD COLUMN IF NOT EXISTS status varchar(24) NOT NULL DEFAULT 'ACTIVE'");
         DB::statement('ALTER TABLE iam.users ADD COLUMN IF NOT EXISTS session_version integer NOT NULL DEFAULT 1');
+        // Laravel's encrypted:array cast produces an encrypted string, so the backing column must
+        // be text. JSONB rejects the ciphertext before the model can decrypt it.
+        DB::statement('ALTER TABLE iam.users ALTER COLUMN mfa_recovery_codes TYPE text USING mfa_recovery_codes::text');
         DB::statement("ALTER TABLE iam.users ADD CONSTRAINT users_status_check CHECK (status IN ('PENDING', 'ACTIVE', 'LOCKED', 'SUSPENDED', 'DEACTIVATED'))");
 
         DB::statement('ALTER TABLE iam.roles ADD COLUMN IF NOT EXISTS hierarchy_level smallint NOT NULL DEFAULT 10');
@@ -97,6 +100,7 @@ return new class extends Migration
         DB::statement('DROP TABLE IF EXISTS iam.password_history');
         DB::statement('ALTER TABLE iam.roles DROP COLUMN IF EXISTS hierarchy_level, DROP COLUMN IF EXISTS is_mfa_mandatory, DROP COLUMN IF EXISTS default_scope_type');
         DB::statement('ALTER TABLE iam.users DROP CONSTRAINT IF EXISTS users_status_check');
+        DB::statement('ALTER TABLE iam.users ALTER COLUMN mfa_recovery_codes TYPE jsonb USING NULL::jsonb');
         DB::statement('ALTER TABLE iam.users DROP COLUMN IF EXISTS status, DROP COLUMN IF EXISTS session_version');
     }
 };

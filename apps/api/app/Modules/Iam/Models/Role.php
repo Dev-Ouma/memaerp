@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * System roles (`is_system`) are seeded and may not be edited or deleted through the UI. Without
  * that, an administrator can quietly strip permissions from the role that oversees them.
+ *
+ * @property bool $is_mfa_mandatory
  */
 final class Role extends BaseModel
 {
@@ -39,11 +41,14 @@ final class Role extends BaseModel
 
     protected $table = 'iam.roles';
 
-    protected $fillable = ['institution_id', 'code', 'name', 'description', 'family', 'is_system'];
+    protected $fillable = [
+        'institution_id', 'code', 'name', 'description', 'family', 'is_system',
+        'hierarchy_level', 'is_mfa_mandatory', 'default_scope_type',
+    ];
 
     protected function casts(): array
     {
-        return ['is_system' => 'boolean'];
+        return ['is_system' => 'boolean', 'is_mfa_mandatory' => 'boolean', 'hierarchy_level' => 'integer'];
     }
 
     /** @return BelongsTo<Institution, $this> */
