@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 final class IamAdminController extends Controller
 {
@@ -59,8 +60,8 @@ final class IamAdminController extends Controller
         $actor = $this->actor($request);
         $validated = $request->validate([
             'given_name' => ['required', 'string', 'max:100'], 'family_name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email:rfc', 'max:255', 'unique:iam.users,email'],
-            'username' => ['required', 'alpha_dash', 'max:64', 'unique:iam.users,username'],
+            'email' => ['required', 'email:rfc', 'max:255', Rule::unique(User::class, 'email')],
+            'username' => ['required', 'alpha_dash', 'max:64', Rule::unique(User::class, 'username')],
             'identity_type' => ['required', 'in:APPLICANT,STUDENT,EMPLOYEE,ALUMNI'],
             'identifier' => ['required', 'string', 'max:100'], 'password' => ['required', 'string'],
         ]);
@@ -122,7 +123,7 @@ final class IamAdminController extends Controller
         $actor = $this->actor($request);
         abort_unless($user->institution_id === $actor->institution_id, 404);
         $validated = $request->validate([
-            'role_id' => ['required', 'uuid', 'exists:iam.roles,id'],
+            'role_id' => ['required', 'uuid', Rule::exists(Role::class, 'id')],
             'scope_type' => ['required', 'in:institution,campus,faculty,department,self'],
             'scope_id' => ['nullable', 'uuid'], 'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date', 'after:starts_at'], 'reason' => ['required', 'string', 'min:8'],

@@ -130,7 +130,15 @@ export class MemaApiClient {
 
     this.client.interceptors.response.use(
       (response) => response,
-      (error) => Promise.reject(extractError(error))
+      (error) => {
+        const normalized = extractError(error);
+        const publicAuthPath = typeof window !== 'undefined' && ['/login', '/mfa', '/reset-password']
+          .some((path) => window.location.pathname === path || window.location.pathname.startsWith(`${path}/`));
+        if (normalized.status === 401 && typeof window !== 'undefined' && !publicAuthPath) {
+          window.location.assign('/login');
+        }
+        return Promise.reject(normalized);
+      }
     );
   }
 

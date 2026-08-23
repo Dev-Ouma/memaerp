@@ -1,7 +1,6 @@
 'use client';
 
 import React, { FormEvent, useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import QRCode from 'qrcode';
 import { api, ApiError, type IamSession } from '@mema/api-client';
@@ -13,7 +12,7 @@ const labelClass = 'space-y-1 text-sm font-medium text-slate-700';
 const messageFrom = (reason: unknown) => reason instanceof ApiError ? reason.message : 'The security operation could not be completed.';
 
 export default function AccountSecurityPage() {
-  const router = useRouter(); const { user, refreshSession } = useAuth();
+  const { user, refreshSession } = useAuth();
   const [sessions, setSessions] = useState<IamSession[]>([]); const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null); const [notice, setNotice] = useState<string | null>(null);
   const [setup, setSetup] = useState<{ secret: string; provisioning_uri: string; qr: string } | null>(null);
@@ -24,9 +23,9 @@ export default function AccountSecurityPage() {
   async function startMfa() { await perform(async () => { const value = await api.setupMfa(); setSetup({ ...value, qr: await QRCode.toDataURL(value.provisioning_uri, { width: 240, margin: 1 }) }); }, 'Scan the QR code, then confirm with a six-digit code.'); }
   async function confirmMfa(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); await perform(async () => { const response = await api.confirmMfa(String(form.get('code'))); setRecoveryCodes(response.recovery_codes); setSetup(null); await refreshSession(); }, 'MFA enabled. Store the recovery codes now; they will not be shown again.'); }
   async function disableMfa(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); await perform(async () => { await api.disableMfa(String(form.get('password'))); await refreshSession(); }, 'MFA disabled.'); }
-  async function changePassword(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); await perform(async () => { await api.changePassword({ current_password: String(form.get('current_password')), password: String(form.get('password')), password_confirmation: String(form.get('password_confirmation')) }); router.replace('/login'); }, 'Password changed. Sign in again.'); }
+  async function changePassword(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); await perform(async () => { await api.changePassword({ current_password: String(form.get('current_password')), password: String(form.get('password')), password_confirmation: String(form.get('password_confirmation')) }); window.location.assign('/login'); }, 'Password changed. Sign in again.'); }
   async function revokeSession(id: string) { await perform(async () => { await api.revokeSession(id); await loadSessions(); }, 'Session revoked.'); }
-  async function logoutAll() { await perform(async () => { await api.logoutAll(); router.replace('/login'); }, 'Signed out everywhere.'); }
+  async function logoutAll() { await perform(async () => { await api.logoutAll(); window.location.assign('/login'); }, 'Signed out everywhere.'); }
 
   return <div className="space-y-8"><div><h2 className="font-heading text-2xl font-bold text-slate-900">Account security</h2><p className="mt-1 text-sm text-slate-500">Control your password, authenticator, recovery codes, and signed-in devices.</p></div>
     {error && <Alert variant="destructive"><AlertTitle>Security operation failed</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}{notice && <Alert variant="success"><AlertTitle>Security updated</AlertTitle><AlertDescription>{notice}</AlertDescription></Alert>}

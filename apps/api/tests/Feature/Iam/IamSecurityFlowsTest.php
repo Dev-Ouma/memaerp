@@ -6,6 +6,7 @@ namespace Tests\Feature\Iam;
 
 use App\Modules\Iam\Database\Seeders\PermissionSeeder;
 use App\Modules\Iam\Database\Seeders\RoleSeeder;
+use App\Modules\Iam\Models\Role;
 use App\Modules\Iam\Models\User;
 use App\Modules\Iam\Services\TotpService;
 use App\Modules\Institution\Database\Seeders\InstitutionSeeder;
@@ -121,14 +122,14 @@ final class IamSecurityFlowsTest extends TestCase
 
     public function test_revoking_a_tracked_browser_session_invalidates_its_cookie_session(): void
     {
-        $login = $this->postJson('/api/v1/auth/login', [
+        $login = $this->withHeader('Origin', 'http://localhost:3005')->postJson('/api/v1/auth/login', [
             'login' => 'auditor@mema.ac.ke', 'password' => 'password123', 'device_name' => 'Audit laptop',
         ])->assertOk();
         $sessionId = (string) DB::table('iam.user_sessions')->where('device_name', 'Audit laptop')->value('id');
         $login->assertSessionHas('iam_user_session_id', $sessionId);
 
-        $this->deleteJson("/api/v1/auth/sessions/{$sessionId}")->assertOk();
-        $this->getJson('/api/v1/auth/me')->assertUnauthorized()->assertJsonPath('error.code', 'SESSION_REVOKED');
+        $this->withHeader('Origin', 'http://localhost:3005')->deleteJson("/api/v1/auth/sessions/{$sessionId}")->assertOk();
+        $this->withHeader('Origin', 'http://localhost:3005')->getJson('/api/v1/auth/me')->assertUnauthorized()->assertJsonPath('error.code', 'SESSION_REVOKED');
     }
 
     public function test_authorized_admin_can_view_live_users_and_roles(): void
@@ -139,6 +140,34 @@ final class IamSecurityFlowsTest extends TestCase
         $this->getJson('/api/v1/iam/users')->assertOk()->assertJsonPath('meta.total', 8);
         $this->getJson('/api/v1/iam/roles')->assertOk()->assertJsonCount(55, 'data');
         $this->assertCount(11, DB::table('iam.roles')->distinct()->pluck('family'));
+    }
+
+    public function test_admin_can_provision_activate_assign_role_and_reset_mfa(): void
+    {
+        $admin = User::query()->where('email', 'admin@mema.ac.ke')->firstOrFail();
+        Sanctum::actingAs($admin);
+        $created = $this->postJson('/api/v1/iam/users', [
+            'given_name' => 'End', 'family_name' => 'Toend', 'email' => 'end.toend@mema.ac.ke',
+            'username' => 'end-toend', 'identity_type' => 'EMPLOYEE', 'identifier' => 'E2E-0001',
+            'password' => 'Temporary-Password-2026!',
+        ])->assertCreated();
+        $user = User::query()->findOrFail($created->json('data.id'));
+        $this->assertSame('PENDING', $user->status);
+
+        $this->patchJson("/api/v1/iam/users/{$user->id}/status", [
+            'status' => 'ACTIVE', 'reason' => 'Identity documents verified.',
+        ])->assertOk();
+        $role = Role::query()->where('code', 'content-editor')->firstOrFail();
+        $this->postJson("/api/v1/iam/users/{$user->id}/roles", [
+            'role_id' => $role->id, 'scope_type' => 'institution',
+            'reason' => 'Approved content operations duty.',
+        ])->assertCreated();
+        $this->postJson("/api/v1/iam/users/{$user->id}/mfa-reset", [
+            'reason' => 'Helpdesk identity verification completed.',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('iam.role_assignments', ['user_id' => $user->id, 'role_id' => $role->id]);
+        $this->assertDatabaseHas('student.person_identities', ['identifier' => 'E2E-0001']);
     }
 
     public function test_privileged_role_requires_mfa_when_policy_is_enabled(): void

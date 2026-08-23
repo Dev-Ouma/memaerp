@@ -58,7 +58,7 @@ test.describe('MOD-00-01 IAM administration', () => {
     await page.getByRole('button', { name: 'Update status' }).click();
     await expect(page.getByText('Account status updated and affected sessions revoked.')).toBeVisible();
     await page.getByLabel('Role').selectOption({ label: 'Content Editor (content-editor)' });
-    await page.getByLabel('Scope').selectOption('institution');
+    await page.getByLabel('Scope', { exact: true }).selectOption('institution');
     await page.getByLabel('Grant reason').fill('Approved content operations duty.');
     await page.getByRole('button', { name: 'Assign role' }).click();
     await expect(page.getByText('Scoped role assigned; the user must sign in again.')).toBeVisible();
@@ -81,7 +81,7 @@ test.describe('MOD-00-01 IAM administration', () => {
 
   test('lists the active device and signs out everywhere', async ({ page }) => {
     await loginUser(page, 'finance@mema.ac.ke'); await page.goto('/account-security');
-    await expect(page.getByText('default-device')).toBeVisible();
+    await expect(page.getByText('Web browser')).toBeVisible();
     await page.getByRole('button', { name: 'Sign out everywhere' }).click();
     await expect(page).toHaveURL(/\/login/);
   });
@@ -89,8 +89,8 @@ test.describe('MOD-00-01 IAM administration', () => {
   test('changes the password and invalidates the current session', async ({ page }) => {
     await loginUser(page, 'registrar@mema.ac.ke'); await page.goto('/account-security');
     await page.getByLabel('Current password', { exact: true }).fill('password123');
-    await page.getByLabel('New password').fill('Registrar-New-Password-2026!');
-    await page.getByLabel('Confirm new password').fill('Registrar-New-Password-2026!');
+    await page.getByLabel('New password', { exact: true }).fill('Registrar-New-Password-2026!');
+    await page.getByLabel('Confirm new password', { exact: true }).fill('Registrar-New-Password-2026!');
     await page.getByRole('button', { name: 'Change password and sign out' }).click();
     await expect(page).toHaveURL(/\/login/);
   });

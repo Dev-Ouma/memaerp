@@ -4,6 +4,8 @@ export default defineConfig({
   testDir: './e2e',
   testMatch: /iam-admin\.spec\.ts/,
   fullyParallel: true,
+  workers: 4,
+  timeout: 60_000,
   retries: 0,
   expect: { timeout: 15_000 },
   reporter: [['list'], ['html', { outputFolder: 'playwright-report/iam', open: 'never' }]],

@@ -459,14 +459,21 @@ export default function PublicWebsiteHomePage() {
       {videoOpen && (
         <div className="video-modal-overlay" onClick={() => setVideoOpen(false)}>
           <div className="video-modal-box" onClick={e => e.stopPropagation()}>
-            <button className="video-modal-close" onClick={() => setVideoOpen(false)}><X /></button>
-            <div className="video-modal-inner">
-              <iframe
-                src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
-                title="Mema University Campus Tour"
-                allow="autoplay; fullscreen"
-                style={{ width:'100%', height:'100%', border:'none', borderRadius:'12px' }}
-              />
+            <button className="video-modal-close" onClick={() => setVideoOpen(false)} aria-label="Close video">
+              <X style={{ width: '1.75rem', height: '1.75rem' }} />
+            </button>
+            <div className="video-modal-inner" style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '14px', overflow: 'hidden', background: '#000' }}>
+              <video
+                src="/campus-tour.mp4"
+                poster="/campus-life.jpg"
+                controls
+                autoPlay
+                playsInline
+                loop
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              >
+                Your browser does not support the video tag.
+              </video>
             </div>
           </div>
         </div>

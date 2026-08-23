@@ -32,10 +32,6 @@ export function createAuthMiddleware(options: AuthMiddlewareOptions = {}) {
       return NextResponse.redirect(loginUrl);
     }
 
-    if (isPublic && hasSessionCookie && pathname === '/login') {
-      return NextResponse.redirect(new URL('/', request.url));
-    }
-
     return NextResponse.next();
   };
 }
