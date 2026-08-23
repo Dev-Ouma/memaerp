@@ -24,3 +24,4 @@ require app_path('Modules/Curriculum/Routes/api.php');
 require app_path('Modules/Course/Routes/api.php');
 require app_path('Modules/Enrollment/Routes/api.php');
 require app_path('Modules/Examination/Routes/api.php');
+require app_path('Modules/Student/Routes/api.php');

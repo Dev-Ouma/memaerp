@@ -15,6 +15,43 @@ export interface Timestamps {
 
 export type UserType = 'SUPERADMIN' | 'ADMIN' | 'LECTURER' | 'STAFF' | 'STUDENT' | 'APPLICANT';
 
+/** Profile returned by GET /api/v1/auth/me */
+export interface AuthRoleAssignment {
+  role_code: string | null;
+  role_name: string | null;
+  family: string | null;
+  scope_type: string | null;
+  scope_id: string | null;
+}
+
+export interface AuthPersonIdentity {
+  type: string;
+  identifier: string;
+  status: string;
+}
+
+export interface AuthPersonSummary {
+  id: UUID;
+  full_name: string;
+  given_name: string;
+  family_name: string;
+  primary_email: string | null;
+  identities?: AuthPersonIdentity[];
+}
+
+export interface AuthUserProfile {
+  id: UUID;
+  email: string;
+  username: string;
+  is_active: boolean;
+  must_change_password: boolean;
+  last_login_at: string | null;
+  person: AuthPersonSummary | null;
+  institution: { id: UUID; code: string; name: string } | null;
+  roles: AuthRoleAssignment[];
+  permissions: string[];
+}
+
 export interface User extends Timestamps {
   id: UUID;
   institution_id: UUID;
@@ -165,13 +202,20 @@ export interface Programme extends Timestamps {
   institution_id: UUID;
   department_id: UUID;
   code: string;
-  title: string;
+  /** API field */
+  name?: string;
+  /** Legacy mock / display alias */
+  title?: string;
   award_level: AwardLevel;
   duration_years: number;
-  credit_units_required: number;
+  /** API field */
+  total_credits_required?: number;
+  /** Legacy mock field */
+  credit_units_required?: number;
   is_active: boolean;
   department?: Department;
   curriculum_versions?: CurriculumVersion[];
+  versions?: CurriculumVersion[];
 }
 
 export interface CurriculumVersion extends Timestamps {

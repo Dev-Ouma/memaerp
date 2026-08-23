@@ -9,6 +9,7 @@ use App\Modules\Enrollment\Models\TermRegistration;
 use App\Modules\Institution\Models\AcademicYear;
 use App\Modules\Institution\Models\Campus;
 use App\Modules\Institution\Models\Institution;
+use App\Platform\Concerns\Auditable;
 use App\Platform\Contracts\ScopeAware;
 use App\Platform\Models\BaseModel;
 use App\Platform\Support\Scope;
@@ -20,6 +21,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class Student extends BaseModel implements ScopeAware
 {
+    use Auditable;
+
     /** @use HasFactory<Factory<static>> */
     use HasFactory;
 

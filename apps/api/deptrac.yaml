@@ -1,0 +1,95 @@
+deptrac:
+  paths:
+    - ./app
+  exclude_files:
+    - '#.*\.gitkeep$#'
+  layers:
+    - name: Contracts
+      collectors:
+        - type: classNameRegex
+          value: '#^App\\Modules\\[^\\]+\\Contracts\\#'
+    - name: Platform
+      collectors:
+        - type: classLike
+          value: App\\Platform\\.*
+    - name: Application
+      collectors:
+        - type: classLike
+          value: App\\Http\\.*|App\\Providers\\.*
+    - name: Admission
+      collectors:
+        - type: classNameRegex
+          value: '#^App\\Modules\\Admission\\(?!Contracts\\)#'
+    - name: Audit
+      collectors:
+        - type: classNameRegex
+          value: '#^App\\Modules\\Audit\\(?!Contracts\\)#'
+    - name: Course
+      collectors:
+        - type: classNameRegex
+          value: '#^App\\Modules\\Course\\(?!Contracts\\)#'
+    - name: Curriculum
+      collectors:
+        - type: classNameRegex
+          value: '#^App\\Modules\\Curriculum\\(?!Contracts\\)#'
+    - name: Enrollment
+      collectors:
+        - type: classNameRegex
+          value: '#^App\\Modules\\Enrollment\\(?!Contracts\\)#'
+    - name: Examination
+      collectors:
+        - type: classNameRegex
+          value: '#^App\\Modules\\Examination\\(?!Contracts\\)#'
+    - name: Finance
+      collectors:
+        - type: classNameRegex
+          value: '#^App\\Modules\\Finance\\(?!Contracts\\)#'
+    - name: Iam
+      collectors:
+        - type: classNameRegex
+          value: '#^App\\Modules\\Iam\\(?!Contracts\\)#'
+    - name: Institution
+      collectors:
+        - type: classNameRegex
+          value: '#^App\\Modules\\Institution\\(?!Contracts\\)#'
+    - name: Student
+      collectors:
+        - type: classNameRegex
+          value: '#^App\\Modules\\Student\\(?!Contracts\\)#'
+  ruleset:
+    Contracts: []
+    Platform:
+      - Contracts
+    Application:
+      - Contracts
+      - Platform
+    Admission:
+      - Contracts
+      - Platform
+    Audit:
+      - Contracts
+      - Platform
+    Course:
+      - Contracts
+      - Platform
+    Curriculum:
+      - Contracts
+      - Platform
+    Enrollment:
+      - Contracts
+      - Platform
+    Examination:
+      - Contracts
+      - Platform
+    Finance:
+      - Contracts
+      - Platform
+    Iam:
+      - Contracts
+      - Platform
+    Institution:
+      - Contracts
+      - Platform
+    Student:
+      - Contracts
+      - Platform

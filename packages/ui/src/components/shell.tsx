@@ -181,10 +181,52 @@ export function AppShell({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Universal Portal Quick Switcher Bar */}
+            <div className="hidden md:flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
+              <a
+                href="http://localhost:3000"
+                className="px-2.5 py-1.5 rounded-lg text-slate-700 hover:text-slate-900 hover:bg-white hover:shadow-xs transition-all"
+                title="University Main Website"
+              >
+                Home
+              </a>
+              <a
+                href="http://localhost:3001"
+                className="px-2.5 py-1.5 rounded-lg text-slate-700 hover:text-slate-900 hover:bg-white hover:shadow-xs transition-all"
+                title="Online Applications"
+              >
+                Apply Now
+              </a>
+              <a
+                href="http://localhost:3002"
+                className={cn(
+                  'px-2.5 py-1.5 rounded-lg transition-all',
+                  appName.toLowerCase().includes('student')
+                    ? 'bg-mema-teal-800 text-white font-bold shadow-xs'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-white'
+                )}
+                title="Student Portal"
+              >
+                Student Portal
+              </a>
+              <a
+                href="http://localhost:3005"
+                className={cn(
+                  'px-2.5 py-1.5 rounded-lg transition-all',
+                  appName.toLowerCase().includes('admin') || appName.toLowerCase().includes('erp')
+                    ? 'bg-mema-teal-800 text-white font-bold shadow-xs'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-white'
+                )}
+                title="Staff & ERP Administration Console"
+              >
+                Staff Portal
+              </a>
+            </div>
+
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Academic Year 2026/2027</span>
+              <span>2026/2027</span>
             </div>
 
             <button

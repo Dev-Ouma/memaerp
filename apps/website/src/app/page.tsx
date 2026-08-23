@@ -19,12 +19,16 @@ import {
 } from 'lucide-react';
 import { mockProgrammes } from '@mema/api-client';
 
+function programmeLabel(programme: (typeof mockProgrammes)[number]) {
+  return programme.title ?? programme.name ?? programme.code;
+}
+
 export default function PublicWebsiteHomePage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredProgrammes = mockProgrammes.filter(
     (p) =>
-      p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      programmeLabel(p).toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -132,7 +136,7 @@ export default function PublicWebsiteHomePage() {
                     {prog.duration_years} Years Full-Time
                   </Badge>
                 </div>
-                <h3 className="text-xl font-bold text-slate-900">{prog.title}</h3>
+                <h3 className="text-xl font-bold text-slate-900">{programmeLabel(prog)}</h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   Offered by the {prog.department?.name}. Covers advanced software design, distributed systems, machine learning, and hands-on practicum attachments.
                 </p>

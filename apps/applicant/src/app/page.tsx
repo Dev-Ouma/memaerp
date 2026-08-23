@@ -92,11 +92,9 @@ export default function ApplicantPortalPage() {
         {step === 1 && (
           <div>
             <CardHeader>
-              <CardTitle asChild>
-                <h2 className="text-xl font-bold text-slate-900">
-                  Step 1: Personal & Contact Information
-                </h2>
-              </CardTitle>
+              <h2 className="text-xl font-bold text-slate-900 font-heading">
+                Step 1: Personal & Contact Information
+              </h2>
               <CardDescription>
                 Provide your official names as they appear on your National ID or Passport
               </CardDescription>

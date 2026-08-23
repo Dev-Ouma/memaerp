@@ -1,6 +1,6 @@
 import React from 'react';
 import './globals.css';
-import { GraduationCap, ArrowRight, User } from 'lucide-react';
+import { GraduationCap, ArrowRight, User, Home, Shield, FileText } from 'lucide-react';
 
 export const metadata = {
   title: 'Mema University — Inspiring Innovation & Academic Excellence',
@@ -16,41 +16,53 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen flex flex-col bg-slate-50 text-slate-900 antialiased">
         {/* Navigation Bar */}
-        <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
+        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-8 h-20 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-mema-teal-700 to-mema-green-600 flex items-center justify-center text-white shadow-md">
-                <GraduationCap className="h-7 w-7" />
-              </div>
-              <div>
-                <span className="font-heading font-bold text-xl text-mema-teal-900 tracking-tight block">
-                  MEMA UNIVERSITY
-                </span>
-                <span className="text-[11px] text-mema-teal-700 block font-semibold tracking-wider uppercase">
-                  Excellence in Research & Technology
-                </span>
-              </div>
+              <a href="http://localhost:3000" className="flex items-center gap-3 group">
+                <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-mema-teal-700 to-mema-green-600 flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform duration-300">
+                  <GraduationCap className="h-7 w-7" />
+                </div>
+                <div>
+                  <span className="font-heading font-bold text-xl text-mema-teal-900 tracking-tight block">
+                    MEMA UNIVERSITY
+                  </span>
+                  <span className="text-[11px] text-mema-teal-700 block font-semibold tracking-wider uppercase">
+                    Excellence in Research & Technology
+                  </span>
+                </div>
+              </a>
             </div>
 
-            <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-700">
+            <nav className="hidden lg:flex items-center gap-6 text-sm font-semibold text-slate-700">
+              <a href="http://localhost:3000" className="flex items-center gap-1.5 text-mema-teal-800 hover:text-mema-teal-900 transition-colors">
+                <Home className="h-4 w-4" /> Home
+              </a>
               <a href="#programmes" className="hover:text-mema-teal-800 transition-colors">Programmes</a>
               <a href="#admissions" className="hover:text-mema-teal-800 transition-colors">Admissions</a>
               <a href="#campuses" className="hover:text-mema-teal-800 transition-colors">Campuses</a>
-              <a href="#research" className="hover:text-mema-teal-800 transition-colors">Research & Innovation</a>
             </nav>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <a
                 href="http://localhost:3002"
-                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-mema-teal-900 hover:text-mema-teal-700 px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-mema-teal-900 hover:text-mema-teal-700 px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-100/80 transition-all"
               >
-                <User className="h-3.5 w-3.5" /> Student Portal
+                <User className="h-3.5 w-3.5 text-mema-teal-600" /> Student Portal
               </a>
+
+              <a
+                href="http://localhost:3005"
+                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-100/80 transition-all"
+              >
+                <Shield className="h-3.5 w-3.5 text-slate-600" /> Staff Portal
+              </a>
+
               <a
                 href="http://localhost:3001"
-                className="inline-flex items-center gap-1.5 text-xs font-bold bg-mema-green-600 hover:bg-mema-green-700 text-white px-4 py-2.5 rounded-lg shadow-sm transition-all"
+                className="inline-flex items-center gap-1.5 text-xs font-bold bg-mema-green-600 hover:bg-mema-green-700 text-white px-4 py-2.5 rounded-lg shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-200"
               >
-                Apply Online <ArrowRight className="h-3.5 w-3.5" />
+                <FileText className="h-3.5 w-3.5" /> Apply Now <ArrowRight className="h-3.5 w-3.5" />
               </a>
             </div>
           </div>

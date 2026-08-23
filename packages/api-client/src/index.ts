@@ -1,21 +1,70 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
 import type {
-  User,
-  Student,
-  Programme,
+  AuthUserProfile,
   Course,
   CourseOffering,
-  TermRegistration,
-  StudentMark,
-  TermGpa,
   Invoice,
   Payment,
-  ApiResponse,
+  Programme,
+  Student,
+  StudentMark,
+  TermGpa,
+  TermRegistration,
 } from '@mema/types';
 
 export const API_BASE_URL =
   (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) ||
   'http://localhost:8000/api/v1';
+
+export function getApiRootUrl(baseUrl: string = API_BASE_URL): string {
+  return baseUrl.replace(/\/api\/v1\/?$/, '');
+}
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status?: number,
+    public code?: string,
+    public fields?: Record<string, string[]>
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+function normalizeProgramme(programme: Programme): Programme {
+  return {
+    ...programme,
+    title: programme.title ?? programme.name ?? programme.code,
+    credit_units_required:
+      programme.credit_units_required ?? programme.total_credits_required ?? 0,
+  };
+}
+
+function extractError(error: unknown): ApiError {
+  if (error instanceof ApiError) {
+    return error;
+  }
+
+  if (axios.isAxiosError(error)) {
+    const axiosError = error as AxiosError<{
+      message?: string;
+      code?: string;
+      errors?: Record<string, string[]>;
+    }>;
+    const data = axiosError.response?.data;
+    const fields = data?.errors;
+    const message =
+      (fields?.login?.[0] ?? fields?.email?.[0]) ||
+      data?.message ||
+      axiosError.message ||
+      'Request failed';
+
+    return new ApiError(message, axiosError.response?.status, data?.code, fields);
+  }
+
+  return new ApiError(error instanceof Error ? error.message : 'Request failed');
+}
 
 export class MemaApiClient {
   private client: AxiosInstance;
@@ -27,114 +76,132 @@ export class MemaApiClient {
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
       },
     });
 
     this.client.interceptors.response.use(
       (response) => response,
-      (error) => {
-        // Handle 401 unauthenticated
-        if (error.response?.status === 401 && typeof window !== 'undefined') {
-          // Custom event or redirection if needed
-        }
-        return Promise.reject(error);
-      }
+      (error) => Promise.reject(extractError(error))
     );
   }
 
-  // Auth & Session
-  async getCsrfCookie() {
-    const rootUrl = API_BASE_URL.replace('/api/v1', '');
-    return axios.get(`${rootUrl}/sanctum/csrf-cookie`, { withCredentials: true });
+  async getCsrfCookie(): Promise<void> {
+    const rootUrl = getApiRootUrl();
+    await axios.get(`${rootUrl}/sanctum/csrf-cookie`, {
+      withCredentials: true,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    });
   }
 
-  async login(credentials: { identifier: string; password: string }) {
-    await this.getCsrfCookie().catch(() => null);
-    const rootUrl = API_BASE_URL.replace('/api/v1', '');
-    return axios.post(`${rootUrl}/login`, credentials, { withCredentials: true });
+  async login(credentials: {
+    login: string;
+    password: string;
+    remember?: boolean;
+  }): Promise<void> {
+    await this.getCsrfCookie().catch(() => undefined);
+    await this.client.post('/auth/login', credentials);
   }
 
-  async logout() {
-    const rootUrl = API_BASE_URL.replace('/api/v1', '');
-    return axios.post(`${rootUrl}/logout`, {}, { withCredentials: true });
+  async logout(): Promise<void> {
+    await this.client.post('/auth/logout');
   }
 
-  async getCurrentUser(): Promise<User> {
-    const response = await this.client.get<User>('/user');
-    return response.data;
+  async getCurrentUser(): Promise<AuthUserProfile> {
+    const response = await this.client.get<{ user: AuthUserProfile }>('/auth/me');
+    return response.data.user;
   }
 
-  // Academics
   async getProgrammes(): Promise<Programme[]> {
-    const res = await this.client.get<ApiResponse<Programme[]>>('/programmes');
-    return res.data.data;
+    const res = await this.client.get<{ data: Programme[] }>('/curriculum/programmes');
+    return res.data.data.map(normalizeProgramme);
+  }
+
+  async getProgramme(id: string): Promise<Programme> {
+    const res = await this.client.get<{ data: Programme }>(`/curriculum/programmes/${id}`);
+    return normalizeProgramme(res.data.data);
   }
 
   async getCourses(): Promise<Course[]> {
-    const res = await this.client.get<ApiResponse<Course[]>>('/courses');
+    const res = await this.client.get<{ data: Course[] }>('/courses/');
     return res.data.data;
   }
 
-  async getOfferings(params?: { term_id?: string; campus_id?: string }): Promise<CourseOffering[]> {
-    const res = await this.client.get<ApiResponse<CourseOffering[]>>('/courses/offerings', { params });
+  async getOfferings(params?: {
+    term_id?: string;
+    campus_id?: string;
+  }): Promise<CourseOffering[]> {
+    const res = await this.client.get<{ data: CourseOffering[] }>(
+      '/courses/offerings/active',
+      { params }
+    );
     return res.data.data;
   }
 
-  // Student & Enrollment
+  async getStudents(): Promise<Student[]> {
+    const res = await this.client.get<{ data: Student[] }>('/enrollment/students');
+    return res.data.data;
+  }
+
   async getStudentProfile(studentId?: string): Promise<Student> {
-    const url = studentId ? `/students/${studentId}` : '/student/me';
-    const res = await this.client.get<ApiResponse<Student>>(url);
+    const url = studentId ? `/enrollment/students/${studentId}` : '/enrollment/students';
+    const res = await this.client.get<{ data: Student | Student[] }>(url);
+    const payload = res.data.data;
+    if (Array.isArray(payload)) {
+      const first = payload[0];
+      if (!first) {
+        throw new ApiError('No student profile found for the current user.', 404);
+      }
+      return first;
+    }
+    return payload;
+  }
+
+  async getTermRegistrations(): Promise<TermRegistration[]> {
+    const res = await this.client.get<{ data: TermRegistration[] }>(
+      '/enrollment/registrations'
+    );
     return res.data.data;
   }
 
-  async getTermRegistrations(studentId?: string): Promise<TermRegistration[]> {
-    const url = studentId ? `/students/${studentId}/registrations` : '/student/registrations';
-    const res = await this.client.get<ApiResponse<TermRegistration[]>>(url);
+  async getTermGpas(): Promise<TermGpa[]> {
+    const res = await this.client.get<{ data: TermGpa[] }>('/exams/term-gpas');
     return res.data.data;
   }
 
-  async registerCourses(payload: { term_id: string; offering_ids: string[] }): Promise<TermRegistration> {
-    const res = await this.client.post<ApiResponse<TermRegistration>>('/enrollment/register', payload);
-    return res.data.data;
+  /** Not yet implemented on the backend — reserved for finance module */
+  async getInvoices(_studentId?: string): Promise<Invoice[]> {
+    throw new ApiError('Finance invoice API is not available yet.', 501, 'NOT_IMPLEMENTED');
   }
 
-  // Exams & Results
-  async getStudentMarks(studentId?: string): Promise<StudentMark[]> {
-    const url = studentId ? `/students/${studentId}/marks` : '/student/marks';
-    const res = await this.client.get<ApiResponse<StudentMark[]>>(url);
-    return res.data.data;
+  /** Not yet implemented on the backend — reserved for finance module */
+  async getPayments(_studentId?: string): Promise<Payment[]> {
+    throw new ApiError('Finance payment API is not available yet.', 501, 'NOT_IMPLEMENTED');
   }
 
-  async getTermGpas(studentId?: string): Promise<TermGpa[]> {
-    const url = studentId ? `/students/${studentId}/gpas` : '/student/gpas';
-    const res = await this.client.get<ApiResponse<TermGpa[]>>(url);
-    return res.data.data;
+  /** Not yet implemented on the backend — reserved for registration module */
+  async registerCourses(_payload: {
+    term_id: string;
+    offering_ids: string[];
+  }): Promise<TermRegistration> {
+    throw new ApiError('Course registration API is not available yet.', 501, 'NOT_IMPLEMENTED');
   }
 
-  // Finance
-  async getInvoices(studentId?: string): Promise<Invoice[]> {
-    const url = studentId ? `/students/${studentId}/invoices` : '/student/invoices';
-    const res = await this.client.get<ApiResponse<Invoice[]>>(url);
-    return res.data.data;
+  /** Not yet implemented on the backend — student-scoped marks list */
+  async getStudentMarks(_studentId?: string): Promise<StudentMark[]> {
+    throw new ApiError('Student marks API is not available yet.', 501, 'NOT_IMPLEMENTED');
   }
 
-  async getPayments(studentId?: string): Promise<Payment[]> {
-    const url = studentId ? `/students/${studentId}/payments` : '/student/payments';
-    const res = await this.client.get<ApiResponse<Payment[]>>(url);
-    return res.data.data;
-  }
-
-  async initiateMpesaPayment(payload: {
+  /** Not yet implemented on the backend — reserved for finance module */
+  async initiateMpesaPayment(_payload: {
     invoice_id: string;
     phone_number: string;
     amount: number;
   }): Promise<{ status: string; checkout_request_id: string; message: string }> {
-    const res = await this.client.post('/finance/mpesa/stk-push', payload);
-    return res.data;
+    throw new ApiError('M-Pesa payment API is not available yet.', 501, 'NOT_IMPLEMENTED');
   }
 
-  // Generic request
-  async request<T = any>(config: AxiosRequestConfig): Promise<T> {
+  async request<T = unknown>(config: AxiosRequestConfig): Promise<T> {
     const res = await this.client.request<T>(config);
     return res.data;
   }
@@ -142,5 +209,4 @@ export class MemaApiClient {
 
 export const api = new MemaApiClient();
 
-// Re-export mock fixtures for demo and offline fallbacks
 export * from './mock-data';

@@ -1,6 +1,6 @@
 import React from 'react';
 import './globals.css';
-import { GraduationCap, Phone, Mail } from 'lucide-react';
+import { GraduationCap } from 'lucide-react';
 
 export const metadata = {
   title: 'Admissions & Online Application — Mema University',
@@ -19,26 +19,46 @@ export default function RootLayout({
         <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-8 h-18 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-mema-teal-700 to-mema-green-600 flex items-center justify-center text-white shadow-md">
-                <GraduationCap className="h-6 w-6" />
-              </div>
-              <div>
-                <span className="font-heading font-bold text-lg text-mema-teal-900 tracking-tight block">
-                  MEMA UNIVERSITY
-                </span>
-                <span className="text-xs text-slate-500 block font-medium">
-                  Admissions & Applicant Portal
-                </span>
-              </div>
+              <a href="http://localhost:3000" className="flex items-center gap-3 group">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-mema-teal-700 to-mema-green-600 flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform duration-300">
+                  <GraduationCap className="h-6 w-6" />
+                </div>
+                <div>
+                  <span className="font-heading font-bold text-lg text-mema-teal-900 tracking-tight block">
+                    MEMA UNIVERSITY
+                  </span>
+                  <span className="text-xs text-slate-500 block font-medium">
+                    Admissions & Applicant Portal
+                  </span>
+                </div>
+              </a>
             </div>
 
-            <div className="flex items-center gap-4 text-xs font-semibold text-slate-600">
-              <span className="hidden sm:flex items-center gap-1">
-                <Phone className="h-3.5 w-3.5 text-mema-green-600" /> +254 20 892 000
-              </span>
-              <span className="hidden sm:flex items-center gap-1">
-                <Mail className="h-3.5 w-3.5 text-mema-teal-700" /> admissions@mema.ac.ke
-              </span>
+            <div className="flex items-center gap-2 sm:gap-3 text-xs font-semibold">
+              <a
+                href="http://localhost:3000"
+                className="px-3 py-2 rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-all"
+              >
+                Home
+              </a>
+              <a
+                href="http://localhost:3001"
+                className="px-3 py-2 rounded-lg bg-mema-green-600 text-white font-bold shadow-xs"
+              >
+                Apply Now
+              </a>
+              <a
+                href="http://localhost:3002"
+                className="px-3 py-2 rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-all hidden sm:inline-flex"
+              >
+                Student Portal
+              </a>
+              <a
+                href="http://localhost:3005"
+                className="px-3 py-2 rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-all hidden sm:inline-flex"
+              >
+                Staff Portal
+              </a>
             </div>
           </div>
         </header>

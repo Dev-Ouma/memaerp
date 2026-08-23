@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 trait Auditable
 {
+    private ?string $pendingAuditReason = null;
+
     public static function bootAuditable(): void
     {
         static::created(function (self $model): void {
@@ -34,7 +36,13 @@ trait Auditable
                 return;
             }
 
-            $model->recordAudit(AuditEvent::UPDATED, $changes['old'], $changes['new']);
+            $model->recordAudit(
+                AuditEvent::UPDATED,
+                $changes['old'],
+                $changes['new'],
+                $model->pendingAuditReason,
+            );
+            $model->pendingAuditReason = null;
         });
 
         static::deleted(function (self $model): void {
@@ -81,5 +89,13 @@ trait Auditable
     public function recordAudit(string $event, ?array $old, ?array $new, ?string $reason = null): void
     {
         app(AuditRecorder::class)->record($event, $this, $old, $new, $reason);
+    }
+
+    /** Attach an operator-supplied reason to the next audited update. */
+    public function auditReason(string $reason): static
+    {
+        $this->pendingAuditReason = $reason;
+
+        return $this;
     }
 }

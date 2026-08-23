@@ -50,6 +50,9 @@ importers:
       '@mema/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@tanstack/react-query':
+        specifier: ^5.66.0
+        version: 5.101.4(react@19.2.8)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -170,6 +173,189 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  apps/lecturer:
+    dependencies:
+      '@mema/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@mema/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@mema/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@mema/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      '@mema/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@tanstack/react-query':
+        specifier: ^5.66.0
+        version: 5.101.4(react@19.2.8)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      lucide-react:
+        specifier: ^0.473.0
+        version: 0.473.0(react@19.2.8)
+      next:
+        specifier: 15.1.6
+        version: 15.1.6(@playwright/test@1.62.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.8(react@19.2.8)
+      tailwind-merge:
+        specifier: ^2.6.0
+        version: 2.6.1
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.7
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19.0.8
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.0.3
+        version: 19.2.4(@types/react@19.2.18)
+      autoprefixer:
+        specifier: ^10.4.20
+        version: 10.5.4(postcss@8.5.26)
+      postcss:
+        specifier: ^8.5.1
+        version: 8.5.26
+      tailwindcss:
+        specifier: ^3.4.17
+        version: 3.4.19
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  apps/management:
+    dependencies:
+      '@mema/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@mema/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@mema/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@mema/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      '@mema/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@tanstack/react-query':
+        specifier: ^5.66.0
+        version: 5.101.4(react@19.2.8)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      lucide-react:
+        specifier: ^0.473.0
+        version: 0.473.0(react@19.2.8)
+      next:
+        specifier: 15.1.6
+        version: 15.1.6(@playwright/test@1.62.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.8(react@19.2.8)
+      tailwind-merge:
+        specifier: ^2.6.0
+        version: 2.6.1
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.7
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19.0.8
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.0.3
+        version: 19.2.4(@types/react@19.2.18)
+      autoprefixer:
+        specifier: ^10.4.20
+        version: 10.5.4(postcss@8.5.26)
+      postcss:
+        specifier: ^8.5.1
+        version: 8.5.26
+      tailwindcss:
+        specifier: ^3.4.17
+        version: 3.4.19
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  apps/staff:
+    dependencies:
+      '@mema/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@mema/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@mema/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@mema/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      '@mema/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@tanstack/react-query':
+        specifier: ^5.66.0
+        version: 5.101.4(react@19.2.8)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      lucide-react:
+        specifier: ^0.473.0
+        version: 0.473.0(react@19.2.8)
+      next:
+        specifier: 15.1.6
+        version: 15.1.6(@playwright/test@1.62.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.8(react@19.2.8)
+      tailwind-merge:
+        specifier: ^2.6.0
+        version: 2.6.1
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.7
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19.0.8
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.0.3
+        version: 19.2.4(@types/react@19.2.18)
+      autoprefixer:
+        specifier: ^10.4.20
+        version: 10.5.4(postcss@8.5.26)
+      postcss:
+        specifier: ^8.5.1
+        version: 8.5.26
+      tailwindcss:
+        specifier: ^3.4.17
+        version: 3.4.19
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
   apps/student:
     dependencies:
       '@mema/api-client':
@@ -187,6 +373,9 @@ importers:
       '@mema/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@tanstack/react-query':
+        specifier: ^5.66.0
+        version: 5.101.4(react@19.2.8)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -310,6 +499,12 @@ importers:
       '@mema/types':
         specifier: workspace:*
         version: link:../types
+      '@mema/ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@tanstack/react-query':
+        specifier: ^5.66.0
+        version: 5.101.4(react@19.2.8)
       react:
         specifier: ^19.0.0
         version: 19.2.8
@@ -329,6 +524,12 @@ importers:
       '@types/react-dom':
         specifier: ^19.0.3
         version: 19.2.4(@types/react@19.2.18)
+      lucide-react:
+        specifier: ^0.473.0
+        version: 0.473.0(react@19.2.8)
+      next:
+        specifier: 15.1.6
+        version: 15.1.6(@playwright/test@1.62.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
@@ -1393,6 +1594,14 @@ packages:
     resolution: {integrity: sha512-yYU8cogLeSh/ms2jh8Fj7jaba/EWa7Ja6GoUqYZaraEuCI5YS6ms6ObZgjjedm+jm6XZjdNRWBpPP6Z86oOxcw==}
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
+
+  '@tanstack/query-core@5.101.4':
+    resolution: {integrity: sha512-gNwcvOJcRbLWPOLG/2OBm+zM+Yv+MKsXKEOWC57USuZDEsI71hEErQsiEGx5wX9rzWWkfwM0fVSPoiIFSsxfiw==}
+
+  '@tanstack/react-query@5.101.4':
+    resolution: {integrity: sha512-yRg2pfOCxIs4ZJW3XYYHU/WgtD04FHSnfHlpRT7h7pR77hwkdRG4wxbKe4aq6P0RvXUTBSQpQeadS1SUYUe+KA==}
+    peerDependencies:
+      react: ^18 || ^19
 
   '@turbo/darwin-64@2.10.11':
     resolution: {integrity: sha512-v3R+1R/Ysozyo+p7Ri8MCIbndOvYt3DgPFrGLhrhQHfvyvbxyH3WyJj+A/2JTNmNleuAlh3JUyCV0iSVHIONTA==}
@@ -4130,6 +4339,13 @@ snapshots:
       '@tailwindcss/oxide': 4.3.3
       tailwindcss: 4.3.3
       vite: 7.3.6(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)
+
+  '@tanstack/query-core@5.101.4': {}
+
+  '@tanstack/react-query@5.101.4(react@19.2.8)':
+    dependencies:
+      '@tanstack/query-core': 5.101.4
+      react: 19.2.8
 
   '@turbo/darwin-64@2.10.11':
     optional: true

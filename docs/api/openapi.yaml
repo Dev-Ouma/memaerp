@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Mema University ERP API
-  version: 0.1.0
+  version: 0.2.0
   description: >-
     Governance scaffold. Operation paths are generated from the Laravel implementation;
     undocumented handwritten production endpoints are prohibited.
@@ -10,7 +10,104 @@ servers:
     description: Same-origin API
 security:
   - sanctumCookie: []
-paths: {}
+paths:
+  /students:
+    get:
+      operationId: listStudents
+      summary: List student records visible to the caller
+      description: >-
+        Returns only records within the caller's institution and organizational scope.
+        Filters are allow-listed and applied after authorization scope at query level.
+      tags: [Students]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/PerPage"
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum:
+              - student_number
+              - -student_number
+              - matriculated_on
+              - -matriculated_on
+              - created_at
+              - -created_at
+            default: student_number
+        - name: filter[status]
+          in: query
+          schema: { $ref: "#/components/schemas/StudentStatus" }
+        - name: filter[academic_standing]
+          in: query
+          schema: { $ref: "#/components/schemas/AcademicStanding" }
+        - name: filter[programme_id]
+          in: query
+          schema: { type: string, format: uuid }
+        - name: filter[campus_id]
+          in: query
+          schema: { type: string, format: uuid }
+        - name: filter[department_id]
+          in: query
+          schema: { type: string, format: uuid }
+        - name: filter[search]
+          in: query
+          description: Case-insensitive student number, name, or primary email search.
+          schema: { type: string, minLength: 2, maxLength: 100 }
+      responses:
+        "200":
+          description: Scoped cursor page of students.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentCollectionResponse" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/ValidationFailed" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /students/{student}:
+    parameters:
+      - $ref: "#/components/parameters/StudentId"
+    get:
+      operationId: getStudent
+      summary: Get one visible student record
+      tags: [Students]
+      responses:
+        "200":
+          description: Student record.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentResponse" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    patch:
+      operationId: updateStudent
+      summary: Update controlled student lifecycle fields
+      description: >-
+        Requires student.record.update over the record's scope. Identity, student number,
+        programme, organizational attribution, admission year, and matriculation date cannot be
+        changed through this generic endpoint. Direct creation and deletion are intentionally
+        absent; matriculation and record retention use governed workflows.
+      tags: [Students]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateStudent" }
+            example:
+              status: ON_LEAVE
+              change_reason: Approved leave of absence for the current term.
+      responses:
+        "200":
+          description: Updated student record and audit correlation metadata.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentResponse" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/ValidationFailed" }
+        "429": { $ref: "#/components/responses/RateLimited" }
 components:
   securitySchemes:
     sanctumCookie:
@@ -47,3 +144,153 @@ components:
               type: string
         trace_id:
           type: string
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [error, meta]
+      properties:
+        error: { $ref: "#/components/schemas/Error" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    StudentStatus:
+      type: string
+      enum: [ACTIVE, ON_LEAVE, SUSPENDED, GRADUATED, WITHDRAWN]
+    AcademicStanding:
+      type: string
+      enum: [GOOD_STANDING, PROBATION, SUSPENDED, DISCONTINUED]
+    NamedReference:
+      type: object
+      additionalProperties: false
+      required: [id, code, name]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+    StudentPerson:
+      type: object
+      additionalProperties: false
+      required: [id, given_name, family_name, full_name]
+      properties:
+        id: { type: string, format: uuid }
+        given_name: { type: string }
+        middle_name: { type: [string, "null"] }
+        family_name: { type: string }
+        full_name: { type: string }
+        primary_email: { type: [string, "null"], format: email }
+        primary_phone: { type: [string, "null"] }
+    Student:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - student_number
+        - status
+        - academic_standing
+        - current_year_level
+        - current_semester
+        - matriculated_on
+        - person
+        - programme
+        - campus
+        - department
+        - admission_year
+        - created_at
+        - updated_at
+      properties:
+        id: { type: string, format: uuid }
+        student_number: { type: string }
+        status: { $ref: "#/components/schemas/StudentStatus" }
+        academic_standing: { $ref: "#/components/schemas/AcademicStanding" }
+        current_year_level: { type: integer, minimum: 1 }
+        current_semester: { type: integer, minimum: 1 }
+        matriculated_on: { type: string, format: date }
+        person: { $ref: "#/components/schemas/StudentPerson" }
+        programme: { $ref: "#/components/schemas/NamedReference" }
+        campus: { $ref: "#/components/schemas/NamedReference" }
+        department: { $ref: "#/components/schemas/NamedReference" }
+        admission_year: { $ref: "#/components/schemas/NamedReference" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    UpdateStudent:
+      type: object
+      additionalProperties: false
+      required: [change_reason]
+      minProperties: 2
+      properties:
+        current_year_level: { type: integer, minimum: 1, maximum: 20 }
+        current_semester: { type: integer, minimum: 1, maximum: 12 }
+        academic_standing: { $ref: "#/components/schemas/AcademicStanding" }
+        status: { $ref: "#/components/schemas/StudentStatus" }
+        change_reason: { type: string, minLength: 10, maxLength: 500 }
+    CursorPage:
+      type: object
+      additionalProperties: false
+      required: [next_cursor, per_page, has_more]
+      properties:
+        next_cursor: { type: [string, "null"] }
+        per_page: { type: integer, minimum: 1, maximum: 100 }
+        has_more: { type: boolean }
+    StudentResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/Student" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    StudentCollectionResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Student" }
+        meta:
+          allOf:
+            - $ref: "#/components/schemas/ResponseMeta"
+            - type: object
+              required: [pagination]
+              properties:
+                pagination: { $ref: "#/components/schemas/CursorPage" }
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string, maxLength: 2048 }
+    PerPage:
+      name: per_page
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+    StudentId:
+      name: student
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    Unauthenticated:
+      description: Authentication is required.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Forbidden:
+      description: The caller lacks the required permission.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    NotFound:
+      description: The record does not exist or is outside the caller's scope.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    ValidationFailed:
+      description: Request validation failed.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    RateLimited:
+      description: Rate limit exceeded.
+      headers:
+        Retry-After:
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
