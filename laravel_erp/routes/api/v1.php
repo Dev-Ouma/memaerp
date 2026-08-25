@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Admission\Http\Controllers\AdminSetupApiController;
 use App\Modules\Admission\Http\Controllers\ApplicantApplicationController;
 use App\Modules\Admission\Http\Controllers\AuthController;
 use App\Modules\Admission\Http\Controllers\PublicProgrammeController;
@@ -32,4 +33,11 @@ Route::middleware('api.token')->group(function (): void {
     Route::patch('/applications/{application}', [ApplicantApplicationController::class, 'update'])->middleware('idempotent');
     Route::post('/applications/{application}/payment-attempts', [ApplicantApplicationController::class, 'payment'])->middleware('idempotent:required');
     Route::post('/applications/{application}/submit', [ApplicantApplicationController::class, 'submit'])->middleware('idempotent:required');
+});
+
+Route::prefix('admin/setups')->middleware(['api.token', 'permission:platform.system.configure'])->group(function (): void {
+    Route::get('/', [AdminSetupApiController::class, 'index']);
+    Route::get('/{setup}', [AdminSetupApiController::class, 'show']);
+    Route::post('/{setup}/versions', [AdminSetupApiController::class, 'store'])->middleware('idempotent');
+    Route::post('/versions/{version}/publish', [AdminSetupApiController::class, 'publish'])->middleware('idempotent:required');
 });

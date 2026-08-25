@@ -11,3 +11,7 @@ The schema and platform foundation are broader than the currently published API.
 - The OpenAPI document currently covers the delivered v1 slice and must grow with each published operation.
 
 No missing endpoint silently simulates a production provider or grants a privileged action.
+
+## Admin Setups integration
+
+The central catalogue, lifecycle, database, UI and API are implemented. Payment fee/channel initiation is wired end to end. The remaining operational services listed above still need to replace their legacy relational or hard-coded inputs with `SetupResolver`, and each must record an `admin_setup_usages` reference before it can be considered setup-authoritative.

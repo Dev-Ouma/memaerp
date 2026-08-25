@@ -60,6 +60,19 @@ final class AdmissionApiTest extends TestCase
         $this->assertDatabaseHas('outbox_events', ['event_name' => 'application.submitted']);
     }
 
+    public function test_payment_initiation_uses_and_retains_the_active_admin_setup_versions(): void
+    {
+        $registration = $this->postJson('/api/v1/auth/register', $this->registration($this->offering()))->assertCreated();
+        $application = AdmissionApplication::query()->firstOrFail();
+        $response = $this->postJson("/api/v1/applications/{$application->id}/payment-attempts", ['channel' => 'MPESA_STK'], [
+            'Authorization' => 'Bearer '.$registration->json('data.access_token'), 'Idempotency-Key' => (string) Str::uuid(),
+        ])->assertAccepted()->assertJsonPath('data.amount', 1000)->assertJsonPath('data.currency', 'KES');
+
+        $this->assertNotEmpty($response->json('data.setup_version_id'));
+        $this->assertDatabaseCount('admin_setup_usages', 2);
+        $this->assertDatabaseHas('admission_applications', ['id' => $application->id, 'fee_amount_expected' => 1000, 'fee_currency' => 'KES']);
+    }
+
     /** @return array<string, mixed> */
     private function registration(ProgrammeOffering $offering): array
     {

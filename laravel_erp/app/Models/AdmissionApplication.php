@@ -61,16 +61,19 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
     public function isPaid(): bool
     {
+        $expectedAmount = (int) ($this->fee_amount_expected ?? 1000);
+        $expectedCurrency = $this->fee_currency ?? 'KES';
+
         return $this->paymentTransactions()
             ->where('is_authoritative_fee', true)
             ->whereIn('status', ['PAID', 'WAIVED'])
-            ->where('amount', 1000)
-            ->where('currency', 'KES')
+            ->where('amount', $expectedAmount)
+            ->where('currency', $expectedCurrency)
             ->exists()
             || $this->payments()
                 ->whereIn('status', ['PAID', 'WAIVED'])
-                ->where('amount', 1000)
-                ->where('currency', 'KES')
+                ->where('amount', $expectedAmount)
+                ->where('currency', $expectedCurrency)
                 ->exists();
     }
 }

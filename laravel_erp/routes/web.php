@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AcademicController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AdminSetupController;
 use App\Http\Controllers\AdmissionAdminController;
 use App\Http\Controllers\ApplicantAdmissionController;
 use App\Http\Controllers\AuthController;
@@ -31,6 +32,11 @@ Route::get('/apply/{offering}', [PublicAdmissionController::class, 'apply'])->na
 Route::post('/apply/{offering}', [PublicAdmissionController::class, 'register'])->middleware('throttle:10,1')->name('admissions.register');
 Route::get('/verify/admission/{token}', [PublicAdmissionController::class, 'verify'])->middleware('throttle:30,1')->name('admissions.verify');
 Route::middleware('auth')->group(function (): void {
+    Route::get('/admissions/setups', [AdminSetupController::class, 'index'])->name('admissions.setups.index');
+    Route::get('/admissions/setups/{setup}', [AdminSetupController::class, 'show'])->name('admissions.setups.show');
+    Route::post('/admissions/setups/{setup}/versions', [AdminSetupController::class, 'store'])->name('admissions.setups.store');
+    Route::post('/admissions/setups/versions/{version}/publish', [AdminSetupController::class, 'publish'])->name('admissions.setups.publish');
+    Route::patch('/admissions/setups/versions/{version}/status', [AdminSetupController::class, 'status'])->name('admissions.setups.status');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/account/{section}', [AccountController::class, 'show'])->name('account.show');
     Route::put('/account/preferences', [AccountController::class, 'preferences'])->name('account.preferences');
@@ -51,7 +57,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/admissions', [AdmissionAdminController::class, 'index'])->name('admissions.index');
     Route::get('/admissions/analytics', [AdmissionAdminController::class, 'analytics'])->name('admissions.analytics');
     Route::get('/admissions/reports', [AdmissionAdminController::class, 'reports'])->name('admissions.reports');
-    foreach (['dashboard', 'applications', 'work-queues', 'document-verification', 'reviews', 'approvals', 'shortlists', 'offers', 'waitlists', 'admission-rolls', 'student-conversions', 'payments', 'payment-reconciliation', 'audit', 'setups'] as $workspace) {
+    foreach (['dashboard', 'applications', 'work-queues', 'document-verification', 'reviews', 'approvals', 'shortlists', 'offers', 'waitlists', 'admission-rolls', 'student-conversions', 'payments', 'payment-reconciliation', 'audit'] as $workspace) {
         Route::get('/admissions/'.$workspace, [AdmissionAdminController::class, 'index']);
     }
     Route::get('/admissions/reports/applications.csv', [AdmissionAdminController::class, 'exportApplications'])->name('admissions.reports.applications');

@@ -7,6 +7,7 @@ namespace App\Modules\Admission\Http\Controllers;
 use App\Models\AdmissionApplication;
 use App\Models\ApplicationPaymentAttempt;
 use App\Models\ProgrammeOffering;
+use App\Modules\Admission\Setups\SetupResolver;
 use App\Modules\Platform\Api\ApiException;
 use App\Modules\Platform\Api\ApiResponse;
 use App\Modules\Platform\Audit\AuditRecorder;
@@ -71,23 +72,32 @@ final class ApplicantApplicationController
         return ApiResponse::data($this->serialize($application->refresh()));
     }
 
-    public function payment(Request $request, AdmissionApplication $application, AuditRecorder $audit, OutboxPublisher $outbox): JsonResponse
+    public function payment(Request $request, AdmissionApplication $application, AuditRecorder $audit, OutboxPublisher $outbox, SetupResolver $setups): JsonResponse
     {
         $this->assertOwner($request, $application);
-        $data = $request->validate(['channel' => ['required', 'in:MPESA_STK,MPESA_C2B,CARD,BANK,CASHIER'], 'payer_reference' => ['nullable', 'string', 'max:80']]);
-        $attempt = DB::transaction(function () use ($application, $data, $request, $audit, $outbox): ApplicationPaymentAttempt {
+        $data = $request->validate(['channel' => ['required', 'string', 'max:40'], 'payer_reference' => ['nullable', 'string', 'max:80']]);
+        $feeSetup = $setups->active('payment.application_fee');
+        $channelSetup = $setups->active('payment.channels_providers');
+        if (! in_array($data['channel'], $channelSetup->configuration['channels'] ?? [], true)) {
+            throw ApiException::unprocessable('PAYMENT_CHANNEL_UNAVAILABLE', 'That payment channel is not active.');
+        }
+        $amount = (int) $feeSetup->configuration['amount'];
+        $currency = (string) $feeSetup->configuration['currency'];
+        $attempt = DB::transaction(function () use ($application, $data, $request, $audit, $outbox, $setups, $feeSetup, $channelSetup, $amount, $currency): ApplicationPaymentAttempt {
             $attempt = new ApplicationPaymentAttempt;
             $attempt->forceFill(['admission_application_id' => $application->id, 'reference' => 'PAY-'.strtoupper(Str::random(12)), 'channel' => $data['channel'],
-                'provider' => $data['channel'], 'amount' => 1000, 'expected_amount' => 1000, 'currency' => 'KES', 'status' => 'INITIATED',
+                'provider' => $data['channel'], 'amount' => $amount, 'expected_amount' => $amount, 'currency' => $currency, 'status' => 'INITIATED',
                 'idempotency_key' => (string) $request->header('Idempotency-Key'), 'expires_at' => now()->addMinutes(15), 'created_by' => $request->user()->id])->save();
-            $application->forceFill(['payment_status' => 'INITIATED'])->save();
-            $audit->record('application_fee.initiated', ['subject_type' => ApplicationPaymentAttempt::class, 'subject_id' => $attempt->id, 'after' => ['amount' => 1000, 'currency' => 'KES', 'channel' => $data['channel']]]);
+            $application->forceFill(['payment_status' => 'INITIATED', 'fee_amount_expected' => $amount, 'fee_currency' => $currency])->save();
+            $setups->use('payment.application_fee', ApplicationPaymentAttempt::class, (string) $attempt->id, 'fee_calculation');
+            $setups->use('payment.channels_providers', ApplicationPaymentAttempt::class, (string) $attempt->id, 'channel_selection');
+            $audit->record('application_fee.initiated', ['subject_type' => ApplicationPaymentAttempt::class, 'subject_id' => $attempt->id, 'after' => ['amount' => $amount, 'currency' => $currency, 'channel' => $data['channel'], 'fee_setup_version_id' => $feeSetup->id, 'channel_setup_version_id' => $channelSetup->id]]);
             $outbox->publish('application_fee.initiated', 'application', (string) $application->id, ['attempt_id' => $attempt->id]);
 
             return $attempt;
         });
 
-        return ApiResponse::accepted(['id' => $attempt->id, 'reference' => $attempt->reference, 'status' => $attempt->status, 'amount' => 1000, 'currency' => 'KES', 'expires_at' => $attempt->expires_at?->toIso8601String()]);
+        return ApiResponse::accepted(['id' => $attempt->id, 'reference' => $attempt->reference, 'status' => $attempt->status, 'amount' => $amount, 'currency' => $currency, 'setup_version_id' => $feeSetup->id, 'expires_at' => $attempt->expires_at?->toIso8601String()]);
     }
 
     public function submit(Request $request, AdmissionApplication $application, AdmissionWorkflow $workflow, OutboxPublisher $outbox): JsonResponse

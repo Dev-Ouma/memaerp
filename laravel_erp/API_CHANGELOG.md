@@ -10,3 +10,10 @@
 - Submission remains server-gated by complete declarations, required evidence and an authoritative KES 1,000 `PAID`/authorised `WAIVED` state.
 
 This is additive. No prior `/api/v1` admission operation was removed or changed.
+
+## 2026-08-25 — Admin Setups foundation
+
+- Added 47 authoritative setup definitions with effective-dated immutable versions.
+- Added secure setup catalogue, detail, version creation and publication endpoints.
+- Added cache invalidation, overlap validation, audit events and historical usage references.
+- Payment initiation now consumes versioned application-fee and payment-channel setup records.

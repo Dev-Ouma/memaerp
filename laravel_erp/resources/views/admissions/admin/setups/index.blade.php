@@ -1,0 +1,7 @@
+@extends('layouts.app')
+@section('title','Admin Setups') @section('section','Admissions · Admin Setups')
+@section('content')
+<div class="page-head"><div><div class="eyebrow">Authoritative configuration</div><h1 class="heading">Admin Setups</h1><p class="sub">Effective-dated, versioned rules used by every admission transaction.</p></div></div>
+<section class="panel"><div class="panel-head"><h2>Configuration catalogue</h2><form style="display:flex;gap:8px;flex-wrap:wrap"><input name="q" value="{{ request('q') }}" placeholder="Search setups"><select name="category"><option value="">All sections</option>@foreach($categories as $category)<option @selected(request('category')===$category)>{{ $category }}</option>@endforeach</select><button class="btn">Filter</button></form></div>
+<div class="table-wrap"><table><thead><tr><th>Setup</th><th>Section</th><th>Operational consumer</th><th>Latest version</th><th>Status</th><th></th></tr></thead><tbody>@foreach($definitions as $definition) @php($latest=$definition->versions->first())<tr><td><strong>{{ $definition->name }}</strong><br><small>{{ $definition->setup_key }}</small></td><td>{{ $definition->category }}</td><td>{{ $definition->consumer }}</td><td>{{ $latest ? 'v'.$latest->version : 'Not configured' }}</td><td><span class="badge">{{ $latest?->status ?? 'MISSING' }}</span></td><td><a class="btn btn-secondary" href="{{ route('admissions.setups.show',$definition) }}">Configure</a></td></tr>@endforeach</tbody></table></div><div class="pagination">{{ $definitions->links() }}</div></section>
+@endsection
