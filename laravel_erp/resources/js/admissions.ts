@@ -40,3 +40,19 @@ document.querySelectorAll<HTMLElement>('[data-file-drop]').forEach((drop) => {
 });
 
 document.querySelectorAll<HTMLButtonElement>('[data-print]').forEach((button) => button.addEventListener('click', () => window.print()));
+
+document.querySelectorAll<HTMLButtonElement>('[data-export-table]').forEach((button) => button.addEventListener('click', () => {
+    const table = document.getElementById(button.dataset.exportTable ?? '');
+    if (!(table instanceof HTMLTableElement)) return;
+    const format = button.dataset.format;
+    if (format === 'pdf') { window.print(); return; }
+    const rows = [...table.rows].map((row) => [...row.cells].map((cell) => `"${cell.innerText.replaceAll('"', '""')}"`).join(','));
+    const content = format === 'xls' ? `<html><body>${table.outerHTML}</body></html>` : rows.join('\n');
+    const mime = format === 'xls' ? 'application/vnd.ms-excel' : 'text/csv;charset=utf-8';
+    const blob = new Blob([content], { type: mime });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `mema-admissions-${new Date().toISOString().slice(0, 10)}.${format}`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+}));

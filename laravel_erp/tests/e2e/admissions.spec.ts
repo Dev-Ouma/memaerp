@@ -29,3 +29,21 @@ test('public journey is keyboard reachable', async ({ page }, testInfo) => {
     const nextLink = testInfo.project.name === 'mobile-chrome' ? 'Apply now' : 'Programmes';
     await expect(page.getByRole('link', { name: nextLink })).toBeFocused();
 });
+
+test('staff can inspect analytics and branded report exports', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Sign in to MEMA' }).click();
+    await page.waitForURL(/dashboard/);
+
+    await page.goto('/admissions/analytics');
+    await expect(page.getByRole('heading', { name: 'Admissions performance' })).toBeVisible();
+    await expect(page.getByRole('img', { name: 'Application conversion funnel' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Programme demand' })).toBeVisible();
+
+    await page.goto('/admissions/reports');
+    await expect(page.getByRole('heading', { name: 'Admissions report centre' })).toBeVisible();
+    await expect(page.getByText('Web preview', { exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'CSV' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Excel (.xls)' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'PDF / Print' })).toBeVisible();
+});
