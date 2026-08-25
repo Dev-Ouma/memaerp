@@ -10,6 +10,11 @@ use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\PublicAdmissionController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/docs/api/admission-openapi.yaml', static fn () => response()->file(
+    base_path('docs/api/admission-openapi.yaml'),
+    ['Content-Type' => 'application/yaml; charset=UTF-8'],
+));
+
 Route::middleware('guest')->group(function (): void {
     Route::get('/', [AuthController::class, 'create'])->name('login');
     Route::post('/login', [AuthController::class, 'store'])->name('login.store');

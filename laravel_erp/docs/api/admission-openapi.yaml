@@ -1,0 +1,108 @@
+openapi: 3.1.0
+info:
+  title: Mema College Admission API
+  version: 1.0.0-alpha.1
+  description: Contract for the implemented Laravel admission API slice.
+servers:
+  - url: /api/v1
+paths:
+  /public/programme-offerings:
+    get:
+      operationId: listPublicProgrammeOfferings
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: campus, in: query, schema: { type: string } }
+        - { name: study_mode, in: query, schema: { type: string } }
+        - { name: intake, in: query, schema: { type: string } }
+        - { name: cursor, in: query, schema: { type: string } }
+      responses:
+        '200': { description: Published programme offerings }
+  /public/programme-offerings/{offering}:
+    get:
+      operationId: getPublicProgrammeOffering
+      parameters: [{ name: offering, in: path, required: true, schema: { type: integer } }]
+      responses:
+        '200': { description: Published programme offering }
+        '404': { $ref: '#/components/responses/Problem' }
+  /auth/register:
+    post:
+      operationId: registerApplicant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterApplicant' }
+      responses:
+        '201': { description: Applicant account created }
+        '422': { $ref: '#/components/responses/Problem' }
+  /auth/login:
+    post:
+      operationId: login
+      responses:
+        '200': { description: Bearer token issued }
+        '401': { $ref: '#/components/responses/Problem' }
+  /auth/logout:
+    post:
+      operationId: logout
+      security: [{ bearerAuth: [] }]
+      responses: { '204': { description: Token revoked } }
+  /applications:
+    get:
+      operationId: listOwnApplications
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Owned applications } }
+    post:
+      operationId: createApplication
+      security: [{ bearerAuth: [] }]
+      responses: { '201': { description: Draft created } }
+  /applications/{application}:
+    parameters: [{ name: application, in: path, required: true, schema: { type: string, format: uuid } }]
+    get:
+      operationId: getOwnApplication
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Owned application }, '404': { $ref: '#/components/responses/Problem' } }
+    patch:
+      operationId: autosaveApplicationSection
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Draft saved }, '409': { $ref: '#/components/responses/Problem' } }
+  /applications/{application}/payment-attempts:
+    post:
+      operationId: initiateApplicationFee
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: application, in: path, required: true, schema: { type: string, format: uuid } }, { name: Idempotency-Key, in: header, required: true, schema: { type: string, maxLength: 190 } }]
+      responses: { '202': { description: Payment intent created }, '422': { $ref: '#/components/responses/Problem' } }
+  /applications/{application}/submit:
+    post:
+      operationId: submitApplication
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: application, in: path, required: true, schema: { type: string, format: uuid } }, { name: Idempotency-Key, in: header, required: true, schema: { type: string, maxLength: 190 } }]
+      responses: { '200': { description: Immutable submission receipt }, '422': { $ref: '#/components/responses/Problem' } }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer }
+  responses:
+    Problem:
+      description: RFC 7807-style problem response
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties: { type: { type: string }, title: { type: string }, status: { type: integer }, code: { type: string }, detail: { type: [string, 'null'] } }
+    RegisterApplicant:
+      type: object
+      required: [email, password, first_name, last_name, phone, terms_version, privacy_version, cookie_version, acknowledgement_accepted, terms_accepted, privacy_accepted]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 10, writeOnly: true }
+        first_name: { type: string }
+        middle_name: { type: [string, 'null'] }
+        last_name: { type: string }
+        phone: { type: string }
+        programme_offering_id: { type: [integer, 'null'] }
+        terms_version: { type: string }
+        privacy_version: { type: string }
+        cookie_version: { type: string }
+        acknowledgement_accepted: { type: boolean, const: true }
+        terms_accepted: { type: boolean, const: true }
+        privacy_accepted: { type: boolean, const: true }
