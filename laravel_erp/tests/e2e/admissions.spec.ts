@@ -5,6 +5,8 @@ test('programme discovery exposes the application journey', async ({ page }) => 
     const admissions = new AdmissionsPage(page);
     await admissions.openCatalogue();
     await expect(admissions.heading).toContainText('Build the skills');
+    await expect(page.getByRole('navigation', { name: 'Public navigation' })).toHaveCSS('display', 'flex');
+    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(245, 248, 249)');
     await admissions.searchFor('Computer');
     await expect(page.getByRole('link', { name: 'View & apply' })).toBeVisible();
 });
@@ -19,10 +21,11 @@ test('registration has required legal, identity and secure-payment guidance', as
     await expect(page.getByRole('checkbox', { name: /creating an account does not mean/ })).toBeVisible();
 });
 
-test('public journey is keyboard reachable', async ({ page }) => {
+test('public journey is keyboard reachable', async ({ page }, testInfo) => {
     await page.goto('/programmes');
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name: /MEMA College Admissions/ })).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('link', { name: 'Programmes' })).toBeFocused();
+    const nextLink = testInfo.project.name === 'mobile-chrome' ? 'Apply now' : 'Programmes';
+    await expect(page.getByRole('link', { name: nextLink })).toBeFocused();
 });
