@@ -52,6 +52,7 @@ test('administrators can manage authoritative admission setups', async ({ page }
     await page.goto('/');
     await page.getByRole('button', { name: 'Sign in to MEMA' }).click();
     await page.waitForURL(/dashboard/);
+    await expect(page.getByRole('link', { name: 'Admin Setups', exact: true })).toBeVisible();
     await page.goto('/admissions/setups?q=fee');
     await expect(page.getByRole('heading', { name: 'Admin Setups', exact: true })).toBeVisible();
     await expect(page.getByText('Application-fee rules', { exact: true })).toBeVisible();
