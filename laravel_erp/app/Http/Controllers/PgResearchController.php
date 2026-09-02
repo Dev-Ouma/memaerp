@@ -4,1131 +4,797 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\PgResearch\PgAppeal;
+use App\Models\PgResearch\PgAppealCategory;
+use App\Models\PgResearch\PgAppealPeriod;
+use App\Models\PgResearch\PgDefenceRequest;
+use App\Models\PgResearch\PgExaminer;
+use App\Models\PgResearch\PgLegacyMigration;
+use App\Models\PgResearch\PgPlagiarismScan;
+use App\Models\PgResearch\PgProgressReport;
+use App\Models\PgResearch\PgProposal;
+use App\Models\PgResearch\PgPublication;
+use App\Models\PgResearch\PgResearchCandidate;
+use App\Models\PgResearch\PgSeminar;
+use App\Models\PgResearch\PgSupervisor;
+use App\Models\PgResearch\PgThesisMark;
+use App\Models\PgResearch\PgThesisResubmission;
+use App\Models\PgResearch\PgVivaExamination;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
+/**
+ * Read side of the postgraduate research lifecycle. Every screen here is a
+ * projection of live tables; all state changes belong to
+ * PgResearchActionController and the PgResearchWorkflow service.
+ */
 final class PgResearchController extends Controller
 {
-    /**
-     * 1. Research Eligibility & Coursework Gating (R19)
-     */
+    /** 1. Research Eligibility & Coursework Gating (R19) */
     public function eligibilityGating(Request $request): View
     {
         $status = $request->query('status');
         $search = $request->query('search');
 
+        $candidates = PgResearchCandidate::query()
+            ->with('waivers')
+            ->when($status, fn ($q) => $q->where('eligibility_status', strtoupper((string) $status)))
+            ->when($search, fn ($q) => $this->searchCandidate($q, (string) $search))
+            ->orderBy('candidate_name')
+            ->get()
+            ->map(fn (PgResearchCandidate $c): array => [
+                'id' => $c->id,
+                'student_name' => $c->candidate_name,
+                'reg_no' => $c->reg_no,
+                'degree_level' => $c->degree_level === 'PHD' ? 'PhD' : 'Master',
+                'programme' => $c->programme_title,
+                'coursework_status' => $c->coursework_units_total === 0
+                    ? 'No coursework registered'
+                    : sprintf(
+                        '%d/%d units passed%s',
+                        $c->coursework_units_passed,
+                        $c->coursework_units_total,
+                        $c->gpa !== null ? sprintf(' (GPA: %.2f)', (float) $c->gpa) : '',
+                    ),
+                'fee_status' => $c->feesCleared()
+                    ? 'Cleared (KES 0 Balance)'
+                    : sprintf('Outstanding (KES %s)', number_format((float) $c->fee_balance, 2)),
+                'registration_status' => $c->registration_status,
+                'eligibility_verdict' => $this->label($c->eligibility_status),
+                'waiver_applied' => $this->waiverLabel($c),
+                'pending_waiver_id' => $c->waivers->firstWhere('status', 'PENDING')?->id,
+                'approved_waiver_id' => $c->waivers->firstWhere('status', 'APPROVED')?->id,
+            ]);
+
         $stats = [
-            'totalPostgrads' => 184,
-            'fullyEligible' => 128,
-            'provisionalWaivers' => 34,
-            'courseworkPending' => 22,
+            'totalPostgrads' => PgResearchCandidate::count(),
+            'fullyEligible' => PgResearchCandidate::where('eligibility_status', 'ELIGIBLE')->count(),
+            'provisionalWaivers' => PgResearchCandidate::where('eligibility_status', 'PROVISIONAL')->count(),
+            'courseworkPending' => PgResearchCandidate::whereIn('eligibility_status', ['PENDING', 'BLOCKED'])->count(),
         ];
 
-        $candidates = [
-            [
-                'id' => 1,
-                'student_name' => 'Dr. Mercy Chepkemoi',
-                'reg_no' => 'PHD-CS/2023/004',
-                'degree_level' => 'PhD',
-                'programme' => 'PhD in Computer Science',
-                'coursework_status' => '100% Passed (8/8 Units, GPA: 3.88)',
-                'fee_status' => '100% Cleared (KES 0 Balance)',
-                'registration_status' => 'Active 2026/2027',
-                'eligibility_verdict' => 'Fully Eligible',
-                'waiver_applied' => 'No Waiver Needed',
-            ],
-            [
-                'id' => 2,
-                'student_name' => 'Geoffrey Mutua',
-                'reg_no' => 'MDS/2024/0118',
-                'degree_level' => 'Master',
-                'programme' => 'Master of Data Science',
-                'coursework_status' => '100% Passed (10/10 Units, GPA: 3.72)',
-                'fee_status' => '100% Cleared (KES 0 Balance)',
-                'registration_status' => 'Active 2026/2027',
-                'eligibility_verdict' => 'Fully Eligible',
-                'waiver_applied' => 'No Waiver Needed',
-            ],
-            [
-                'id' => 3,
-                'student_name' => 'Harrison Kiprono',
-                'reg_no' => 'PHD-CS/2021/002',
-                'degree_level' => 'PhD',
-                'programme' => 'PhD in Computer Science',
-                'coursework_status' => 'Pending Official Mark Release (DSC 902 Exam Sat)',
-                'fee_status' => '100% Cleared (KES 0 Balance)',
-                'registration_status' => 'Active 2026/2027',
-                'eligibility_verdict' => 'Provisional Research Clearance',
-                'waiver_applied' => 'R19 Provisional Waiver Approved (Dean Sign-off)',
-            ],
-            [
-                'id' => 4,
-                'student_name' => 'Boniface Ouma K\'Onyango',
-                'reg_no' => 'PHD-ECO/2022/008',
-                'degree_level' => 'PhD',
-                'programme' => 'PhD in Economics',
-                'coursework_status' => '100% Passed (8/8 Units, GPA: 3.91)',
-                'fee_status' => 'Fee Balance Outstanding (KES 24,500)',
-                'registration_status' => 'Provisional Registration',
-                'eligibility_verdict' => 'Blocked on Fees',
-                'waiver_applied' => 'No Waiver',
-            ],
-            [
-                'id' => 5,
-                'student_name' => 'Faith Jepchirchir',
-                'reg_no' => 'MSC-CYB/2024/0034',
-                'degree_level' => 'Master',
-                'programme' => 'MSc in Cybersecurity & Forensics',
-                'coursework_status' => '100% Passed (10/10 Units, GPA: 3.80)',
-                'fee_status' => '100% Cleared (KES 0 Balance)',
-                'registration_status' => 'Active 2026/2027',
-                'eligibility_verdict' => 'Fully Eligible',
-                'waiver_applied' => 'No Waiver Needed',
-            ],
-        ];
-
-        return view('pg-research.eligibility-gating', compact('stats', 'candidates', 'status', 'search'));
+        return view('pg-research.eligibility-gating', [
+            'stats' => $stats,
+            'candidates' => $candidates,
+            'status' => $status,
+            'search' => $search,
+            'allCandidates' => $this->candidateOptions(),
+        ]);
     }
 
-    /**
-     * 2. Supervisor Allocation & Workload Distribution (R2)
-     */
+    /** 2. Supervisor Allocation */
     public function supervisorAllocation(Request $request): View
     {
-        $status = $request->query('status');
         $search = $request->query('search');
 
+        $allocations = PgResearchCandidate::query()
+            ->with(['allocations.supervisor'])
+            ->when($search, fn ($q) => $this->searchCandidate($q, (string) $search))
+            ->orderBy('candidate_name')
+            ->get()
+            ->map(function (PgResearchCandidate $c): array {
+                $active = $c->allocations->where('status', 'ACTIVE');
+                $lead = $active->firstWhere('role', 'LEAD');
+                $co = $active->firstWhere('role', 'CO');
+                $external = $active->firstWhere('role', 'EXTERNAL');
+
+                return [
+                    'id' => $c->id,
+                    'student_name' => $c->candidate_name,
+                    'reg_no' => $c->reg_no,
+                    'degree_level' => $c->degree_level === 'PHD' ? 'PhD' : 'Master',
+                    'supervisor_1' => $lead?->supervisor->full_name ?? 'Unassigned',
+                    'supervisor_2' => $co?->supervisor->full_name ?? '—',
+                    'optional_mentor' => $external?->supervisor->full_name ?? '—',
+                    'status' => $lead ? 'Allocated' : 'Awaiting Allocation',
+                    'lead_allocation_id' => $lead?->id,
+                ];
+            });
+
         $stats = [
-            'allocatedScholars' => 148,
-            'unassignedScholars' => 16,
-            'phdTwoSupervisorRatio' => '100% (2 Supervisors)',
-            'mscOneSupervisorRatio' => '100% (1 Supervisor)',
+            'totalAllocated' => PgResearchCandidate::whereHas(
+                'allocations', fn ($q) => $q->where('role', 'LEAD')->where('status', 'ACTIVE'),
+            )->count(),
+            'unassigned' => PgResearchCandidate::whereDoesntHave(
+                'allocations', fn ($q) => $q->where('role', 'LEAD')->where('status', 'ACTIVE'),
+            )->count(),
+            'phdCandidates' => PgResearchCandidate::where('degree_level', 'PHD')->count(),
+            'mscCandidates' => PgResearchCandidate::where('degree_level', 'MASTERS')->count(),
         ];
 
-        $allocations = [
-            [
-                'id' => 1,
-                'student_name' => 'Dr. Mercy Chepkemoi',
-                'reg_no' => 'PHD-CS/2023/004',
-                'degree_level' => 'PhD (Requires 2 Supervisors)',
-                'programme' => 'PhD in Computer Science',
-                'research_domain' => 'Federated Machine Learning & Distributed Systems',
-                'supervisor_1' => 'Prof. James Mwangi (Lead / Internal)',
-                'supervisor_2' => 'Dr. Amina Hassan (Co-Supervisor / Internal)',
-                'optional_mentor' => 'Prof. David Ndetei (External Mentor)',
-                'status' => 'Fully Assigned & Active',
-            ],
-            [
-                'id' => 2,
-                'student_name' => 'Geoffrey Mutua',
-                'reg_no' => 'MDS/2024/0118',
-                'degree_level' => 'Master (Requires 1 Supervisor)',
-                'programme' => 'Master of Data Science',
-                'research_domain' => 'Spatial Graph Neural Networks & Agro-Meteorology',
-                'supervisor_1' => 'Dr. Amina Hassan (Primary Supervisor)',
-                'supervisor_2' => 'N/A (Master\'s Policy 1 Supervisor)',
-                'optional_mentor' => 'Dr. Sarah Rotich (Industry Fellow)',
-                'status' => 'Fully Assigned & Active',
-            ],
-            [
-                'id' => 3,
-                'student_name' => 'Grace Wanjiku Njuguna',
-                'reg_no' => 'MED/2024/0052',
-                'degree_level' => 'Master (Requires 1 Supervisor)',
-                'programme' => 'Master of Education in Learning Design',
-                'research_domain' => 'Digital Pedagogies & Secondary STEM Curricula',
-                'supervisor_1' => 'Dr. Grace Njeri (Primary Supervisor)',
-                'supervisor_2' => 'N/A (Master\'s Policy 1 Supervisor)',
-                'optional_mentor' => 'None',
-                'status' => 'Fully Assigned & Active',
-            ],
-            [
-                'id' => 4,
-                'student_name' => 'Boniface Ouma K\'Onyango',
-                'reg_no' => 'PHD-ECO/2022/008',
-                'degree_level' => 'PhD (Requires 2 Supervisors)',
-                'programme' => 'PhD in Economics',
-                'research_domain' => 'Cross-Border Mobile Remittances & Macro-Policy',
-                'supervisor_1' => 'Dr. Daniel Otieno (Lead / Internal)',
-                'supervisor_2' => 'Pending Co-Supervisor Allocation',
-                'optional_mentor' => 'None',
-                'status' => 'Pending Supervisor 2 Allocation',
-            ],
-        ];
-
-        return view('pg-research.supervisor-allocation', compact('stats', 'allocations', 'status', 'search'));
+        return view('pg-research.supervisor-allocation', [
+            'stats' => $stats,
+            'allocations' => $allocations,
+            'search' => $search,
+            'supervisors' => $this->supervisorOptions(),
+            'allCandidates' => $this->candidateOptions(),
+        ]);
     }
 
-    /**
-     * 3. Supervisor Role Configuration
-     */
+    /** 3. Supervisor Roles & Capacity */
     public function supervisorRoles(Request $request): View
     {
+        $search = $request->query('search');
+
+        $roles = PgSupervisor::query()
+            ->withCount(['allocations as active_load' => fn ($q) => $q->where('status', 'ACTIVE')])
+            ->when($search, fn ($q) => $q->where(fn ($w) => $w
+                ->where('full_name', 'ilike', "%{$search}%")
+                ->orWhere('staff_no', 'ilike', "%{$search}%")
+                ->orWhere('department', 'ilike', "%{$search}%")))
+            ->orderBy('full_name')
+            ->get()
+            ->map(fn (PgSupervisor $s): array => [
+                'id' => $s->id,
+                'role_code' => $s->staff_no,
+                'role_title' => $s->full_name,
+                'min_qualification' => $s->academic_rank,
+                'max_quota' => (string) $s->max_load,
+                'sign_off_scope' => $s->specialization ?? $s->department ?? 'General supervision',
+                'honorarium_unit' => sprintf('%d of %d slots in use', $s->active_load, $s->max_load),
+                'status' => $s->is_active ? 'Active' : 'Inactive',
+                'active_load' => $s->active_load,
+            ]);
+
         $stats = [
-            'totalRoles' => 6,
-            'activeSupervisors' => 142,
-            'activeScholars' => 486,
-            'maxRatio' => '1:5 PhD / 1:8 MSc',
+            'totalRoles' => PgSupervisor::count(),
+            'activeRoles' => PgSupervisor::where('is_active', true)->count(),
+            'maxQuota' => (int) PgSupervisor::where('is_active', true)->sum('max_load'),
+            'assignedLoad' => \App\Models\PgResearch\PgSupervisorAllocation::where('status', 'ACTIVE')->count(),
         ];
 
-        $roles = [
-            [
-                'id' => 1,
-                'role_code' => 'SUP-LEAD-01',
-                'role_title' => 'Lead Doctoral Supervisor (Major Advisor)',
-                'min_qualification' => 'PhD / Associate Professor or Professor',
-                'max_quota' => '5 PhD Candidates',
-                'sign_off_scope' => 'Concept, Proposal, Ethics, Viva, Final Submission',
-                'honorarium_unit' => 'KES 45,000 / candidate',
-                'status' => 'Active',
-            ],
-            [
-                'id' => 2,
-                'role_code' => 'SUP-CO-02',
-                'role_title' => 'Co-Supervisor (Internal)',
-                'min_qualification' => 'PhD / Senior Lecturer',
-                'max_quota' => '8 PG Candidates',
-                'sign_off_scope' => 'Methodology, Data Analysis, Thesis Chapters',
-                'honorarium_unit' => 'KES 30,000 / candidate',
-                'status' => 'Active',
-            ],
-            [
-                'id' => 3,
-                'role_code' => 'SUP-EXT-03',
-                'role_title' => 'External Academic Advisor / Industry Specialist',
-                'min_qualification' => 'PhD / Certified Industry Fellow',
-                'max_quota' => '3 PG Candidates',
-                'sign_off_scope' => 'Industry Validation & Applied Research Modules',
-                'honorarium_unit' => 'KES 40,000 / candidate',
-                'status' => 'Active',
-            ],
-            [
-                'id' => 4,
-                'role_code' => 'SUP-MSC-04',
-                'role_title' => 'Master\'s Principal Supervisor',
-                'min_qualification' => 'PhD / Lecturer with 3+ yrs experience',
-                'max_quota' => '8 Master Candidates',
-                'sign_off_scope' => 'Full Dissertation Lifecycle Sign-off',
-                'honorarium_unit' => 'KES 25,000 / candidate',
-                'status' => 'Active',
-            ],
-            [
-                'id' => 5,
-                'role_code' => 'SUP-MENTOR-05',
-                'role_title' => 'Early Career Researcher Mentor',
-                'min_qualification' => 'Professor / Distinguished Scholar',
-                'max_quota' => '4 Post-Docs / Junior Faculty',
-                'sign_off_scope' => 'Grant Writing & Publication Milestone Review',
-                'honorarium_unit' => 'KES 20,000 / candidate',
-                'status' => 'Active',
-            ],
-            [
-                'id' => 6,
-                'role_code' => 'SUP-EXAM-06',
-                'role_title' => 'Internal Viva Examiner / Board Reader',
-                'min_qualification' => 'PhD / Senior Academic Staff',
-                'max_quota' => '12 Examinations / Year',
-                'sign_off_scope' => 'Independent Blind Examination & Defense Verdict',
-                'honorarium_unit' => 'KES 15,000 / oral defense',
-                'status' => 'Inactive',
-            ],
-        ];
-
-        return view('pg-research.supervisor-roles', compact('stats', 'roles'));
+        return view('pg-research.supervisor-roles', [
+            'stats' => $stats,
+            'roles' => $roles,
+            'search' => $search,
+        ]);
     }
 
-    /**
-     * 4. Proposal Reader / Internal Examiner Review Stage (R6 - Blocking)
-     */
+    /** 4. Proposal Reader Review */
     public function proposalReaderReview(Request $request): View
     {
         $status = $request->query('status');
-        $search = $request->query('search');
+
+        $proposals = PgProposal::query()
+            ->with(['candidate', 'reader', 'reviews' => fn ($q) => $q->latest('reviewed_at')])
+            ->when($status, fn ($q) => $q->where('status', strtoupper((string) $status)))
+            ->latest('submitted_at')
+            ->get()
+            ->map(function (PgProposal $p): array {
+                $latest = $p->reviews->first();
+
+                return [
+                    'id' => $p->id,
+                    'candidate_id' => $p->candidate_id,
+                    'student_name' => $p->candidate->candidate_name,
+                    'reg_no' => $p->candidate->reg_no,
+                    'programme' => $p->candidate->programme_title,
+                    'proposal_title' => $p->title,
+                    'appointed_reader' => $p->reader?->full_name ?? 'Not appointed',
+                    'assigned_date' => $p->submitted_at?->format('d M Y') ?? '—',
+                    'reader_verdict' => $latest ? $this->label($latest->verdict) : 'Awaiting review',
+                    'comments_summary' => $latest->comments ?? 'No reader comments recorded yet.',
+                    'status' => $this->label($p->status),
+                    'is_open' => in_array($p->status, ['SUBMITTED', 'UNDER_REVIEW'], true),
+                ];
+            });
 
         $stats = [
-            'proposalsUnderReview' => 28,
-            'readerApproved' => 42,
-            'readerRevisions' => 9,
-            'readerTurnaround' => '10.2 Days (SLA <= 14 Days)',
+            'totalProposals' => PgProposal::count(),
+            'underReaderReview' => PgProposal::where('status', 'UNDER_REVIEW')->count(),
+            'approved' => PgProposal::where('status', 'APPROVED')->count(),
+            'revisionRequired' => PgProposal::where('status', 'REVISION_REQUIRED')->count(),
         ];
 
-        $proposals = [
-            [
-                'id' => 1,
-                'student_name' => 'Harrison Kiprono',
-                'reg_no' => 'PHD-CS/2021/002',
-                'programme' => 'PhD in Computer Science',
-                'proposal_title' => 'High-Throughput Genomic Sequence Indexing on Distributed Edge Architectures',
-                'appointed_reader' => 'Prof. David Kiplagat (Designated Internal Examiner)',
-                'reader_verdict' => 'Approved to Proceed to Proposal Defence Panel',
-                'comments_summary' => 'Comprehensive literature survey; research methodology is mathematically sound.',
-                'assigned_date' => '08-08-2026',
-                'reviewed_date' => '18-08-2026',
-                'status' => 'Reader Cleared',
-            ],
-            [
-                'id' => 2,
-                'student_name' => 'Lorna Anyango',
-                'reg_no' => 'MED/2023/0019',
-                'programme' => 'Master of Education in Leadership',
-                'proposal_title' => 'Institutional Governance Models and Learner Achievement in TVET Colleges',
-                'appointed_reader' => 'Dr. Grace Njeri (Designated Internal Examiner)',
-                'reader_verdict' => 'Minor Revisions Required on Conceptual Framework',
-                'comments_summary' => 'Strengthen sampling frame in Chapter 3; clarify ethical clearance protocols.',
-                'assigned_date' => '12-08-2026',
-                'reviewed_date' => '22-08-2026',
-                'status' => 'Revisions Under Review',
-            ],
-            [
-                'id' => 3,
-                'student_name' => 'Samuel Kibor Koech',
-                'reg_no' => 'PHD-MED/2022/001',
-                'programme' => 'PhD in Technology Education',
-                'proposal_title' => 'Immersive Virtual Reality Simulation Frameworks for Technical Engineering Vocations',
-                'appointed_reader' => 'Dr. Jeremiah Onunga (Designated Internal Examiner)',
-                'reader_verdict' => 'Approved to Proceed to Proposal Defence Panel',
-                'comments_summary' => 'Sound theoretical foundations and practical laboratory test-bed design.',
-                'assigned_date' => '15-08-2026',
-                'reviewed_date' => '25-08-2026',
-                'status' => 'Reader Cleared',
-            ],
-        ];
-
-        return view('pg-research.proposal-reader-review', compact('stats', 'proposals', 'status', 'search'));
+        return view('pg-research.proposal-reader-review', [
+            'stats' => $stats,
+            'proposals' => $proposals,
+            'status' => $status,
+            'readers' => $this->supervisorOptions(),
+            'allCandidates' => $this->candidateOptions(),
+        ]);
     }
 
-    /**
-     * 5. Postgraduate Seminar Presentations Tracking (R3)
-     */
+    /** 5. Seminar Presentations */
     public function seminarPresentations(Request $request): View
     {
-        $status = $request->query('status');
-        $search = $request->query('search');
+        $type = $request->query('type');
+
+        $seminars = PgSeminar::query()
+            ->with('candidate')
+            ->when($type, fn ($q) => $q->where('seminar_type', strtoupper((string) $type)))
+            ->orderByDesc('scheduled_for')
+            ->get()
+            ->map(fn (PgSeminar $s): array => [
+                'id' => $s->id,
+                'candidate_name' => $s->candidate->candidate_name,
+                'reg_no' => $s->candidate->reg_no,
+                'programme' => $s->candidate->programme_title,
+                'seminar_type' => $this->label($s->seminar_type),
+                'presentation_date' => $s->scheduled_for->format('d M Y H:i'),
+                'moderator' => $s->panel_chair ?? 'To be confirmed',
+                'panel_feedback' => $s->outcome_notes ?? 'Pending panel feedback.',
+                'status' => $this->label($s->status),
+                'is_open' => $s->status === 'SCHEDULED',
+            ]);
 
         $stats = [
-            'seminarsCompleted' => 56,
-            'departmentalSeminars' => 32,
-            'preDefenseSeminars' => 24,
-            'attendanceRate' => '96.2%',
+            'totalSeminars' => PgSeminar::count(),
+            'departmental' => PgSeminar::where('seminar_type', 'PROPOSAL')->count(),
+            'preDefence' => PgSeminar::where('seminar_type', 'PRE_DEFENCE')->count(),
+            'scheduled' => PgSeminar::where('status', 'SCHEDULED')->count(),
         ];
 
-        $seminars = [
-            [
-                'id' => 1,
-                'candidate_name' => 'Dr. Mercy Chepkemoi',
-                'reg_no' => 'PHD-CS/2023/004',
-                'programme' => 'PhD in Computer Science',
-                'seminar_type' => 'Doctoral Pre-Defense Seminar 3 (School Level)',
-                'presentation_date' => '14-08-2026',
-                'moderator' => 'Prof. Patrick Ouma (Dean, SST)',
-                'panel_feedback' => 'Commended for robust empirical simulations; cleared to lodge formal Notice of Intent to Defend.',
-                'status' => 'Completed & Certified',
-            ],
-            [
-                'id' => 2,
-                'candidate_name' => 'Geoffrey Mutua',
-                'reg_no' => 'MDS/2024/0118',
-                'programme' => 'Master of Data Science',
-                'seminar_type' => 'Master\'s Research Findings Seminar (Departmental)',
-                'presentation_date' => '10-08-2026',
-                'moderator' => 'Dr. Kikete Wabuya (Ag. Chair, Math & Stat)',
-                'panel_feedback' => 'Spatial prediction models validated; feedback incorporated into draft dissertation.',
-                'status' => 'Completed & Certified',
-            ],
-            [
-                'id' => 3,
-                'candidate_name' => 'Boniface Ouma K\'Onyango',
-                'reg_no' => 'PHD-ECO/2022/008',
-                'programme' => 'PhD in Economics',
-                'seminar_type' => 'Doctoral Methodology Seminar 2 (Faculty Level)',
-                'presentation_date' => '04-09-2026 (Upcoming)',
-                'moderator' => 'Dr. Daniel Otieno',
-                'panel_feedback' => 'Scheduled for presentation in Faculty Boardroom B402.',
-                'status' => 'Scheduled',
-            ],
-        ];
-
-        return view('pg-research.seminar-presentations', compact('stats', 'seminars', 'status', 'search'));
+        return view('pg-research.seminar-presentations', [
+            'stats' => $stats,
+            'seminars' => $seminars,
+            'type' => $type,
+            'allCandidates' => $this->candidateOptions(),
+        ]);
     }
 
-    /**
-     * 6. Research Progress Reports (Forms A, B, C) (R5, R14)
-     */
+    /** 6. Progress Reports */
     public function progressReports(Request $request): View
     {
         $status = $request->query('status');
-        $search = $request->query('search');
+
+        $reports = PgProgressReport::query()
+            ->with('candidate')
+            ->when($status, fn ($q) => $q->where('status', strtoupper((string) $status)))
+            ->latest('submitted_at')
+            ->get()
+            ->map(fn (PgProgressReport $r): array => [
+                'id' => $r->id,
+                'student_name' => $r->candidate->candidate_name,
+                'reg_no' => $r->candidate->reg_no,
+                'degree_level' => $r->candidate->degree_level === 'PHD' ? 'PhD' : 'Master',
+                'report_stage' => $r->report_stage,
+                'submission_date' => $r->submitted_at->format('d M Y'),
+                'milestone_summary' => $r->milestone_summary,
+                'supervisor_endorsement' => $r->supervisor_comment ?? 'Awaiting supervisor endorsement.',
+                'self_service_action' => $this->label($r->status),
+                'is_open' => $r->status !== 'APPROVED',
+            ]);
 
         $stats = [
-            'totalReportsSubmitted' => 214,
-            'formACount' => 86, // Initial Inception & Literature
-            'formBCount' => 74, // Data Collection & Analysis
-            'formCCount' => 54, // Thesis Draft & Milestone Clearance
-            'complianceRate' => '92.8%',
+            'totalReports' => PgProgressReport::count(),
+            'formSubmitted' => PgProgressReport::where('status', 'SUBMITTED')->count(),
+            'approved' => PgProgressReport::where('status', 'APPROVED')->count(),
+            'returned' => PgProgressReport::where('status', 'RETURNED')->count(),
         ];
 
-        $reports = [
-            [
-                'id' => 1,
-                'student_name' => 'Dr. Mercy Chepkemoi',
-                'reg_no' => 'PHD-CS/2023/004',
-                'degree_level' => 'PhD (Requires 6 Periodic Reports)',
-                'report_stage' => 'Form C - Report 6 of 6 (Final Thesis Draft)',
-                'submission_date' => '18-08-2026',
-                'supervisor_endorsement' => 'Prof. James Mwangi (Lead Supervisor - Approved)',
-                'milestone_summary' => 'Completed all 5 chapters, Turnitin 8.2%, 2 Scopus papers published.',
-                'self_service_action' => 'Locked (Approved by Supervisor)',
-                'status' => 'Approved by Directorate',
-            ],
-            [
-                'id' => 2,
-                'student_name' => 'Geoffrey Mutua',
-                'reg_no' => 'MDS/2024/0118',
-                'degree_level' => 'Master (Requires 3 Periodic Reports)',
-                'report_stage' => 'Form C - Report 3 of 3 (Final Dissertation Draft)',
-                'submission_date' => '15-08-2026',
-                'supervisor_endorsement' => 'Dr. Amina Hassan (Approved)',
-                'milestone_summary' => 'Model trained on Kenya Meteorological dataset; discussion chapter completed.',
-                'self_service_action' => 'Locked (Approved by Supervisor)',
-                'status' => 'Approved by Directorate',
-            ],
-            [
-                'id' => 3,
-                'student_name' => 'Dennis Kioko Mutisya',
-                'reg_no' => 'MBA/2023/0440',
-                'degree_level' => 'Master (Requires 3 Periodic Reports)',
-                'report_stage' => 'Form B - Report 2 of 3 (Data Collection)',
-                'submission_date' => '22-08-2026',
-                'supervisor_endorsement' => 'Dr. Daniel Otieno (Pending Review)',
-                'milestone_summary' => 'Administered 180 questionnaires to Nairobi manufacturing cluster.',
-                'self_service_action' => 'Recall / Replace Available (Self-Service R14)',
-                'status' => 'Under Supervisor Review',
-            ],
-        ];
-
-        return view('pg-research.progress-reports', compact('stats', 'reports', 'status', 'search'));
+        return view('pg-research.progress-reports', [
+            'stats' => $stats,
+            'reports' => $reports,
+            'status' => $status,
+            'allCandidates' => $this->candidateOptions(),
+        ]);
     }
 
-    /**
-     * 7. Defence Request Approval
-     */
+    /** 7. Plagiarism / Similarity Checker */
+    public function plagiarismChecker(Request $request): View
+    {
+        $verdict = $request->query('verdict');
+
+        $scans = PgPlagiarismScan::query()
+            ->with('candidate')
+            ->when($verdict, fn ($q) => $q->where('status', strtoupper((string) $verdict)))
+            ->latest('scanned_at')
+            ->get()
+            ->map(fn (PgPlagiarismScan $s): array => [
+                'id' => $s->id,
+                'student_name' => $s->candidate->candidate_name,
+                'reg_no' => $s->candidate->reg_no,
+                'document_title' => $s->candidate->thesis_title ?? 'Untitled manuscript',
+                'document_stage' => $this->label($s->document_type),
+                'similarity_score' => sprintf('%.2f%%', (float) $s->similarity_index),
+                'ai_score' => sprintf('threshold %.2f%%', (float) $s->threshold),
+                'ai_breakdown' => $s->review_notes ?? 'No override recorded.',
+                'matched_sources' => $s->report_reference ?? 'Report reference not supplied',
+                'certificate_no' => $s->report_reference ?? sprintf('SCAN-%06d', $s->id),
+                'verdict' => $this->label($s->status),
+                'is_flagged' => $s->status === 'FLAGGED',
+            ]);
+
+        $stats = [
+            'totalScans' => PgPlagiarismScan::count(),
+            'fullyCleared' => PgPlagiarismScan::whereIn('status', ['PASSED', 'CLEARED_BY_OVERRIDE'])->count(),
+            'flagged' => PgPlagiarismScan::where('status', 'FLAGGED')->count(),
+            'averageSimilarity' => round((float) (PgPlagiarismScan::avg('similarity_index') ?? 0), 2),
+        ];
+
+        return view('pg-research.plagiarism-checker', [
+            'stats' => $stats,
+            'scans' => $scans,
+            'verdict' => $verdict,
+            'allCandidates' => $this->candidateOptions(),
+        ]);
+    }
+
+    /** 8. Defence Request & Clearance */
     public function defenceRequestApproval(Request $request): View
     {
         $status = $request->query('status');
-        $search = $request->query('search');
+
+        $requests = PgDefenceRequest::query()
+            ->with(['candidate.allocations.supervisor', 'scan'])
+            ->when($status, fn ($q) => $q->where('status', strtoupper((string) $status)))
+            ->latest('requested_at')
+            ->get()
+            ->map(fn (PgDefenceRequest $r): array => [
+                'id' => $r->id,
+                'student_name' => $r->candidate->candidate_name,
+                'reg_no' => $r->candidate->reg_no,
+                'programme' => $r->candidate->programme_title,
+                'thesis_title' => $r->thesis_title,
+                'lead_supervisor' => $r->candidate->leadSupervisor()?->full_name ?? 'Unassigned',
+                'turnitin_score' => $r->scan
+                    ? sprintf('%.2f%%', (float) $r->scan->similarity_index)
+                    : 'No scan on file',
+                'fee_clearance' => $r->candidate->feesCleared()
+                    ? 'Cleared'
+                    : sprintf('KES %s outstanding', number_format((float) $r->candidate->fee_balance, 2)),
+                'publications_count' => (string) $r->candidate->publications()->where('status', 'ACCEPTED')->count(),
+                'status' => $this->label($r->status),
+                'is_pending' => $r->status === 'PENDING',
+            ]);
 
         $stats = [
-            'totalRequests' => 64,
-            'pendingApproval' => 18,
-            'clearedForViva' => 39,
-            'sentBack' => 7,
-            'avgTurnitin' => '11.4%',
+            'total' => PgDefenceRequest::count(),
+            'pending' => PgDefenceRequest::where('status', 'PENDING')->count(),
+            'cleared' => PgDefenceRequest::where('status', 'APPROVED')->count(),
+            'avgTurnitin' => round((float) (PgPlagiarismScan::where('document_type', 'THESIS')->avg('similarity_index') ?? 0), 2),
         ];
 
-        $requests = [
-            [
-                'id' => 1,
-                'student_name' => 'Dr. Mercy Chepkemoi',
-                'reg_no' => 'PHD-CS/2023/004',
-                'programme' => 'PhD in Computer Science',
-                'thesis_title' => 'Federated Machine Learning Frameworks for Resilient Rural Telehealth Diagnostics',
-                'lead_supervisor' => 'Prof. James Mwangi',
-                'turnitin_score' => '8.2%',
-                'coursework_gpa' => '3.88',
-                'publications_count' => '2 Indexed Articles',
-                'fee_clearance' => 'Cleared (100%)',
-                'status' => 'Pending Approval',
-                'submitted_at' => '24-08-2026',
-            ],
-            [
-                'id' => 2,
-                'student_name' => 'Geoffrey Mutua',
-                'reg_no' => 'MDS/2024/0118',
-                'programme' => 'Master of Data Science',
-                'thesis_title' => 'Predictive Spatial Modeling of Agricultural Yield Fluctuations under Climate Volatility in Kenya',
-                'lead_supervisor' => 'Dr. Amina Hassan',
-                'turnitin_score' => '12.5%',
-                'coursework_gpa' => '3.72',
-                'publications_count' => '1 Peer-Reviewed Article',
-                'fee_clearance' => 'Cleared (100%)',
-                'status' => 'Cleared for Viva',
-                'submitted_at' => '22-08-2026',
-            ],
-            [
-                'id' => 3,
-                'student_name' => 'Grace Wanjiku Njuguna',
-                'reg_no' => 'MED/2024/0052',
-                'programme' => 'Master of Education in Learning Design',
-                'thesis_title' => 'Digital Pedagogical Tool Adoption in Secondary STEM Curricula in Lake Region Counties',
-                'lead_supervisor' => 'Dr. Grace Njeri',
-                'turnitin_score' => '14.1%',
-                'coursework_gpa' => '3.65',
-                'publications_count' => '1 Peer-Reviewed Article',
-                'fee_clearance' => 'Cleared (100%)',
-                'status' => 'Cleared for Viva',
-                'submitted_at' => '19-08-2026',
-            ],
-            [
-                'id' => 4,
-                'student_name' => 'Boniface Ouma K\'Onyango',
-                'reg_no' => 'PHD-ECO/2022/008',
-                'programme' => 'PhD in Economics',
-                'thesis_title' => 'Macroeconomic Implications of Cross-Border Mobile Money Remittances within EAC Economies',
-                'lead_supervisor' => 'Dr. Daniel Otieno',
-                'turnitin_score' => '19.4%',
-                'coursework_gpa' => '3.91',
-                'publications_count' => '2 Indexed Articles',
-                'fee_clearance' => 'Cleared (100%)',
-                'status' => 'Sent Back',
-                'submitted_at' => '18-08-2026',
-            ],
-            [
-                'id' => 5,
-                'student_name' => 'Faith Jepchirchir',
-                'reg_no' => 'MSC-CYB/2024/0034',
-                'programme' => 'MSc in Cybersecurity & Forensics',
-                'thesis_title' => 'Zero-Trust Protocol Implementations in Critical National Banking Infrastructure',
-                'lead_supervisor' => 'Prof. James Mwangi',
-                'turnitin_score' => '9.7%',
-                'coursework_gpa' => '3.80',
-                'publications_count' => '1 Peer-Reviewed Article',
-                'fee_clearance' => 'Cleared (100%)',
-                'status' => 'Pending Approval',
-                'submitted_at' => '25-08-2026',
-            ],
-        ];
-
-        return view('pg-research.defence-request-approval', compact('stats', 'requests', 'status', 'search'));
+        return view('pg-research.defence-request-approval', [
+            'stats' => $stats,
+            'requests' => $requests,
+            'status' => $status,
+            'allCandidates' => $this->candidateOptions(),
+        ]);
     }
 
-    /**
-     * 8. Examiner Dashboard & Mark Entry
-     */
+    /** 9. Examiner Dashboard */
     public function examinerDashboard(Request $request): View
     {
+        $status = $request->query('status');
+
+        $assignments = PgExaminer::query()
+            ->with(['candidate', 'report'])
+            ->when($status, fn ($q) => $q->where('status', strtoupper((string) $status)))
+            ->latest('appointed_on')
+            ->get()
+            ->map(fn (PgExaminer $e): array => [
+                'id' => $e->id,
+                'examiner_name' => $e->examiner_name,
+                'examiner_type' => $this->label($e->examiner_type),
+                'candidate_code' => $e->candidate->reg_no,
+                'thesis_title' => $e->candidate->thesis_title ?? 'Untitled thesis',
+                'dispatch_date' => $e->appointed_on->format('d M Y'),
+                'due_date' => $e->appointed_on->copy()->addDays(42)->format('d M Y'),
+                'report_status' => $this->label($e->status),
+                'honorarium_status' => $e->report ? 'Payable' : 'Withheld pending report',
+                'has_report' => $e->report !== null,
+            ]);
+
         $stats = [
-            'assignedManuscripts' => 14,
-            'evaluationsCompleted' => 9,
-            'evaluationsPending' => 5,
-            'avgTurnaroundDays' => '18 Days (SLA <= 21 Days)',
+            'assigned' => PgExaminer::whereIn('status', ['APPOINTED', 'NOMINATED'])->count(),
+            'evaluationsReceived' => \App\Models\PgResearch\PgExaminerReport::count(),
+            'avgScore' => round((float) (\App\Models\PgResearch\PgExaminerReport::avg('score') ?? 0), 2),
+            'overdue' => PgExaminer::where('status', 'APPOINTED')
+                ->whereDate('appointed_on', '<', now()->subDays(42))->count(),
         ];
 
-        $assignments = [
-            [
-                'id' => 1,
-                'examiner_name' => 'Prof. Timothy Wafula',
-                'examiner_type' => 'External Examiner (University of Nairobi)',
-                'candidate_code' => 'CAND-PHD-CS-2026-04',
-                'thesis_title' => 'Federated Machine Learning Frameworks for Resilient Rural Telehealth Diagnostics',
-                'dispatch_date' => '05-08-2026',
-                'due_date' => '26-08-2026',
-                'report_status' => 'Report & Rubric Submitted (Score: 81.5%)',
-                'honorarium_status' => 'Approved (KES 35,000)',
-            ],
-            [
-                'id' => 2,
-                'examiner_name' => 'Dr. Amina Hassan',
-                'examiner_type' => 'Internal Examiner (School of Computing)',
-                'candidate_code' => 'CAND-PHD-CS-2026-04',
-                'thesis_title' => 'Federated Machine Learning Frameworks for Resilient Rural Telehealth Diagnostics',
-                'dispatch_date' => '05-08-2026',
-                'due_date' => '26-08-2026',
-                'report_status' => 'Report & Rubric Submitted (Score: 84.0%)',
-                'honorarium_status' => 'Approved (KES 15,000)',
-            ],
-            [
-                'id' => 3,
-                'examiner_name' => 'Dr. Sarah Rotich',
-                'examiner_type' => 'External Examiner (Kenyatta University)',
-                'candidate_code' => 'CAND-MDS-2026-118',
-                'thesis_title' => 'Predictive Spatial Modeling of Agricultural Yield Fluctuations under Climate Volatility in Kenya',
-                'dispatch_date' => '12-08-2026',
-                'due_date' => '02-09-2026',
-                'report_status' => 'Under Review (Draft Saved)',
-                'honorarium_status' => 'Pending Submission',
-            ],
-            [
-                'id' => 4,
-                'examiner_name' => 'Prof. David Ndetei',
-                'examiner_type' => 'External Examiner (Kenyatta University)',
-                'candidate_code' => 'CAND-PHD-MED-2026-01',
-                'thesis_title' => 'Institutional Governance Models and Learner Achievement in TVET Colleges',
-                'dispatch_date' => '18-08-2026',
-                'due_date' => '08-09-2026',
-                'report_status' => 'Dispatched / Awaiting Evaluation',
-                'honorarium_status' => 'Pending Submission',
-            ],
-        ];
-
-        return view('pg-research.examiner-dashboard', compact('stats', 'assignments'));
+        return view('pg-research.examiner-dashboard', [
+            'stats' => $stats,
+            'assignments' => $assignments,
+            'status' => $status,
+            'defenceCleared' => $this->defenceClearedOptions(),
+        ]);
     }
 
-    /**
-     * 9. Graduate Level Viva Examination
-     */
+    /** 10. Viva Voce Examination */
     public function vivaExamination(Request $request): View
     {
+        $status = $request->query('status');
+
+        $vivas = PgVivaExamination::query()
+            ->with(['candidate.examiners'])
+            ->when($status, fn ($q) => $q->where('status', strtoupper((string) $status)))
+            ->orderByDesc('scheduled_for')
+            ->get()
+            ->map(function (PgVivaExamination $v): array {
+                $examiners = $v->candidate->examiners;
+
+                return [
+                    'id' => $v->id,
+                    'candidate_name' => $v->candidate->candidate_name,
+                    'reg_no' => $v->candidate->reg_no,
+                    'degree' => $v->candidate->degree_level === 'PHD' ? 'PhD' : 'Master',
+                    'viva_date' => $v->scheduled_for->format('d M Y H:i'),
+                    'venue' => $v->venue,
+                    'board_chair' => $v->chair_name ?? 'To be confirmed',
+                    'internal_examiner' => $examiners->firstWhere('examiner_type', 'INTERNAL')?->examiner_name ?? '—',
+                    'external_examiner' => $examiners->firstWhere('examiner_type', 'EXTERNAL')?->examiner_name ?? '—',
+                    'status' => $v->verdict ? $this->label($v->verdict) : $this->label($v->status),
+                    'is_open' => $v->status === 'SCHEDULED',
+                ];
+            });
+
         $stats = [
-            'scheduledVivas' => 24,
-            'completedThisMonth' => 19,
-            'passRate' => '94.7%',
-            'pendingPanels' => 5,
+            'scheduled' => PgVivaExamination::where('status', 'SCHEDULED')->count(),
+            'completed' => PgVivaExamination::where('status', 'HELD')->count(),
+            'passRate' => $this->passRate(),
+            'pendingVerdict' => PgVivaExamination::where('status', 'SCHEDULED')
+                ->whereDate('scheduled_for', '<', now())->count(),
         ];
 
-        $vivas = [
-            [
-                'id' => 1,
-                'candidate_name' => 'Dr. Mercy Chepkemoi',
-                'reg_no' => 'PHD-CS/2023/004',
-                'degree' => 'PhD in Computer Science',
-                'viva_date' => '04-09-2026 10:00 AM',
-                'venue' => 'Senate Chamber / Virtual Zoom Room 1',
-                'board_chair' => 'Prof. Patrick Ouma (Dean, SPGS)',
-                'internal_examiner' => 'Dr. Amina Hassan',
-                'external_examiner' => 'Prof. Timothy Wafula (UoN)',
-                'status' => 'Panel Confirmed & Scheduled',
-            ],
-            [
-                'id' => 2,
-                'candidate_name' => 'Geoffrey Mutua',
-                'reg_no' => 'MDS/2024/0118',
-                'degree' => 'Master of Data Science',
-                'viva_date' => '08-09-2026 02:00 PM',
-                'venue' => 'Faculty Boardroom B402',
-                'board_chair' => 'Dr. Daniel Otieno (Chairman)',
-                'internal_examiner' => 'Prof. James Mwangi',
-                'external_examiner' => 'Dr. Sarah Rotich (Kenyatta Univ)',
-                'status' => 'Panel Confirmed & Scheduled',
-            ],
-            [
-                'id' => 3,
-                'candidate_name' => 'Grace Wanjiku Njuguna',
-                'reg_no' => 'MED/2024/0052',
-                'degree' => 'Master of Education',
-                'viva_date' => '28-08-2026 09:30 AM',
-                'venue' => 'School of Education Boardroom',
-                'board_chair' => 'Prof. Patrick Ouma',
-                'internal_examiner' => 'Dr. Grace Njeri',
-                'external_examiner' => 'Prof. Agnes Kimani (Moi Univ)',
-                'status' => 'Completed - Minor Corrections Awarded',
-            ],
-            [
-                'id' => 4,
-                'candidate_name' => 'Samuel Kibor Koech',
-                'reg_no' => 'PHD-MED/2022/001',
-                'degree' => 'PhD in Technology Education',
-                'viva_date' => '11-09-2026 11:00 AM',
-                'venue' => 'Senate Chamber',
-                'board_chair' => 'Prof. Patrick Ouma',
-                'internal_examiner' => 'Dr. Grace Njeri',
-                'external_examiner' => 'Prof. David Ndetei (KU)',
-                'status' => 'Awaiting External Examiner Confirmation',
-            ],
-        ];
-
-        return view('pg-research.viva-examination', compact('stats', 'vivas'));
+        return view('pg-research.viva-examination', [
+            'stats' => $stats,
+            'vivas' => $vivas,
+            'status' => $status,
+            'readyCandidates' => $this->vivaReadyOptions(),
+        ]);
     }
 
-    /**
-     * 10. Thesis Marks Approval & Moderation (R7, R12)
-     */
+    /** 11. Thesis Marks Approval */
     public function thesisMarksApproval(Request $request): View
     {
+        $status = $request->query('status');
+
+        $marks = PgThesisMark::query()
+            ->with(['candidate.examiners.report'])
+            ->when($status, fn ($q) => $q->where('status', strtoupper((string) $status)))
+            ->latest('updated_at')
+            ->get()
+            ->map(function (PgThesisMark $m): array {
+                $reports = $m->candidate->examiners->map(fn ($e) => $e->report)->filter();
+                $byType = fn (string $type) => $m->candidate->examiners
+                    ->firstWhere('examiner_type', $type)?->report?->score;
+
+                return [
+                    'id' => $m->id,
+                    'student_name' => $m->candidate->candidate_name,
+                    'reg_no' => $m->candidate->reg_no,
+                    'programme' => $m->candidate->programme_title,
+                    'internal_mark' => $byType('INTERNAL') !== null ? sprintf('%.2f', (float) $byType('INTERNAL')) : '—',
+                    'external_mark' => $byType('EXTERNAL') !== null ? sprintf('%.2f', (float) $byType('EXTERNAL')) : '—',
+                    'oral_viva_mark' => $m->candidate->viva?->verdict ? $this->label($m->candidate->viva->verdict) : '—',
+                    'composite_score' => sprintf('%.2f', (float) $m->composite_score),
+                    'final_grade' => $m->final_grade,
+                    'senate_status' => $this->label($m->status),
+                    'panel_reports' => $reports->count(),
+                    'is_pending' => $m->status === 'SUBMITTED',
+                ];
+            });
+
         $stats = [
-            'marksPendingRatification' => 22,
-            'approvedBySenate' => 74,
-            'distinctionsAwarded' => 15,
-            'avgCompositeScore' => '76.4%',
+            'totalMarks' => PgThesisMark::count(),
+            'approved' => PgThesisMark::where('status', 'RATIFIED')->count(),
+            'distinctions' => PgThesisMark::where('final_grade', 'Distinction')->count(),
+            'avgScore' => round((float) (PgThesisMark::avg('composite_score') ?? 0), 2),
         ];
 
-        $marksList = [
-            [
-                'id' => 1,
-                'student_name' => 'Harrison Kiprono',
-                'reg_no' => 'PHD-CS/2021/002',
-                'programme' => 'PhD in Computer Science',
-                'internal_mark' => '84.0% (A)',
-                'external_mark' => '81.5% (A)',
-                'oral_viva_mark' => '86.0% (A)',
-                'composite_score' => '83.8%',
-                'final_grade' => 'Distinction / Pass',
-                'senate_status' => 'Approved by Senate',
-            ],
-            [
-                'id' => 2,
-                'student_name' => 'Grace Wanjiku Njuguna',
-                'reg_no' => 'MED/2024/0052',
-                'programme' => 'Master of Education',
-                'internal_mark' => '76.0% (B+)',
-                'external_mark' => '74.0% (B+)',
-                'oral_viva_mark' => '78.0% (B+)',
-                'composite_score' => '76.0%',
-                'final_grade' => 'Credit / Pass',
-                'senate_status' => 'Pending Senate Ratification',
-            ],
-            [
-                'id' => 3,
-                'student_name' => 'Lorna Anyango',
-                'reg_no' => 'MED/2023/0019',
-                'programme' => 'Master of Education in Leadership',
-                'internal_mark' => '79.0% (B+)',
-                'external_mark' => '82.0% (A)',
-                'oral_viva_mark' => '80.0% (A)',
-                'composite_score' => '80.3%',
-                'final_grade' => 'Distinction / Pass',
-                'senate_status' => 'Pending Senate Ratification',
-            ],
-            [
-                'id' => 4,
-                'student_name' => 'Dennis Kioko Mutisya',
-                'reg_no' => 'MBA/2023/0440',
-                'programme' => 'Master of Business Administration',
-                'internal_mark' => '71.0% (B)',
-                'external_mark' => '68.0% (C+)',
-                'oral_viva_mark' => '73.0% (B)',
-                'composite_score' => '70.7%',
-                'final_grade' => 'Credit / Pass',
-                'senate_status' => 'Pending Senate Ratification',
-            ],
-            [
-                'id' => 5,
-                'student_name' => 'Esther Mwende',
-                'reg_no' => 'PHD-ECO/2021/005',
-                'programme' => 'PhD in Economics',
-                'internal_mark' => '88.0% (A)',
-                'external_mark' => '85.0% (A)',
-                'oral_viva_mark' => '89.0% (A)',
-                'composite_score' => '87.3%',
-                'final_grade' => 'Distinction / Pass',
-                'senate_status' => 'Approved by Senate',
-            ],
-        ];
-
-        return view('pg-research.thesis-marks-approval', compact('stats', 'marksList'));
+        return view('pg-research.thesis-marks-approval', [
+            'stats' => $stats,
+            'marks' => $marks,
+            'status' => $status,
+        ]);
     }
 
-    /**
-     * 11. Final Thesis Resubmission Review
-     */
+    /** 12. Thesis Resubmission & Corrections */
     public function thesisResubmission(Request $request): View
     {
+        $status = $request->query('status');
+
+        $submissions = PgThesisResubmission::query()
+            ->with(['candidate.viva'])
+            ->when($status, fn ($q) => $q->where('status', strtoupper((string) $status)))
+            ->latest('due_on')
+            ->get()
+            ->map(fn (PgThesisResubmission $s): array => [
+                'id' => $s->id,
+                'student_name' => $s->candidate->candidate_name,
+                'reg_no' => $s->candidate->reg_no,
+                'programme' => $s->candidate->programme_title,
+                'thesis_title' => $s->candidate->thesis_title ?? 'Untitled thesis',
+                'viva_verdict' => $s->candidate->viva?->verdict ? $this->label($s->candidate->viva->verdict) : '—',
+                'corrections_matrix' => $s->corrections_summary ?? 'Corrections matrix not yet filed.',
+                'resubmitted_at' => $s->submitted_at?->format('d M Y') ?? sprintf('Due %s', $s->due_on->format('d M Y')),
+                'examiner_auditor' => $s->verifier?->name ?? 'Awaiting verification',
+                'hardbound_copies' => sprintf('Cycle %d', $s->cycle),
+                'status' => $this->label($s->status),
+                'is_awaiting' => $s->status === 'AWAITING',
+                'is_submitted' => in_array($s->status, ['SUBMITTED', 'UNDER_REVIEW'], true),
+                'is_overdue' => $s->status === 'AWAITING' && $s->due_on->isPast(),
+            ]);
+
         $stats = [
-            'totalResubmissions' => 38,
-            'underReview' => 9,
-            'approvedForBinding' => 26,
-            'revisionsPending' => 3,
+            'totalResubmissions' => PgThesisResubmission::count(),
+            'underReview' => PgThesisResubmission::whereIn('status', ['SUBMITTED', 'UNDER_REVIEW'])->count(),
+            'approved' => PgThesisResubmission::where('status', 'ACCEPTED')->count(),
+            'minorRevisions' => PgThesisResubmission::where('status', 'AWAITING')->count(),
         ];
 
-        $resubmissions = [
-            [
-                'id' => 1,
-                'student_name' => 'Harrison Kiprono',
-                'reg_no' => 'PHD-CS/2021/002',
-                'programme' => 'PhD in Computer Science',
-                'thesis_title' => 'High-Throughput Genomic Sequence Indexing on Distributed Edge Architectures',
-                'viva_verdict' => 'Pass with Minor Corrections (30-day window)',
-                'examiner_auditor' => 'Prof. David Kiplagat (Internal Examiner)',
-                'corrections_matrix' => 'All 14 Examiner Comments Addressed & Tabulated',
-                'hardbound_copies' => 'Submitted (5 Copies + PDF + CD)',
-                'status' => 'Approved for Hardbound Binding',
-                'resubmitted_at' => '20-08-2026',
-            ],
-            [
-                'id' => 2,
-                'student_name' => 'Lorna Anyango',
-                'reg_no' => 'MED/2023/0019',
-                'programme' => 'Master of Education in Leadership',
-                'thesis_title' => 'Institutional Governance Models and Learner Achievement in TVET Colleges',
-                'viva_verdict' => 'Pass with Minor Corrections (30-day window)',
-                'examiner_auditor' => 'Dr. Grace Njeri (Examiner)',
-                'corrections_matrix' => '8 of 8 Comments Verified & Certified by Supervisor',
-                'hardbound_copies' => 'Pending Verification',
-                'status' => 'Under Review',
-                'resubmitted_at' => '25-08-2026',
-            ],
-            [
-                'id' => 3,
-                'student_name' => 'Dennis Kioko Mutisya',
-                'reg_no' => 'MBA/2023/0440',
-                'programme' => 'Master of Business Administration',
-                'thesis_title' => 'Supply Chain Digitization and Operational Efficiency among Kenyan Manufacturing Firms',
-                'viva_verdict' => 'Pass with Major Corrections (90-day window)',
-                'examiner_auditor' => 'Dr. Daniel Otieno (Department Reader)',
-                'corrections_matrix' => 'Chapter 4 Statistical Methodology Restructured',
-                'hardbound_copies' => 'Under Review',
-                'status' => 'Under Review',
-                'resubmitted_at' => '21-08-2026',
-            ],
-            [
-                'id' => 4,
-                'student_name' => 'Esther Mwende',
-                'reg_no' => 'PHD-ECO/2021/005',
-                'programme' => 'PhD in Economics',
-                'thesis_title' => 'Fiscal Decentralization and Sub-National Debt Sustainability in Eastern Africa',
-                'viva_verdict' => 'Pass with Minor Corrections',
-                'examiner_auditor' => 'Prof. James Mwangi (Lead Examiner)',
-                'corrections_matrix' => 'Signed Certificate of Corrections Uploaded',
-                'hardbound_copies' => 'Cleared & Stamped by University Librarian',
-                'status' => 'Approved for Hardbound Binding',
-                'resubmitted_at' => '17-08-2026',
-            ],
-        ];
-
-        return view('pg-research.thesis-resubmission', compact('stats', 'resubmissions'));
+        return view('pg-research.thesis-resubmission', [
+            'stats' => $stats,
+            'submissions' => $submissions,
+            'status' => $status,
+        ]);
     }
 
-    /**
-     * 12. Research Publications Review (R4)
-     */
+    /** 13. Publications Review */
     public function publicationsReview(Request $request): View
     {
+        $status = $request->query('status');
+
+        $publications = PgPublication::query()
+            ->with('candidate')
+            ->when($status, fn ($q) => $q->where('status', strtoupper((string) $status)))
+            ->latest()
+            ->get()
+            ->map(fn (PgPublication $p): array => [
+                'id' => $p->id,
+                'author_name' => $p->candidate->candidate_name,
+                'reg_no' => $p->candidate->reg_no,
+                'programme' => $p->candidate->programme_title,
+                'article_title' => $p->article_title,
+                'journal_name' => $p->journal_name,
+                'doi_link' => $p->doi ?? 'DOI not supplied',
+                'indexing' => $p->indexed_in ?? 'Not indexed',
+                'cue_requirement' => $p->candidate->degree_level === 'PHD' ? '2 papers (PhD)' : '1 paper (Masters)',
+                'status' => $this->label($p->status),
+                'is_open' => ! in_array($p->status, ['ACCEPTED', 'REJECTED'], true),
+            ]);
+
         $stats = [
-            'totalArticlesLogged' => 112,
-            'verifiedPeerReviewed' => 84,
-            'pendingIndexingCheck' => 21,
-            'rejectedNonCUE' => 7,
+            'totalPublications' => PgPublication::count(),
+            'verified' => PgPublication::where('status', 'ACCEPTED')->count(),
+            'pending' => PgPublication::whereIn('status', ['SUBMITTED', 'UNDER_REVIEW'])->count(),
+            'rejected' => PgPublication::where('status', 'REJECTED')->count(),
         ];
 
-        $publications = [
-            [
-                'id' => 1,
-                'author_name' => 'Dr. Mercy Chepkemoi',
-                'reg_no' => 'PHD-CS/2023/004',
-                'programme' => 'PhD in Computer Science',
-                'article_title' => 'Privacy-Preserving Federated Diagnostics in Bandwidth-Constrained Health Networks',
-                'journal_name' => 'IEEE Transactions on Network and Service Management',
-                'indexing' => 'Scopus Q1 / Web of Science',
-                'doi_link' => '10.1109/TNSM.2026.319022',
-                'cue_requirement' => 'Article 1 of 2 (Doctoral Compulsory Standard)',
-                'status' => 'Verified & Approved',
-            ],
-            [
-                'id' => 2,
-                'author_name' => 'Dr. Mercy Chepkemoi',
-                'reg_no' => 'PHD-CS/2023/004',
-                'programme' => 'PhD in Computer Science',
-                'article_title' => 'Edge-Assisted Telemedicine Anomaly Detection via Quantized Transformers',
-                'journal_name' => 'Elsevier Journal of Systems Architecture',
-                'indexing' => 'Scopus Q2 / AJOL Indexed',
-                'doi_link' => '10.1016/j.sysarc.2026.102844',
-                'cue_requirement' => 'Article 2 of 2 (Doctoral Compulsory Standard)',
-                'status' => 'Verified & Approved',
-            ],
-            [
-                'id' => 3,
-                'author_name' => 'Geoffrey Mutua',
-                'reg_no' => 'MDS/2024/0118',
-                'programme' => 'Master of Data Science',
-                'article_title' => 'Extreme Weather Forecasting using Spatio-Temporal Graph Neural Networks in Kenya',
-                'journal_name' => 'East African Journal of Science, Technology and Innovation (EAJSTI)',
-                'indexing' => 'AJOL / Google Scholar Peer Reviewed',
-                'doi_link' => '10.4314/eajsti.v7i2.11',
-                'cue_requirement' => 'Article 1 of 1 (Master\'s Encouraged Benchmark)',
-                'status' => 'Verified & Approved',
-            ],
-            [
-                'id' => 4,
-                'author_name' => 'Boniface Ouma K\'Onyango',
-                'reg_no' => 'PHD-ECO/2022/008',
-                'programme' => 'PhD in Economics',
-                'article_title' => 'Cross-Border Digital Payments Interoperability and Financial Inclusion in the East African Community',
-                'journal_name' => 'African Development Review',
-                'indexing' => 'Wiley / Scopus Q2',
-                'doi_link' => '10.1111/1467-8268.12702',
-                'cue_requirement' => 'Article 1 of 2 (Doctoral Compulsory Standard)',
-                'status' => 'Pending Indexing Verification',
-            ],
-        ];
-
-        return view('pg-research.publications-review', compact('stats', 'publications'));
+        return view('pg-research.publications-review', [
+            'stats' => $stats,
+            'publications' => $publications,
+            'status' => $status,
+            'allCandidates' => $this->candidateOptions(),
+        ]);
     }
 
-    /**
-     * 13. Legacy Projects & Interim Data Migration (R10, R18)
-     */
+    /** 14. Legacy Data Migration */
     public function legacyMigration(Request $request): View
     {
+        $status = $request->query('status');
+
+        $migrations = PgLegacyMigration::query()
+            ->with('candidate')
+            ->when($status, fn ($q) => $q->where('status', strtoupper((string) $status)))
+            ->latest()
+            ->get()
+            ->map(fn (PgLegacyMigration $m): array => [
+                'id' => $m->id,
+                'student_name' => $m->candidate?->candidate_name ?? 'Unmatched record',
+                'reg_no' => $m->source_reference,
+                'programme' => $m->candidate?->programme_title ?? '—',
+                'source_module' => $m->source_module,
+                'migrated_artifacts' => $m->artifacts ?? 'No artefacts listed',
+                'target_stage' => $m->target_stage,
+                'validation_status' => $m->error_message ?? $this->label($m->status),
+                'batch' => $m->batch_reference,
+                'is_pending' => in_array($m->status, ['PENDING', 'FAILED'], true),
+                'is_imported' => $m->status === 'IMPORTED',
+            ]);
+
         $stats = [
-            'totalLegacyDossiers' => 82,
-            'migratedFromDSC800' => 48,
-            'interimFormsMigrated' => 26,
-            'pendingDataValidation' => 8,
+            'totalRecords' => PgLegacyMigration::count(),
+            'migrated' => PgLegacyMigration::whereIn('status', ['IMPORTED', 'VERIFIED'])->count(),
+            'interim' => PgLegacyMigration::where('status', 'IMPORTED')->count(),
+            'pending' => PgLegacyMigration::whereIn('status', ['PENDING', 'FAILED'])->count(),
         ];
 
-        $migrations = [
-            [
-                'id' => 1,
-                'student_name' => 'Collins Kiprop',
-                'reg_no' => 'DSC-800/2023/042',
-                'source_module' => 'DSC800 (Module 12) Project Management',
-                'programme' => 'MSc in Information Systems',
-                'migrated_artifacts' => 'Approved Proposal PDF, 3 Progress Forms, Supervisor Logbook',
-                'target_stage' => 'Draft Thesis Review',
-                'validation_status' => 'Migrated & Verified (100%)',
-            ],
-            [
-                'id' => 2,
-                'student_name' => 'Jackline Cherotich',
-                'reg_no' => 'SST-PG/2024/008',
-                'source_module' => 'Interim Google Forms & Email Repository',
-                'programme' => 'PhD in Data Science',
-                'migrated_artifacts' => 'Interim Concept Paper, Turnitin Scan 11.2%, HOD Endorsement',
-                'target_stage' => 'Proposal Reader Review',
-                'validation_status' => 'Migrated & Verified (100%)',
-            ],
-            [
-                'id' => 3,
-                'student_name' => 'Peter Mwaniki',
-                'reg_no' => 'MED-PG/2023/014',
-                'source_module' => 'DSC800 (Module 12) Project Management',
-                'programme' => 'Master of Education',
-                'migrated_artifacts' => 'Proposal Defence Rubrics (Panel Passed)',
-                'target_stage' => 'Progress Reporting Form B',
-                'validation_status' => 'Awaiting Supervisor Re-Confirmation',
-            ],
-        ];
-
-        return view('pg-research.legacy-migration', compact('stats', 'migrations'));
+        return view('pg-research.legacy-migration', [
+            'stats' => $stats,
+            'migrations' => $migrations,
+            'status' => $status,
+        ]);
     }
 
-    /**
-     * 14. PG Appeal Category
-     */
-    public function appealCategory(Request $request): View
-    {
-        $categories = [
-            [
-                'id' => 1,
-                'code' => 'AC-DEF-01',
-                'name' => 'Thesis Defense & Viva Voce Outcome Appeal',
-                'scope' => 'Viva Voce & Final Defense',
-                'tier' => 'Senate Post-Graduate Committee',
-                'sla_days' => 14,
-                'status' => 'Active',
-                'description' => 'Appeals lodged against oral defense failure, major revisions verdict, or grading disputes.',
-            ],
-            [
-                'id' => 2,
-                'code' => 'AC-PRG-02',
-                'name' => 'Annual Research Progress Discontinuation',
-                'scope' => 'Milestone Review',
-                'tier' => 'Faculty Academic Board',
-                'sla_days' => 21,
-                'status' => 'Active',
-                'description' => 'Appeals contesting termination of candidature due to unsatisfactory annual progress review.',
-            ],
-            [
-                'id' => 3,
-                'code' => 'AC-SUP-03',
-                'name' => 'Supervisor Allocation & Academic Impasse',
-                'scope' => 'Supervision Grievance',
-                'tier' => 'Directorate of Post-Graduate Studies',
-                'sla_days' => 10,
-                'status' => 'Active',
-                'description' => 'Grievances regarding supervisor unavailability, conflict of interest, or academic deadlock.',
-            ],
-            [
-                'id' => 4,
-                'code' => 'AC-PLG-04',
-                'name' => 'Plagiarism & Turnitin Similarity Sanction',
-                'scope' => 'Research Integrity Board',
-                'tier' => 'Research Integrity & Ethics Board',
-                'sla_days' => 30,
-                'status' => 'Active',
-                'description' => 'Appeals regarding thesis similarity index threshold violations and disciplinary penalties.',
-            ],
-            [
-                'id' => 5,
-                'code' => 'AC-EXT-05',
-                'name' => 'Extenuating Candidature Extension Denied',
-                'scope' => 'Candidature Extension',
-                'tier' => 'School Board of Examiners',
-                'sla_days' => 7,
-                'status' => 'Active',
-                'description' => 'Appeals against rejection of medical or compassional study extension requests.',
-            ],
-            [
-                'id' => 6,
-                'code' => 'AC-REV-06',
-                'name' => 'External Examiner Assessment Contest',
-                'scope' => 'Examination Dispute',
-                'tier' => 'Vice-Chancellor Special Panel',
-                'sla_days' => 21,
-                'status' => 'Inactive',
-                'description' => 'Contested external reviewer evaluation reports requiring third-party blind arbiter.',
-            ],
-        ];
-
-        return view('pg-research.appeal-category', compact('categories'));
-    }
-
-    /**
-     * 15. PG Appeal Period Setup
-     */
+    /** 15. Appeal Period Setup */
     public function appealPeriodSetup(Request $request): View
     {
-        $periods = [
-            [
-                'id' => 1,
-                'window_name' => '2026/2027 Semester 1 Postgraduate Defense Appeals',
-                'academic_year' => '2026-2027',
-                'cohort' => 'PhD & Master of Science Cycle 1',
-                'start_date' => '01-09-2026',
-                'end_date' => '30-09-2026',
-                'hearing_date' => '15-10-2026',
-                'status' => 'Open',
-            ],
-            [
-                'id' => 2,
-                'window_name' => '2025/2026 Special Research Progress Grievances',
-                'academic_year' => '2025-2026',
-                'cohort' => 'All Postgraduate Scholars',
-                'start_date' => '15-10-2025',
-                'end_date' => '15-11-2025',
-                'hearing_date' => '05-12-2025',
-                'status' => 'Closed',
-            ],
-            [
-                'id' => 3,
-                'window_name' => '2026/2027 Mid-Year Thesis Grading Review Window',
-                'academic_year' => '2026-2027',
-                'cohort' => 'Doctoral Candidates 2024-2026',
-                'start_date' => '01-02-2027',
-                'end_date' => '28-02-2027',
-                'hearing_date' => '10-03-2027',
-                'status' => 'Scheduled',
-            ],
-            [
-                'id' => 4,
-                'window_name' => '2024/2025 Late Dissertation Defense Appeals',
-                'academic_year' => '2024-2025',
-                'cohort' => 'Executive MBA & Master of Education',
-                'start_date' => '10-05-2025',
-                'end_date' => '31-05-2025',
-                'hearing_date' => '14-06-2025',
-                'status' => 'Closed',
-            ],
-            [
-                'id' => 5,
-                'window_name' => '2026/2027 Plagiarism Committee Adjudication Window',
-                'academic_year' => '2026-2027',
-                'cohort' => 'Final Year Postgraduate Submissions',
-                'start_date' => '15-09-2026',
-                'end_date' => '15-10-2026',
-                'hearing_date' => '25-10-2026',
-                'status' => 'Open',
-            ],
-        ];
-
-        return view('pg-research.appeal-period-setup', compact('periods'));
-    }
-
-    /**
-     * 16. Embedded Plagiarism & AI Similarity Index Scanner (R11)
-     * Policy: Max Originality Similarity <= 15% (Turnitin) | Max AI Generated Text <= 20%
-     */
-    public function plagiarismChecker(Request $request): View
-    {
         $status = $request->query('status');
-        $search = $request->query('search');
+
+        $periods = PgAppealPeriod::query()
+            ->with(['category'])
+            ->withCount('appeals')
+            ->when($status, fn ($q) => $q->where('status', strtoupper((string) $status)))
+            ->orderByDesc('opens_on')
+            ->get()
+            ->map(fn (PgAppealPeriod $p): array => [
+                'id' => $p->id,
+                'window_name' => $p->term_label,
+                'academic_year' => $p->academic_year,
+                'cohort' => $p->category?->name ?? 'All categories',
+                'start_date' => $p->opens_on->format('d M Y'),
+                'end_date' => $p->closes_on->format('d M Y'),
+                'hearing_date' => $p->closes_on->copy()->addDays(7)->format('d M Y'),
+                'status' => $this->label($p->status),
+                'appeals_count' => $p->appeals_count,
+                'is_draft' => $p->status === 'DRAFT',
+                'is_open' => $p->status === 'OPEN',
+            ]);
 
         $stats = [
-            'totalScansConducted' => 248,
-            'fullyClearedDocs' => 196,
-            'flaggedSimilarity' => 31, // > 15% Originality similarity
-            'flaggedAiUsage' => 21,    // > 20% AI generated content
-            'avgSimilarityIndex' => '10.8%',
-            'avgAiDetectionIndex' => '7.4%',
+            'totalWindows' => PgAppealPeriod::count(),
+            'open' => PgAppealPeriod::where('status', 'OPEN')->count(),
+            'closed' => PgAppealPeriod::where('status', 'CLOSED')->count(),
+            'appealsLodged' => PgAppeal::count(),
         ];
 
-        $scans = [
-            [
-                'id' => 1,
-                'student_name' => 'Dr. Mercy Chepkemoi',
-                'reg_no' => 'PHD-CS/2023/004',
-                'programme' => 'PhD in Computer Science',
-                'document_title' => 'Final_Thesis_Manuscript_v4.pdf',
-                'document_stage' => 'Final Doctoral Thesis (Chapters 1–5)',
-                'similarity_score' => 8.2, // Limit: <= 15%
-                'ai_score' => 6.5,         // Limit: <= 20%
-                'similarity_status' => 'Compliant (<= 15%)',
-                'ai_status' => 'Compliant (<= 20%)',
-                'matched_sources' => 'Internet: 4.1%, Publications: 3.2%, Student Papers: 0.9%',
-                'ai_breakdown' => 'Human Authored: 93.5%, AI Assisted: 6.5%',
-                'certificate_no' => 'MEMA-SIM-2026-089',
-                'scan_date' => '24-08-2026 14:32',
-                'verdict' => 'Cleared for Viva Voce',
-            ],
-            [
-                'id' => 2,
-                'student_name' => 'Geoffrey Mutua',
-                'reg_no' => 'MDS/2024/0118',
-                'programme' => 'Master of Data Science',
-                'document_title' => 'MSc_Dissertation_Complete.pdf',
-                'document_stage' => 'Master\'s Dissertation (Chapters 1–5)',
-                'similarity_score' => 12.5,
-                'ai_score' => 11.0,
-                'similarity_status' => 'Compliant (<= 15%)',
-                'ai_status' => 'Compliant (<= 20%)',
-                'matched_sources' => 'Internet: 6.0%, Publications: 4.8%, Student Papers: 1.7%',
-                'ai_breakdown' => 'Human Authored: 89.0%, AI Assisted: 11.0%',
-                'certificate_no' => 'MEMA-SIM-2026-074',
-                'scan_date' => '22-08-2026 11:15',
-                'verdict' => 'Cleared for Viva Voce',
-            ],
-            [
-                'id' => 3,
-                'student_name' => 'Boniface Ouma K\'Onyango',
-                'reg_no' => 'PHD-ECO/2022/008',
-                'programme' => 'PhD in Economics',
-                'document_title' => 'Doctoral_Proposal_Macroeconomics.pdf',
-                'document_stage' => 'Proposal Chapters 1–3',
-                'similarity_score' => 19.4, // FLAGGED: > 15%
-                'ai_score' => 8.0,
-                'similarity_status' => 'Exceeded Limit (> 15%)',
-                'ai_status' => 'Compliant (<= 20%)',
-                'matched_sources' => 'Internet: 11.2%, Publications: 6.4%, Student Papers: 1.8%',
-                'ai_breakdown' => 'Human Authored: 92.0%, AI Assisted: 8.0%',
-                'certificate_no' => 'Pending Re-Write',
-                'scan_date' => '18-08-2026 09:40',
-                'verdict' => 'Flagged - Revisions Required',
-            ],
-            [
-                'id' => 4,
-                'student_name' => 'Dennis Kioko Mutisya',
-                'reg_no' => 'MBA/2023/0440',
-                'programme' => 'Master of Business Administration',
-                'document_title' => 'Supply_Chain_Literature_Draft.pdf',
-                'document_stage' => 'Draft Thesis Chapter 2 Literature',
-                'similarity_score' => 11.0,
-                'ai_score' => 28.5, // FLAGGED: > 20% AI usage
-                'similarity_status' => 'Compliant (<= 15%)',
-                'ai_status' => 'AI Limit Exceeded (> 20%)',
-                'matched_sources' => 'Internet: 5.5%, Publications: 4.0%, Student Papers: 1.5%',
-                'ai_breakdown' => 'Human Authored: 71.5%, AI Generated: 28.5%',
-                'certificate_no' => 'Pending Re-Write',
-                'scan_date' => '21-08-2026 16:05',
-                'verdict' => 'Flagged - Excessive AI Generation',
-            ],
-            [
-                'id' => 5,
-                'student_name' => 'Grace Wanjiku Njuguna',
-                'reg_no' => 'MED/2024/0052',
-                'programme' => 'Master of Education in Learning Design',
-                'document_title' => 'MED_Final_Thesis_Hardbound_Draft.pdf',
-                'document_stage' => 'Post-Viva Corrected Thesis',
-                'similarity_score' => 9.5,
-                'ai_score' => 4.2,
-                'similarity_status' => 'Compliant (<= 15%)',
-                'ai_status' => 'Compliant (<= 20%)',
-                'matched_sources' => 'Internet: 4.8%, Publications: 3.5%, Student Papers: 1.2%',
-                'ai_breakdown' => 'Human Authored: 95.8%, AI Assisted: 4.2%',
-                'certificate_no' => 'MEMA-SIM-2026-092',
-                'scan_date' => '26-08-2026 10:20',
-                'verdict' => 'Cleared for Hardbound Binding',
-            ],
+        return view('pg-research.appeal-period-setup', [
+            'stats' => $stats,
+            'periods' => $periods,
+            'status' => $status,
+            'categories' => PgAppealCategory::orderBy('name')->get(['id', 'name', 'code']),
+        ]);
+    }
+
+    /** 16. Appeal Categories & lodged appeals */
+    public function appealCategory(Request $request): View
+    {
+        $search = $request->query('search');
+
+        $categories = PgAppealCategory::query()
+            ->withCount('appeals')
+            ->when($search, fn ($q) => $q->where(fn ($w) => $w
+                ->where('name', 'ilike', "%{$search}%")
+                ->orWhere('code', 'ilike', "%{$search}%")))
+            ->orderBy('name')
+            ->get()
+            ->map(fn (PgAppealCategory $c): array => [
+                'id' => $c->id,
+                'code' => $c->code,
+                'name' => $c->name,
+                'tier' => $this->label($c->applies_to),
+                'description' => $c->description ?? 'No description recorded.',
+                'sla_days' => (string) $c->sla_days,
+                'fee' => sprintf('KES %s', number_format((float) $c->fee_amount, 2)),
+                'appeals_count' => $c->appeals_count,
+                'status' => $c->is_active ? 'Active' : 'Inactive',
+                'is_active' => $c->is_active,
+            ]);
+
+        $appeals = PgAppeal::query()
+            ->with(['candidate', 'category', 'assignee'])
+            ->latest('submitted_at')
+            ->get()
+            ->map(fn (PgAppeal $a): array => [
+                'id' => $a->id,
+                'reference' => $a->reference,
+                'student_name' => $a->candidate->candidate_name,
+                'reg_no' => $a->candidate->reg_no,
+                'category' => $a->category->name,
+                'grounds' => $a->grounds,
+                'status' => $this->label($a->status),
+                'assignee' => $a->assignee?->name ?? 'Unassigned',
+                'submitted_at' => $a->submitted_at->format('d M Y'),
+                'due_at' => $a->dueAt()?->format('d M Y') ?? '—',
+                'is_overdue' => $a->isOverdue(),
+                'is_open' => ! in_array($a->status, PgAppeal::TERMINAL, true),
+            ]);
+
+        $stats = [
+            'totalCategories' => PgAppealCategory::count(),
+            'activeCategories' => PgAppealCategory::where('is_active', true)->count(),
+            'appealsLodged' => PgAppeal::count(),
+            'appealsOpen' => PgAppeal::whereNotIn('status', PgAppeal::TERMINAL)->count(),
         ];
 
-        return view('pg-research.plagiarism-checker', compact('stats', 'scans', 'status', 'search'));
+        return view('pg-research.appeal-category', [
+            'stats' => $stats,
+            'categories' => $categories,
+            'appeals' => $appeals,
+            'search' => $search,
+            'allCandidates' => $this->candidateOptions(),
+            'staff' => \App\Models\User::orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
+    // --------------------------------------------------------------- Helpers
+
+    private function searchCandidate($query, string $term)
+    {
+        return $query->where(fn ($w) => $w
+            ->where('candidate_name', 'ilike', "%{$term}%")
+            ->orWhere('reg_no', 'ilike', "%{$term}%")
+            ->orWhere('programme_title', 'ilike', "%{$term}%"));
+    }
+
+    private function candidateOptions(): Collection
+    {
+        return PgResearchCandidate::orderBy('candidate_name')
+            ->get(['id', 'candidate_name', 'reg_no', 'degree_level']);
+    }
+
+    private function supervisorOptions(): Collection
+    {
+        return PgSupervisor::where('is_active', true)
+            ->withCount(['allocations as active_load' => fn ($q) => $q->where('status', 'ACTIVE')])
+            ->orderBy('full_name')
+            ->get();
+    }
+
+    private function defenceClearedOptions(): Collection
+    {
+        return PgResearchCandidate::whereHas('defenceRequests', fn ($q) => $q->where('status', 'APPROVED'))
+            ->orderBy('candidate_name')
+            ->get(['id', 'candidate_name', 'reg_no']);
+    }
+
+    /** Candidates whose full examiner panel has reported — the only ones a viva may be booked for. */
+    private function vivaReadyOptions(): Collection
+    {
+        return PgResearchCandidate::whereHas('examiners')
+            ->whereDoesntHave('examiners', fn ($q) => $q->where('status', '!=', 'REPORT_SUBMITTED'))
+            ->orderBy('candidate_name')
+            ->get(['id', 'candidate_name', 'reg_no']);
+    }
+
+    private function passRate(): float
+    {
+        $held = PgVivaExamination::whereNotNull('verdict')->count();
+
+        if ($held === 0) {
+            return 0.0;
+        }
+
+        $passed = PgVivaExamination::whereIn('verdict', ['PASS', 'PASS_MINOR', 'PASS_MAJOR'])->count();
+
+        return round($passed / $held * 100, 1);
+    }
+
+    private function waiverLabel(PgResearchCandidate $candidate): string
+    {
+        $approved = $candidate->waivers->firstWhere('status', 'APPROVED');
+        if ($approved) {
+            return sprintf(
+                '%s approved%s',
+                str_replace('_', ' ', $approved->waiver_type),
+                $approved->expires_on ? ' until '.$approved->expires_on->format('d M Y') : '',
+            );
+        }
+
+        if ($candidate->waivers->firstWhere('status', 'PENDING')) {
+            return 'Waiver request pending decision';
+        }
+
+        return 'No waiver on file';
+    }
+
+    private function label(string $value): string
+    {
+        return ucwords(strtolower(str_replace('_', ' ', $value)));
     }
 }

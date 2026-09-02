@@ -16,24 +16,10 @@
                 <i data-lucide="help-circle" class="w-3.5 h-3.5 text-slate-600"></i>
                 <span id="workflow-toggle-btn-text">Show Workflow Guide</span>
             </button>
-            <button type="button" onclick="openSubmitReportModal()" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
+            <button type="button" data-modal-open="progress-submit-modal" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
                 Log Progress Form
             </button>
         </div>
-    </div>
-
-    {{-- Real-Time Alert Toast Container --}}
-    <div id="prog-alert-box" class="hidden mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all">
-        <div class="flex items-start gap-2.5">
-            <i id="alert-icon" data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            <div>
-                <strong id="alert-title" class="block font-bold"></strong>
-                <span id="alert-message" class="font-normal opacity-90"></span>
-            </div>
-        </div>
-        <button type="button" onclick="dismissAlert()" class="text-slate-400 hover:text-slate-600">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
     </div>
 
     {{-- Workflow Guide --}}
@@ -216,9 +202,23 @@
                                 @endif
                             </td>
                             <td class="py-3.5 px-4 text-center">
-                                <button type="button" onclick="openProgressModal('{{ addslashes($r['student_name']) }}', '{{ $r['reg_no'] }}', '{{ addslashes($r['report_stage']) }}', '{{ addslashes($r['milestone_summary']) }}')" class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors">
-                                    Review
-                                </button>
+                                @if($r['is_open'])
+                                    <div class="flex flex-col items-center gap-1">
+                                        <x-pg.action
+                                            :action="route('pg-research.progress-reports.decide', $r['id'])"
+                                            :fields="['decision' => 'APPROVED']"
+                                            label="Endorse"
+                                            variant="approve"
+                                            confirm="Endorse and sign off this progress report?" />
+                                        <button type="button" data-modal-open="progress-return-modal"
+                                                data-report="{{ $r['id'] }}"
+                                                class="px-3 py-1 rounded border border-amber-400 text-amber-700 hover:bg-amber-50 font-semibold text-[10.5px] transition-colors return-trigger">
+                                            Request clarification
+                                        </button>
+                                    </div>
+                                @else
+                                    <span class="text-[10.5px] text-emerald-700 font-semibold">Approved</span>
+                                @endif
                             </td>
                         </tr>
                     @endforeach
@@ -242,36 +242,65 @@
 
 </div>
 
-{{-- MODAL: PROGRESS REVIEW --}}
-<div class="modal" id="prog-modal" role="dialog" aria-modal="true">
-    <div class="modal-card" style="width:min(580px, 94vw);">
-        <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
-            <div>
-                <h2 class="text-sm font-bold text-white">Postgraduate Progress Report Review</h2>
-                <small style="color:rgba(255,255,255,0.85);">Supervisor 1 digital sign-off and feedback.</small>
-            </div>
-            <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
-        </div>
-        <div class="panel-body p-5 text-xs space-y-3.5">
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div class="text-[11px] text-slate-500 font-semibold">Scholar & Stage</div>
-                <div class="font-bold text-slate-900 text-xs mt-0.5" id="modal-pg-student"></div>
-                <div class="text-blue-900 font-bold text-xs mt-1" id="modal-pg-stage"></div>
-            </div>
+{{-- MODAL: SUBMIT PROGRESS REPORT --}}
+<x-pg.modal-form
+    id="progress-submit-modal"
+    title="Submit Progress Report"
+    subtitle="One report per candidate per reporting period."
+    :action="route('pg-research.progress-reports.store')"
+    submit-label="Submit report"
+    width="620px">
 
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div class="text-[11px] text-slate-500 font-semibold">Milestone Narrative</div>
-                <div class="text-xs text-slate-800 mt-1 leading-snug" id="modal-pg-milestone"></div>
-            </div>
+    <x-pg.field label="Candidate" name="candidate_id" required>
+        <select name="candidate_id" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+            <option value="">Select candidate…</option>
+            @foreach($allCandidates as $option)
+                <option value="{{ $option->id }}">{{ $option->candidate_name }} — {{ $option->reg_no }}</option>
+            @endforeach
+        </select>
+    </x-pg.field>
 
-            <div class="flex justify-between items-center pt-3 border-t border-slate-100">
-                <button type="button" class="btn btn-secondary text-xs" data-modal-close>Close</button>
-                <div class="flex gap-2">
-                    <button type="button" class="px-3 py-1.5 rounded bg-amber-600 text-white font-bold text-xs" onclick="document.getElementById('prog-modal').classList.remove('open'); triggerActionAlert('warning', 'Returned for Additions', 'Form returned to scholar for additional data clarifications.');">Request Clarification</button>
-                    <button type="button" class="px-3 py-1.5 rounded bg-emerald-600 text-white font-bold text-xs" onclick="document.getElementById('prog-modal').classList.remove('open'); triggerActionAlert('success', 'Progress Certified', 'Report approved and counter-signed. Milestone recorded in academic ledger.');">Endorse & Sign</button>
+    <div class="grid grid-cols-2 gap-3">
+        <x-pg.field label="Reporting period" name="period_label" required>
+            <input type="text" name="period_label" required maxlength="60" value="{{ old('period_label') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs" placeholder="2026/2027 Semester 1">
+        </x-pg.field>
+
+        <x-pg.field label="Research stage" name="report_stage" required>
+            <input type="text" name="report_stage" required maxlength="60" value="{{ old('report_stage') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs" placeholder="Data collection">
+        </x-pg.field>
+    </div>
+
+    <x-pg.field label="Milestone summary" name="milestone_summary" required>
+        <textarea name="milestone_summary" rows="5" required minlength="10"
+                  class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">{{ old('milestone_summary') }}</textarea>
+    </x-pg.field>
+</x-pg.modal-form>
+
+{{-- MODAL: RETURN FOR CLARIFICATION --}}
+<div class="modal" id="progress-return-modal" role="dialog" aria-modal="true">
+    <div class="modal-card" style="width:min(540px, 94vw);">
+        <form method="POST" action="{{ route('pg-research.progress-reports.decide', 0) }}" id="return-form">
+            @csrf
+            <input type="hidden" name="decision" value="RETURNED">
+            <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
+                <div>
+                    <h2 class="text-sm font-bold text-white">Return Report for Clarification</h2>
+                    <small style="color:rgba(255,255,255,0.85);">The comment is saved on the report and shown to the candidate.</small>
+                </div>
+                <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
+            </div>
+            <div class="panel-body p-5 text-xs space-y-3.5">
+                <x-pg.field label="What must be clarified?" name="comment" required>
+                    <textarea name="comment" rows="4" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs"></textarea>
+                </x-pg.field>
+                <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+                    <button type="button" class="btn btn-secondary text-xs" data-modal-close>Cancel</button>
+                    <button type="submit" class="px-3.5 py-1.5 rounded bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs">Return report</button>
                 </div>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -286,44 +315,6 @@
         }
     }
 
-    function triggerActionAlert(type, title, message) {
-        const box = document.getElementById('prog-alert-box');
-        const icon = document.getElementById('alert-icon');
-        const titleEl = document.getElementById('alert-title');
-        const msgEl = document.getElementById('alert-message');
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-
-        box.className = 'mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all';
-
-        if (type === 'success') {
-            box.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-200');
-            icon.setAttribute('data-lucide', 'check-circle-2');
-            icon.className = 'w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'warning') {
-            box.classList.add('bg-amber-50', 'text-amber-900', 'border-amber-200');
-            icon.setAttribute('data-lucide', 'alert-triangle');
-            icon.className = 'w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'error') {
-            box.classList.add('bg-red-50', 'text-red-900', 'border-red-200');
-            icon.setAttribute('data-lucide', 'alert-circle');
-            icon.className = 'w-4 h-4 text-red-600 mt-0.5 flex-shrink-0';
-        } else {
-            box.classList.add('bg-blue-50', 'text-blue-900', 'border-blue-200');
-            icon.setAttribute('data-lucide', 'info');
-            icon.className = 'w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0';
-        }
-
-        box.classList.remove('hidden');
-        lucide.createIcons();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function dismissAlert() {
-        document.getElementById('prog-alert-box').classList.add('hidden');
-    }
-
     function openProgressModal(name, reg, stage, milestone) {
         document.getElementById('modal-pg-student').textContent = name + ' (' + reg + ')';
         document.getElementById('modal-pg-stage').textContent = stage;
@@ -331,11 +322,14 @@
         document.getElementById('prog-modal').classList.add('open');
     }
 
-    function openSubmitReportModal() {
-        triggerActionAlert('info', 'Student Self-Service Portal (R14)', 'Scholar can upload Form A/B/C with supporting drafts and has recall capability before supervisor sign-off.');
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
+        const returnBase = @js(route('pg-research.progress-reports.decide', 0));
+        document.querySelectorAll('.return-trigger').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('return-form').action = returnBase.replace(/\/0\//, '/' + btn.dataset.report + '/');
+            });
+        });
+
         const searchInput = document.getElementById('prog-search');
         const rows = document.querySelectorAll('.prog-row');
 

@@ -16,24 +16,10 @@
                 <i data-lucide="help-circle" class="w-3.5 h-3.5 text-slate-600"></i>
                 <span id="workflow-toggle-btn-text">Show Workflow Guide</span>
             </button>
-            <button type="button" onclick="openAppointModal()" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
+            <button type="button" data-modal-open="examiner-appoint-modal" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
                 Appoint Examiner
             </button>
         </div>
-    </div>
-
-    {{-- Real-Time Alert Toast Container --}}
-    <div id="exam-alert-box" class="hidden mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all">
-        <div class="flex items-start gap-2.5">
-            <i id="alert-icon" data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            <div>
-                <strong id="alert-title" class="block font-bold"></strong>
-                <span id="alert-message" class="font-normal opacity-90"></span>
-            </div>
-        </div>
-        <button type="button" onclick="dismissAlert()" class="text-slate-400 hover:text-slate-600">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
     </div>
 
     {{-- Workflow Guide --}}
@@ -216,9 +202,16 @@
                                 {{ $as['honorarium_status'] }}
                             </td>
                             <td class="py-3.5 px-4 text-center">
-                                <button type="button" onclick="openExaminerModal('{{ addslashes($as['examiner_name']) }}', '{{ $as['candidate_code'] }}', '{{ addslashes($as['thesis_title']) }}', '{{ $as['report_status'] }}')" class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors">
-                                    Dossier
-                                </button>
+                                @if($as['has_report'])
+                                    <span class="text-[10.5px] text-emerald-700 font-semibold">Report filed</span>
+                                @else
+                                    <button type="button" data-modal-open="examiner-report-modal"
+                                            data-examiner="{{ $as['id'] }}"
+                                            data-name="{{ $as['examiner_name'] }}"
+                                            class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors report-trigger">
+                                        File report
+                                    </button>
+                                @endif
                             </td>
                         </tr>
                     @endforeach
@@ -242,43 +235,93 @@
 
 </div>
 
-{{-- MODAL: EXAMINER DOSSIER --}}
-<div class="modal" id="examiner-modal" role="dialog" aria-modal="true">
-    <div class="modal-card" style="width:min(560px, 94vw);">
-        <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
-            <div>
-                <h2 class="text-sm font-bold text-white">Examiner Manuscript Dossier & Rubric</h2>
-                <small style="color:rgba(255,255,255,0.85);">Download blinded manuscript and review official evaluation report.</small>
-            </div>
-            <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
-        </div>
-        <div class="panel-body p-5 text-xs space-y-3.5">
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div class="text-[11px] text-slate-500 font-semibold">Examiner & Candidate Code</div>
-                <div class="font-bold text-slate-900 text-xs mt-0.5" id="modal-e-name"></div>
-                <div class="text-blue-900 font-mono text-[11px] mt-0.5" id="modal-e-code"></div>
-            </div>
+{{-- MODAL: APPOINT EXAMINER --}}
+<x-pg.modal-form
+    id="examiner-appoint-modal"
+    title="Appoint Thesis Examiner"
+    subtitle="Only candidates with approved defence clearance can be listed here."
+    :action="route('pg-research.examiners.store')"
+    submit-label="Appoint examiner"
+    width="620px">
 
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div class="text-[11px] text-slate-500 font-semibold">Manuscript Title</div>
-                <div class="font-medium text-slate-800 mt-0.5 leading-snug" id="modal-e-title"></div>
-            </div>
+    <x-pg.field label="Candidate" name="candidate_id" required hint="Populated from candidates whose defence clearance is approved.">
+        <select name="candidate_id" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+            <option value="">Select candidate…</option>
+            @foreach($defenceCleared as $option)
+                <option value="{{ $option->id }}">{{ $option->candidate_name }} — {{ $option->reg_no }}</option>
+            @endforeach
+        </select>
+    </x-pg.field>
 
-            <div class="p-3 border border-slate-200 rounded-lg flex items-center justify-between bg-slate-50">
-                <div class="flex items-center gap-3">
-                    <i data-lucide="file-text" class="w-5 h-5 text-[#0A3E50]"></i>
-                    <div>
-                        <div class="text-xs font-bold text-slate-800">Blinded_Thesis_Manuscript.pdf</div>
-                        <small class="text-slate-400">Complete Dissertation (4.8 MB)</small>
-                    </div>
+    <div class="grid grid-cols-2 gap-3">
+        <x-pg.field label="Examiner name" name="examiner_name" required>
+            <input type="text" name="examiner_name" required maxlength="190" value="{{ old('examiner_name') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="Examiner type" name="examiner_type" required>
+            <select name="examiner_type" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+                <option value="EXTERNAL">External examiner</option>
+                <option value="INTERNAL">Internal examiner</option>
+                <option value="CHAIR">Board chair</option>
+            </select>
+        </x-pg.field>
+
+        <x-pg.field label="Institution" name="institution">
+            <input type="text" name="institution" maxlength="190" value="{{ old('institution') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="Email" name="email">
+            <input type="email" name="email" maxlength="190" value="{{ old('email') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+    </div>
+</x-pg.modal-form>
+
+{{-- MODAL: FILE EXAMINER REPORT --}}
+<div class="modal" id="examiner-report-modal" role="dialog" aria-modal="true">
+    <div class="modal-card" style="width:min(600px, 94vw);">
+        <form method="POST" action="{{ route('pg-research.examiners.report', 0) }}" id="examiner-report-form">
+            @csrf
+            <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
+                <div>
+                    <h2 class="text-sm font-bold text-white">File Examiner Report</h2>
+                    <small style="color:rgba(255,255,255,0.85);">The viva cannot be scheduled until every appointed examiner has filed.</small>
                 </div>
-                <button type="button" class="px-2.5 py-1 bg-white border border-slate-200 rounded font-semibold text-slate-700 hover:bg-slate-50" onclick="triggerActionAlert('info', 'Document Downloaded', 'Blinded_Thesis_Manuscript.pdf downloaded.')">Download</button>
+                <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
             </div>
+            <div class="panel-body p-5 text-xs space-y-3.5">
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-900 text-xs" id="examiner-report-name"></div>
 
-            <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                <button type="button" class="btn btn-secondary text-xs" data-modal-close>Close</button>
+                <div class="grid grid-cols-2 gap-3">
+                    <x-pg.field label="Recommendation" name="recommendation" required>
+                        <select name="recommendation" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+                            <option value="PASS">Pass as submitted</option>
+                            <option value="MINOR">Pass with minor corrections</option>
+                            <option value="MAJOR">Pass with major corrections</option>
+                            <option value="REEXAMINE">Re-examine</option>
+                            <option value="FAIL">Fail</option>
+                        </select>
+                    </x-pg.field>
+
+                    <x-pg.field label="Score" name="score" hint="Panel scores are averaged into the composite mark.">
+                        <input type="number" step="0.01" min="0" max="100" name="score"
+                               class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+                    </x-pg.field>
+                </div>
+
+                <x-pg.field label="Remarks" name="remarks" required>
+                    <textarea name="remarks" rows="5" required minlength="10"
+                              class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs"></textarea>
+                </x-pg.field>
+
+                <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+                    <button type="button" class="btn btn-secondary text-xs" data-modal-close>Cancel</button>
+                    <button type="submit" class="px-3.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">File report</button>
+                </div>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -293,44 +336,6 @@
         }
     }
 
-    function triggerActionAlert(type, title, message) {
-        const box = document.getElementById('exam-alert-box');
-        const icon = document.getElementById('alert-icon');
-        const titleEl = document.getElementById('alert-title');
-        const msgEl = document.getElementById('alert-message');
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-
-        box.className = 'mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all';
-
-        if (type === 'success') {
-            box.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-200');
-            icon.setAttribute('data-lucide', 'check-circle-2');
-            icon.className = 'w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'warning') {
-            box.classList.add('bg-amber-50', 'text-amber-900', 'border-amber-200');
-            icon.setAttribute('data-lucide', 'alert-triangle');
-            icon.className = 'w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'error') {
-            box.classList.add('bg-red-50', 'text-red-900', 'border-red-200');
-            icon.setAttribute('data-lucide', 'alert-circle');
-            icon.className = 'w-4 h-4 text-red-600 mt-0.5 flex-shrink-0';
-        } else {
-            box.classList.add('bg-blue-50', 'text-blue-900', 'border-blue-200');
-            icon.setAttribute('data-lucide', 'info');
-            icon.className = 'w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0';
-        }
-
-        box.classList.remove('hidden');
-        lucide.createIcons();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function dismissAlert() {
-        document.getElementById('exam-alert-box').classList.add('hidden');
-    }
-
     function openExaminerModal(name, code, title, status) {
         document.getElementById('modal-e-name').textContent = name;
         document.getElementById('modal-e-code').textContent = 'Candidate: ' + code;
@@ -338,11 +343,15 @@
         document.getElementById('examiner-modal').classList.add('open');
     }
 
-    function openAppointModal() {
-        triggerActionAlert('info', 'Appoint Examiner', 'Open candidate manuscript dossier to nominate and dispatch to external or internal reviewers.');
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
+        const reportBase = @js(route('pg-research.examiners.report', 0));
+        document.querySelectorAll('.report-trigger').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('examiner-report-form').action = reportBase.replace(/\/0\//, '/' + btn.dataset.examiner + '/');
+                document.getElementById('examiner-report-name').textContent = btn.dataset.name;
+            });
+        });
+
         const searchInput = document.getElementById('exam-search');
         const rows = document.querySelectorAll('.exam-row');
 

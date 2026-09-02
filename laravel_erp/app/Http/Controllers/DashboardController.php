@@ -113,6 +113,25 @@ final class DashboardController extends Controller
         $supportCount = $profiles->where('has_support_need', true)->count();
         $youthCount = $profiles->filter(fn (ApplicantProfile $profile): bool => $profile->date_of_birth !== null && $profile->date_of_birth->age <= 35)->count();
 
+        $graduatedCount = 0;
+        $alumniCount = 0;
+        try {
+            $graduatedCount = DB::table('students')->where('admission_number', 'like', '%GRD%')->count();
+        } catch (\Throwable) {
+        }
+
+        $activeResearchProjects = 0;
+        $researchSupervisors = 0;
+        try {
+            $activeResearchProjects = DB::table('pg_research_candidates')->count();
+            $researchSupervisors = DB::table('pg_supervisors')->count();
+        } catch (\Throwable) {
+        }
+
+        $researchGrants = (float) BudgetProposal::query()->where(function ($q) {
+            $q->where('department', 'ilike', '%Research%')->orWhere('description', 'ilike', '%Research%');
+        })->sum('approved_amount');
+
         $metrics = [
             'applications' => $totalApplications,
             'inProgress' => $inProgress,
@@ -126,9 +145,9 @@ final class DashboardController extends Controller
             'enrolledInReview' => $applications->where('status', 'READY_TO_ENROL')->count(),
             'accepted' => $accepted,
             'initiated' => $applications->where('status', 'DRAFT')->count(),
-            'graduated' => 0,
+            'graduated' => $graduatedCount,
             'programmesCount' => $coursesCount,
-            'alumniCount' => 0,
+            'alumniCount' => $alumniCount,
             'pendingAdmissions' => $inProgress,
             'dropOffRate' => number_format($this->decimalPercentage($rejected + $offerRejected, $totalApplications), 2).'%',
             'admissionsBySource' => $sources,
@@ -144,7 +163,7 @@ final class DashboardController extends Controller
             'financials' => ['collected' => $this->money($paid), 'target' => $this->money($target), 'rate' => $financialRate, 'yoy' => '0.0%', 'outstanding' => $this->money(max(0, $target - $paid))],
             'academicHealth' => ['complianceRate' => $academicCoverage, 'accreditedCount' => $coursesCount, 'totalProgrammes' => $coursesCount, 'studentFacultyRatio' => '1 : '.($staffCount > 0 ? (int) ceil($studentsCount / $staffCount) : 0), 'nursingCapacity' => 0.0],
             'retention' => ['rate' => $acceptanceRate, 'atRiskCount' => $rejected, 'interventionsActive' => $applications->whereIn('status', ['RETURNED_FOR_CORRECTION', 'INFO_REQUESTED'])->count(), 'dropOffDelta' => '0.0%'],
-            'research' => ['grantsTotal' => $this->money(0), 'activeProjects' => 0, 'publicationsYtd' => 0, 'innovationPipeline' => 0],
+            'research' => ['grantsTotal' => $this->money($researchGrants), 'activeProjects' => $activeResearchProjects, 'publicationsYtd' => $researchSupervisors, 'innovationPipeline' => $activeResearchProjects],
             'governance' => ['auditReadiness' => $auditReadiness, 'pendingSenateApprovals' => $applications->where('status', 'APPROVAL_PENDING')->count(), 'budgetUtilization' => $budgetRate],
         ];
 

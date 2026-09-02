@@ -16,24 +16,10 @@
                 <i data-lucide="help-circle" class="w-3.5 h-3.5 text-slate-600"></i>
                 <span id="workflow-toggle-btn-text">Show Workflow Guide</span>
             </button>
-            <button type="button" onclick="openAddRoleModal()" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
+            <button type="button" data-modal-open="supervisor-create-modal" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
                 Add
             </button>
         </div>
-    </div>
-
-    {{-- Real-Time Alert Toast Container --}}
-    <div id="role-alert-box" class="hidden mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all">
-        <div class="flex items-start gap-2.5">
-            <i id="alert-icon" data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            <div>
-                <strong id="alert-title" class="block font-bold"></strong>
-                <span id="alert-message" class="font-normal opacity-90"></span>
-            </div>
-        </div>
-        <button type="button" onclick="dismissAlert()" class="text-slate-400 hover:text-slate-600">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
     </div>
 
     {{-- Governance & Lifecycle Guide --}}
@@ -221,9 +207,11 @@
                                 @endif
                             </td>
                             <td class="py-3.5 px-4 text-center">
-                                <button type="button" onclick="openEditRoleModal('{{ $r['role_code'] }}', '{{ addslashes($r['role_title']) }}', '{{ addslashes($r['min_qualification']) }}', '{{ addslashes($r['max_quota']) }}', '{{ addslashes($r['sign_off_scope']) }}', '{{ addslashes($r['honorarium_unit']) }}', '{{ $r['status'] }}')" class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors">
-                                    Edit
-                                </button>
+                                <x-pg.action
+                                    :action="route('pg-research.supervisors.toggle', $r['id'])"
+                                    :label="$r['status'] === 'Active' ? 'Deactivate' : 'Activate'"
+                                    :variant="$r['status'] === 'Active' ? 'reject' : 'approve'"
+                                    :confirm="$r['status'] === 'Active' ? 'Deactivate this supervisor? They will no longer be allocatable.' : null" />
                             </td>
                         </tr>
                     @endforeach
@@ -247,67 +235,47 @@
 
 </div>
 
-{{-- MODAL: ADD / EDIT SUPERVISOR ROLE --}}
-<div class="modal" id="role-modal" role="dialog" aria-modal="true">
-    <div class="modal-card" style="width:min(540px, 94vw);">
-        <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
-            <div>
-                <h2 class="text-sm font-bold text-white" id="role-modal-title">Configure Supervisor Role</h2>
-                <small style="color:rgba(255,255,255,0.85);">Define eligibility thresholds, quota limits, and honoraria.</small>
-            </div>
-            <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
-        </div>
-        <form class="panel-body p-5" onsubmit="event.preventDefault(); saveRole();">
-            <div class="space-y-3">
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="text-xs font-semibold text-slate-700 block mb-1">Role Code</label>
-                        <input type="text" id="modal-r-code" class="w-full border border-slate-300 rounded p-2 text-xs font-mono" placeholder="e.g. SUP-LEAD-01" required>
-                    </div>
-                    <div>
-                        <label class="text-xs font-semibold text-slate-700 block mb-1">Max Supervisee Quota</label>
-                        <input type="text" id="modal-r-quota" class="w-full border border-slate-300 rounded p-2 text-xs" placeholder="e.g. 5 PhD Candidates" required>
-                    </div>
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-slate-700 block mb-1">Role Title</label>
-                    <input type="text" id="modal-r-title" class="w-full border border-slate-300 rounded p-2 text-xs text-slate-800" placeholder="e.g. Lead Doctoral Supervisor (Major Advisor)" required>
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-slate-700 block mb-1">Minimum Qualification Required</label>
-                    <select id="modal-r-qual" class="w-full border border-slate-300 rounded p-2 text-xs text-slate-800" required>
-                        <option>PhD / Associate Professor or Professor</option>
-                        <option>PhD / Senior Lecturer</option>
-                        <option>PhD / Lecturer with 3+ yrs experience</option>
-                        <option>PhD / Certified Industry Fellow</option>
-                        <option>Professor / Distinguished Scholar</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-slate-700 block mb-1">Milestone Sign-off Scope</label>
-                    <input type="text" id="modal-r-scope" class="w-full border border-slate-300 rounded p-2 text-xs text-slate-800" placeholder="e.g. Concept, Proposal, Ethics, Viva, Final Submission" required>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="text-xs font-semibold text-slate-700 block mb-1">Honorarium Unit Rate</label>
-                        <input type="text" id="modal-r-honorarium" class="w-full border border-slate-300 rounded p-2 text-xs font-mono" placeholder="KES 45,000 / candidate" required>
-                    </div>
-                    <div>
-                        <label class="text-xs font-semibold text-slate-700 block mb-1">Role Status</label>
-                        <select id="modal-r-status" class="w-full border border-slate-300 rounded p-2 text-xs text-slate-800">
-                            <option value="Active">Active</option>
-                            <option value="Inactive">Inactive</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <div class="flex justify-end gap-2 mt-4 pt-3 border-t border-slate-100">
-                <button type="button" class="btn btn-secondary text-xs" data-modal-close>Cancel</button>
-                <button type="submit" class="btn text-xs bg-[#0A3E50] hover:bg-[#072c39] text-white font-semibold">Save Role</button>
-            </div>
-        </form>
+{{-- MODAL: ADD SUPERVISOR --}}
+<x-pg.modal-form
+    id="supervisor-create-modal"
+    title="Add Supervisor to the Pool"
+    subtitle="Capacity entered here is enforced at allocation time."
+    :action="route('pg-research.supervisors.store')"
+    submit-label="Add supervisor"
+    width="620px">
+
+    <div class="grid grid-cols-2 gap-3">
+        <x-pg.field label="Staff number" name="staff_no" required>
+            <input type="text" name="staff_no" required maxlength="40" value="{{ old('staff_no') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs font-mono">
+        </x-pg.field>
+
+        <x-pg.field label="Full name" name="full_name" required>
+            <input type="text" name="full_name" required maxlength="190" value="{{ old('full_name') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="Academic rank" name="academic_rank" required>
+            <input type="text" name="academic_rank" required maxlength="60" value="{{ old('academic_rank') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs" placeholder="Senior Lecturer">
+        </x-pg.field>
+
+        <x-pg.field label="Maximum supervision load" name="max_load" required hint="Allocations beyond this are refused.">
+            <input type="number" name="max_load" min="1" max="30" required value="{{ old('max_load', 5) }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="Department" name="department">
+            <input type="text" name="department" maxlength="190" value="{{ old('department') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="Specialisation" name="specialization">
+            <input type="text" name="specialization" maxlength="190" value="{{ old('specialization') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
     </div>
-</div>
+</x-pg.modal-form>
 
 <script>
     function toggleWorkflowGuide() {
@@ -318,44 +286,6 @@
             guide.classList.toggle('hidden', !isHidden);
             btnText.textContent = isHidden ? 'Hide Workflow Guide' : 'Show Workflow Guide';
         }
-    }
-
-    function triggerActionAlert(type, title, message) {
-        const box = document.getElementById('role-alert-box');
-        const icon = document.getElementById('alert-icon');
-        const titleEl = document.getElementById('alert-title');
-        const msgEl = document.getElementById('alert-message');
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-
-        box.className = 'mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all';
-
-        if (type === 'success') {
-            box.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-200');
-            icon.setAttribute('data-lucide', 'check-circle-2');
-            icon.className = 'w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'warning') {
-            box.classList.add('bg-amber-50', 'text-amber-900', 'border-amber-200');
-            icon.setAttribute('data-lucide', 'alert-triangle');
-            icon.className = 'w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'error') {
-            box.classList.add('bg-red-50', 'text-red-900', 'border-red-200');
-            icon.setAttribute('data-lucide', 'alert-circle');
-            icon.className = 'w-4 h-4 text-red-600 mt-0.5 flex-shrink-0';
-        } else {
-            box.classList.add('bg-blue-50', 'text-blue-900', 'border-blue-200');
-            icon.setAttribute('data-lucide', 'info');
-            icon.className = 'w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0';
-        }
-
-        box.classList.remove('hidden');
-        lucide.createIcons();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function dismissAlert() {
-        document.getElementById('role-alert-box').classList.add('hidden');
     }
 
     function openAddRoleModal() {
@@ -378,11 +308,6 @@
         document.getElementById('modal-r-honorarium').value = honorarium;
         document.getElementById('modal-r-status').value = status;
         document.getElementById('role-modal').classList.add('open');
-    }
-
-    function saveRole() {
-        document.getElementById('role-modal').classList.remove('open');
-        triggerActionAlert('success', 'Supervisor Role Saved', 'Postgraduate supervisor configuration successfully updated and policy limits enacted.');
     }
 
     document.addEventListener('DOMContentLoaded', () => {

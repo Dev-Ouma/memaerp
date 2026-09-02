@@ -16,24 +16,10 @@
                 <i data-lucide="help-circle" class="w-3.5 h-3.5 text-slate-600"></i>
                 <span id="workflow-toggle-btn-text">Show Workflow Guide</span>
             </button>
-            <button type="button" onclick="openScheduleModal()" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
+            <button type="button" data-modal-open="viva-schedule-modal" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
                 Schedule Viva
             </button>
         </div>
-    </div>
-
-    {{-- Real-Time Alert Toast Container --}}
-    <div id="viva-alert-box" class="hidden mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all">
-        <div class="flex items-start gap-2.5">
-            <i id="alert-icon" data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            <div>
-                <strong id="alert-title" class="block font-bold"></strong>
-                <span id="alert-message" class="font-normal opacity-90"></span>
-            </div>
-        </div>
-        <button type="button" onclick="dismissAlert()" class="text-slate-400 hover:text-slate-600">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
     </div>
 
     {{-- Workflow Guide --}}
@@ -211,9 +197,17 @@
                                 @endif
                             </td>
                             <td class="py-3.5 px-4 text-center">
-                                <button type="button" onclick="openVerdictModal('{{ addslashes($v['candidate_name']) }}', '{{ $v['reg_no'] }}', '{{ addslashes($v['degree']) }}', '{{ $v['viva_date'] }}')" class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors">
-                                    Verdict
-                                </button>
+                                @if($v['is_open'])
+                                    <button type="button" data-modal-open="viva-verdict-modal"
+                                            data-viva="{{ $v['id'] }}"
+                                            data-candidate="{{ $v['candidate_name'] }}"
+                                            data-reg="{{ $v['reg_no'] }}"
+                                            class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors verdict-trigger">
+                                        Record verdict
+                                    </button>
+                                @else
+                                    <span class="text-[10.5px] text-slate-500 font-semibold">{{ $v['status'] }}</span>
+                                @endif
                             </td>
                         </tr>
                     @endforeach
@@ -237,57 +231,84 @@
 
 </div>
 
+{{-- MODAL: SCHEDULE VIVA --}}
+<x-pg.modal-form
+    id="viva-schedule-modal"
+    title="Schedule Viva Voce Examination"
+    subtitle="Only candidates whose full examiner panel has filed reports are listed."
+    :action="route('pg-research.vivas.store')"
+    submit-label="Schedule viva"
+    width="620px">
+
+    <x-pg.field label="Candidate" name="candidate_id" required hint="A candidate with an outstanding examiner report cannot be scheduled.">
+        <select name="candidate_id" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+            <option value="">Select candidate…</option>
+            @foreach($readyCandidates as $option)
+                <option value="{{ $option->id }}">{{ $option->candidate_name }} — {{ $option->reg_no }}</option>
+            @endforeach
+        </select>
+        @if($readyCandidates->isEmpty())
+            <span class="block text-[10.5px] text-amber-700 font-semibold mt-1">
+                No candidate currently has a complete examiner panel report set.
+            </span>
+        @endif
+    </x-pg.field>
+
+    <div class="grid grid-cols-2 gap-3">
+        <x-pg.field label="Date &amp; time" name="scheduled_for" required>
+            <input type="datetime-local" name="scheduled_for" required
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="Venue" name="venue" required>
+            <input type="text" name="venue" required maxlength="190" value="{{ old('venue') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+    </div>
+
+    <x-pg.field label="Board chair" name="chair_name">
+        <input type="text" name="chair_name" maxlength="190" value="{{ old('chair_name') }}"
+               class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+    </x-pg.field>
+</x-pg.modal-form>
+
 {{-- MODAL: RECORD VIVA VERDICT --}}
-<div class="modal" id="verdict-modal" role="dialog" aria-modal="true">
-    <div class="modal-card" style="width:min(580px, 94vw);">
-        <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
-            <div>
-                <h2 class="text-sm font-bold text-white">Record Oral Viva Examination Verdict</h2>
-                <small style="color:rgba(255,255,255,0.85);">Formally table the Examination Board's collective decision.</small>
-            </div>
-            <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
-        </div>
-        <form class="panel-body p-5 text-xs space-y-3.5" onsubmit="event.preventDefault(); saveVerdict();">
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div class="text-[11px] text-slate-500 font-semibold">Scholar Name & Degree</div>
-                <div class="font-bold text-slate-900 text-xs mt-0.5" id="modal-v-student"></div>
-                <div class="text-slate-600 text-[11px] font-mono mt-0.5" id="modal-v-reg"></div>
-            </div>
-
-            <div>
-                <label class="text-xs font-semibold text-slate-700 block mb-1">Board Collective Verdict</label>
-                <select id="modal-v-verdict" class="w-full border border-slate-300 rounded p-2 text-xs text-slate-800" required>
-                    <option value="pass_minor">Pass with Minor Corrections (30-day window)</option>
-                    <option value="pass_clean">Pass without Corrections (Immediate Hardbound)</option>
-                    <option value="pass_major">Pass with Major Corrections (90-day re-examination)</option>
-                    <option value="resit">Re-sit Oral Defense / Re-write Thesis</option>
-                    <option value="fail">Fail / Discontinue Candidature</option>
-                </select>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2">
+<div class="modal" id="viva-verdict-modal" role="dialog" aria-modal="true">
+    <div class="modal-card" style="width:min(600px, 94vw);">
+        <form method="POST" action="{{ route('pg-research.vivas.verdict', 0) }}" id="verdict-form">
+            @csrf
+            <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
                 <div>
-                    <label class="text-xs font-semibold text-slate-700 block mb-1">Internal Mark (%)</label>
-                    <input type="number" class="w-full border border-slate-300 rounded p-2 text-xs font-mono" min="0" max="100" value="82" required>
+                    <h2 class="text-sm font-bold text-white">Record Examination Board Verdict</h2>
+                    <small style="color:rgba(255,255,255,0.85);">A corrections verdict opens a resubmission cycle with a real due date.</small>
                 </div>
-                <div>
-                    <label class="text-xs font-semibold text-slate-700 block mb-1">External Mark (%)</label>
-                    <input type="number" class="w-full border border-slate-300 rounded p-2 text-xs font-mono" min="0" max="100" value="85" required>
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-slate-700 block mb-1">Viva Presentation (%)</label>
-                    <input type="number" class="w-full border border-slate-300 rounded p-2 text-xs font-mono" min="0" max="100" value="84" required>
-                </div>
+                <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
             </div>
+            <div class="panel-body p-5 text-xs space-y-3.5">
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div class="font-bold text-slate-900 text-xs" id="verdict-candidate"></div>
+                    <div class="text-slate-600 text-[11px] font-mono mt-0.5" id="verdict-reg"></div>
+                </div>
 
-            <div>
-                <label class="text-xs font-semibold text-slate-700 block mb-1">Board Recommendations / Required Corrections Summary</label>
-                <textarea class="w-full border border-slate-300 rounded p-2 text-xs text-slate-800" rows="3" placeholder="Specify required amendments to Chapter 3 methodology, sample size clarifications, and formatting updates..."></textarea>
-            </div>
+                <x-pg.field label="Verdict" name="verdict" required>
+                    <select name="verdict" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+                        <option value="PASS">Pass as submitted — composite mark computed from panel scores</option>
+                        <option value="PASS_MINOR">Pass with minor corrections — 90-day resubmission cycle</option>
+                        <option value="PASS_MAJOR">Pass with major corrections — 180-day resubmission cycle</option>
+                        <option value="REEXAMINE">Re-examine — candidate returns to writing</option>
+                        <option value="FAIL">Fail</option>
+                    </select>
+                </x-pg.field>
 
-            <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                <button type="button" class="btn btn-secondary text-xs" data-modal-close>Cancel</button>
-                <button type="submit" class="btn text-xs bg-[#0A3E50] hover:bg-[#072c39] text-white font-semibold">Submit Official Verdict</button>
+                <x-pg.field label="Board notes" name="verdict_notes" required>
+                    <textarea name="verdict_notes" rows="5" required minlength="10"
+                              class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs"></textarea>
+                </x-pg.field>
+
+                <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+                    <button type="button" class="btn btn-secondary text-xs" data-modal-close>Cancel</button>
+                    <button type="submit" class="px-3.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">Record verdict</button>
+                </div>
             </div>
         </form>
     </div>
@@ -304,60 +325,22 @@
         }
     }
 
-    function triggerActionAlert(type, title, message) {
-        const box = document.getElementById('viva-alert-box');
-        const icon = document.getElementById('alert-icon');
-        const titleEl = document.getElementById('alert-title');
-        const msgEl = document.getElementById('alert-message');
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-
-        box.className = 'mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all';
-
-        if (type === 'success') {
-            box.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-200');
-            icon.setAttribute('data-lucide', 'check-circle-2');
-            icon.className = 'w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'warning') {
-            box.classList.add('bg-amber-50', 'text-amber-900', 'border-amber-200');
-            icon.setAttribute('data-lucide', 'alert-triangle');
-            icon.className = 'w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'error') {
-            box.classList.add('bg-red-50', 'text-red-900', 'border-red-200');
-            icon.setAttribute('data-lucide', 'alert-circle');
-            icon.className = 'w-4 h-4 text-red-600 mt-0.5 flex-shrink-0';
-        } else {
-            box.classList.add('bg-blue-50', 'text-blue-900', 'border-blue-200');
-            icon.setAttribute('data-lucide', 'info');
-            icon.className = 'w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0';
-        }
-
-        box.classList.remove('hidden');
-        lucide.createIcons();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function dismissAlert() {
-        document.getElementById('viva-alert-box').classList.add('hidden');
-    }
-
     function openVerdictModal(student, reg, degree, date) {
         document.getElementById('modal-v-student').textContent = student + ' (' + degree + ')';
         document.getElementById('modal-v-reg').textContent = reg + ' • Defended on: ' + date;
         document.getElementById('verdict-modal').classList.add('open');
     }
 
-    function openScheduleModal() {
-        triggerActionAlert('info', 'Viva Scheduling Assistant', 'Select eligible candidate from Defence Clearance list to assign panellists and book venue.');
-    }
-
-    function saveVerdict() {
-        document.getElementById('verdict-modal').classList.remove('open');
-        triggerActionAlert('success', 'Viva Verdict Tabulated', 'Examination board verdict officially logged and transmitted to Directorate of Postgraduate Studies.');
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
+        const verdictBase = @js(route('pg-research.vivas.verdict', 0));
+        document.querySelectorAll('.verdict-trigger').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('verdict-form').action = verdictBase.replace(/\/0\//, '/' + btn.dataset.viva + '/');
+                document.getElementById('verdict-candidate').textContent = btn.dataset.candidate;
+                document.getElementById('verdict-reg').textContent = btn.dataset.reg;
+            });
+        });
+
         const searchInput = document.getElementById('viva-search');
         const rows = document.querySelectorAll('.viva-row');
 

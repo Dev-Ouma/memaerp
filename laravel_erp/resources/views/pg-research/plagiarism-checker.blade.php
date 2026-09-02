@@ -19,24 +19,10 @@
                 <i data-lucide="help-circle" class="w-3.5 h-3.5 text-slate-600"></i>
                 <span id="workflow-toggle-btn-text">Show Workflow Guide</span>
             </button>
-            <button type="button" onclick="openUploadScanModal()" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
+            <button type="button" data-modal-open="scan-record-modal" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
                 Scan New Manuscript
             </button>
         </div>
-    </div>
-
-    {{-- Real-Time Alert Toast Container --}}
-    <div id="plag-alert-box" class="hidden mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all">
-        <div class="flex items-start gap-2.5">
-            <i id="alert-icon" data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            <div>
-                <strong id="alert-title" class="block font-bold"></strong>
-                <span id="alert-message" class="font-normal opacity-90"></span>
-            </div>
-        </div>
-        <button type="button" onclick="dismissAlert()" class="text-slate-400 hover:text-slate-600">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
     </div>
 
     {{-- Workflow Guide & Policy Banners --}}
@@ -247,9 +233,16 @@
                                 @endif
                             </td>
                             <td class="py-3.5 px-4 text-center">
-                                <button type="button" onclick="openEmbeddedViewer('{{ addslashes($sc['student_name']) }}', '{{ $sc['reg_no'] }}', '{{ addslashes($sc['document_title']) }}', {{ $sc['similarity_score'] }}, {{ $sc['ai_score'] }}, '{{ $sc['certificate_no'] }}')" class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors shadow-2xs">
-                                    Viewer & Heatmap
-                                </button>
+                                @if($sc['is_flagged'])
+                                    <button type="button" data-modal-open="scan-override-modal"
+                                            data-scan="{{ $sc['id'] }}"
+                                            data-student="{{ $sc['student_name'] }}"
+                                            class="px-3 py-1 rounded border border-red-400 text-red-700 hover:bg-red-50 font-semibold text-xs transition-colors override-trigger">
+                                        Review flag
+                                    </button>
+                                @else
+                                    <span class="text-[10.5px] text-emerald-700 font-semibold">{{ $sc['verdict'] }}</span>
+                                @endif
                             </td>
                         </tr>
                     @endforeach
@@ -273,116 +266,77 @@
 
 </div>
 
-{{-- MODAL: EMBEDDED TURNITIN & AI SIMILARITY VIEWER --}}
-<div class="modal" id="viewer-modal" role="dialog" aria-modal="true">
-    <div class="modal-card" style="width:min(880px, 96vw);">
-        <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
-            <div class="flex items-center gap-2">
-                <i data-lucide="scan" class="w-5 h-5 text-white"></i>
+{{-- MODAL: RECORD SIMILARITY SCAN --}}
+<x-pg.modal-form
+    id="scan-record-modal"
+    title="Record Similarity Scan"
+    subtitle="The pass/flag verdict is computed from the score against the threshold — it is not chosen here."
+    :action="route('pg-research.scans.store')"
+    submit-label="Record scan"
+    width="600px">
+
+    <x-pg.field label="Candidate" name="candidate_id" required>
+        <select name="candidate_id" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+            <option value="">Select candidate…</option>
+            @foreach($allCandidates as $option)
+                <option value="{{ $option->id }}">{{ $option->candidate_name }} — {{ $option->reg_no }}</option>
+            @endforeach
+        </select>
+    </x-pg.field>
+
+    <div class="grid grid-cols-2 gap-3">
+        <x-pg.field label="Document" name="document_type" required>
+            <select name="document_type" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+                <option value="THESIS">Thesis manuscript</option>
+                <option value="PROPOSAL">Research proposal</option>
+                <option value="ARTICLE">Journal article</option>
+            </select>
+        </x-pg.field>
+
+        <x-pg.field label="Report reference" name="report_reference">
+            <input type="text" name="report_reference" maxlength="190" value="{{ old('report_reference') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs font-mono">
+        </x-pg.field>
+
+        <x-pg.field label="Similarity index (%)" name="similarity_index" required>
+            <input type="number" step="0.01" min="0" max="100" name="similarity_index" required value="{{ old('similarity_index') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="Threshold (%)" name="threshold" hint="Scores above this are flagged and block defence clearance.">
+            <input type="number" step="0.01" min="0" max="100" name="threshold" value="{{ old('threshold', 15) }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+    </div>
+</x-pg.modal-form>
+
+{{-- MODAL: OVERRIDE FLAGGED SCAN --}}
+<div class="modal" id="scan-override-modal" role="dialog" aria-modal="true">
+    <div class="modal-card" style="width:min(560px, 94vw);">
+        <form method="POST" action="{{ route('pg-research.scans.override', 0) }}" id="override-form">
+            @csrf
+            <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
                 <div>
-                    <h2 class="text-sm font-bold text-white">Embedded Turnitin Originality & AI Detector Viewer</h2>
-                    <small style="color:rgba(255,255,255,0.85);">Interactive matched passage breakdown and AI generative sentence classifier.</small>
+                    <h2 class="text-sm font-bold text-white">Clear Flagged Similarity Report</h2>
+                    <small style="color:rgba(255,255,255,0.85);">The justification is retained permanently in the research audit trail.</small>
+                </div>
+                <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
+            </div>
+            <div class="panel-body p-5 text-xs space-y-3.5">
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-900 text-xs" id="override-student"></div>
+
+                <x-pg.field label="Override justification" name="notes" required hint="Minimum 10 characters; recorded against the scan.">
+                    <textarea name="notes" rows="4" required minlength="10"
+                              class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs"
+                              placeholder="e.g. Matches are the candidate's own published work, verified against DOI 10.xxxx."></textarea>
+                </x-pg.field>
+
+                <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+                    <button type="button" class="btn btn-secondary text-xs" data-modal-close>Cancel</button>
+                    <button type="submit" class="px-3.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">Clear flag</button>
                 </div>
             </div>
-            <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
-        </div>
-        <div class="panel-body p-5 text-xs space-y-4">
-            
-            {{-- Manuscript Header Stats --}}
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 bg-slate-50 border border-slate-200 rounded-lg">
-                <div>
-                    <span class="text-[11px] text-slate-500 font-semibold block">Candidate:</span>
-                    <strong class="text-slate-900 text-xs" id="modal-vm-student"></strong>
-                    <div class="text-[11px] text-slate-500 font-mono mt-0.5" id="modal-vm-reg"></div>
-                </div>
-                <div>
-                    <span class="text-[11px] text-slate-500 font-semibold block">Turnitin Similarity Index:</span>
-                    <div class="flex items-center gap-1.5 mt-0.5">
-                        <span class="text-lg font-black text-emerald-700" id="modal-vm-sim"></span>
-                        <span class="text-[10.5px] font-bold text-slate-600">(Ceiling &le; 15%)</span>
-                    </div>
-                </div>
-                <div>
-                    <span class="text-[11px] text-slate-500 font-semibold block">AI Generative Content Index:</span>
-                    <div class="flex items-center gap-1.5 mt-0.5">
-                        <span class="text-lg font-black text-purple-900" id="modal-vm-ai"></span>
-                        <span class="text-[10.5px] font-bold text-slate-600">(Ceiling &le; 20%)</span>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Interactive Heatmap Simulator & Exclusions Panel --}}
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                
-                {{-- Left 2 cols: Simulated Manuscript Viewer with Color Coded Matches --}}
-                <div class="md:col-span-2 p-4 bg-white border border-slate-200 rounded-lg shadow-2xs space-y-3">
-                    <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                        <div class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                            <i data-lucide="file-text" class="w-4 h-4 text-[#0A3E50]"></i>
-                            <span>Manuscript Paragraph Breakdown</span>
-                        </div>
-                        <div class="flex gap-1.5">
-                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800">Internet Match</span>
-                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">Published Article</span>
-                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">AI Generated</span>
-                        </div>
-                    </div>
-
-                    <div class="text-xs text-slate-700 leading-relaxed font-serif bg-slate-50/70 p-3.5 rounded border border-slate-100 space-y-2.5 max-h-56 overflow-y-auto">
-                        <p>
-                            <strong>1.1 Background:</strong> Distributed edge computing architectures offer scalable solutions for latency-sensitive applications in healthcare diagnostics. 
-                            <mark class="bg-blue-100 text-blue-950 px-1 rounded font-medium border border-blue-200">As established by Mwangi et al. (2025), data locality guarantees compliance with patient privacy regulations across Kenyan public hospitals.</mark>
-                        </p>
-                        <p>
-                            <strong>1.2 Problem Statement:</strong> 
-                            <mark class="bg-purple-100 text-purple-950 px-1 rounded font-medium border border-purple-200">Recent advancements in quantized artificial neural networks have democratized high-dimensional model inference on edge nodes without significant loss in classification precision.</mark> 
-                            However, bandwidth volatility in rural remote clinics precipitates packet drops during federated parameter synchronization.
-                        </p>
-                        <p>
-                            <strong>1.3 Proposed Methodology:</strong> To alleviate communication overhead, we introduce a gradient compression scheme incorporating top-k sparsification.
-                            <mark class="bg-red-100 text-red-950 px-1 rounded font-medium border border-red-200">Mathematical simulations demonstrate a 72% reduction in uplink transmission payloads while maintaining a 98.2% diagnostic accuracy.</mark>
-                        </p>
-                    </div>
-                </div>
-
-                {{-- Right 1 col: Exclusions & Filter Controls --}}
-                <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
-                    <div class="font-bold text-slate-800 text-xs border-b border-slate-200 pb-1.5 flex items-center gap-1.5">
-                        <i data-lucide="sliders" class="w-4 h-4 text-[#0A3E50]"></i>
-                        <span>Turnitin Exclusion Filters</span>
-                    </div>
-
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked class="rounded text-[#0A3E50]">
-                        <span class="text-xs text-slate-700">Exclude Bibliography & References</span>
-                    </label>
-
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked class="rounded text-[#0A3E50]">
-                        <span class="text-xs text-slate-700">Exclude Direct Quotations</span>
-                    </label>
-
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked class="rounded text-[#0A3E50]">
-                        <span class="text-xs text-slate-700">Exclude Small Matches (&lt; 5 words)</span>
-                    </label>
-
-                    <div class="pt-2 border-t border-slate-200">
-                        <span class="text-[11px] text-slate-500 font-semibold block mb-1">Clearance Certificate No:</span>
-                        <div class="font-mono text-xs font-bold text-slate-900 bg-white p-2 rounded border border-slate-200 text-center" id="modal-vm-cert"></div>
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="flex justify-between items-center pt-3 border-t border-slate-100">
-                <button type="button" class="btn btn-secondary text-xs" data-modal-close>Close Viewer</button>
-                <div class="flex gap-2">
-                    <button type="button" class="px-3 py-1.5 rounded bg-blue-600 text-white font-bold text-xs" onclick="document.getElementById('viewer-modal').classList.remove('open'); triggerActionAlert('info', 'Re-Scan Initiated', 'Embedded Turnitin API scan dispatched. Updated similarity index will refresh in 30 seconds.');">Re-Run Similarity Scan</button>
-                    <button type="button" class="px-3 py-1.5 rounded bg-emerald-600 text-white font-bold text-xs" onclick="document.getElementById('viewer-modal').classList.remove('open'); triggerActionAlert('success', 'Clearance Certificate Issued', 'Official Turnitin & AI Compliance Certificate generated and attached to candidate academic docket.');">Download Clearance Certificate</button>
-                </div>
-            </div>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -397,44 +351,6 @@
         }
     }
 
-    function triggerActionAlert(type, title, message) {
-        const box = document.getElementById('plag-alert-box');
-        const icon = document.getElementById('alert-icon');
-        const titleEl = document.getElementById('alert-title');
-        const msgEl = document.getElementById('alert-message');
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-
-        box.className = 'mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all';
-
-        if (type === 'success') {
-            box.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-200');
-            icon.setAttribute('data-lucide', 'check-circle-2');
-            icon.className = 'w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'warning') {
-            box.classList.add('bg-amber-50', 'text-amber-900', 'border-amber-200');
-            icon.setAttribute('data-lucide', 'alert-triangle');
-            icon.className = 'w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'error') {
-            box.classList.add('bg-red-50', 'text-red-900', 'border-red-200');
-            icon.setAttribute('data-lucide', 'alert-circle');
-            icon.className = 'w-4 h-4 text-red-600 mt-0.5 flex-shrink-0';
-        } else {
-            box.classList.add('bg-blue-50', 'text-blue-900', 'border-blue-200');
-            icon.setAttribute('data-lucide', 'info');
-            icon.className = 'w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0';
-        }
-
-        box.classList.remove('hidden');
-        lucide.createIcons();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function dismissAlert() {
-        document.getElementById('plag-alert-box').classList.add('hidden');
-    }
-
     function openEmbeddedViewer(name, reg, title, sim, ai, cert) {
         document.getElementById('modal-vm-student').textContent = name;
         document.getElementById('modal-vm-reg').textContent = reg + ' | ' + title;
@@ -445,11 +361,15 @@
         lucide.createIcons();
     }
 
-    function openUploadScanModal() {
-        triggerActionAlert('info', 'Turnitin File Ingestion', 'Upload candidate proposal, chapter, or thesis PDF/DOCX to run embedded similarity and AI detection scan.');
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
+        const overrideBase = @js(route('pg-research.scans.override', 0));
+        document.querySelectorAll('.override-trigger').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('override-form').action = overrideBase.replace(/\/0\//, '/' + btn.dataset.scan + '/');
+                document.getElementById('override-student').textContent = btn.dataset.student;
+            });
+        });
+
         const searchInput = document.getElementById('plag-search');
         const rows = document.querySelectorAll('.scan-row');
 

@@ -16,24 +16,10 @@
                 <i data-lucide="help-circle" class="w-3.5 h-3.5 text-slate-600"></i>
                 <span id="workflow-toggle-btn-text">Show Workflow Guide</span>
             </button>
-            <button type="button" onclick="openAddPeriodModal()" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
-                Add
+            <button type="button" data-modal-open="period-modal" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
+                New Appeal Window
             </button>
         </div>
-    </div>
-
-    {{-- Real-Time Alert Toast Container --}}
-    <div id="period-alert-box" class="hidden mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all">
-        <div class="flex items-start gap-2.5">
-            <i id="alert-icon" data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            <div>
-                <strong id="alert-title" class="block font-bold"></strong>
-                <span id="alert-message" class="font-normal opacity-90"></span>
-            </div>
-        </div>
-        <button type="button" onclick="dismissAlert()" class="text-slate-400 hover:text-slate-600">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
     </div>
 
     {{-- Governance & Lifecycle Guide --}}
@@ -174,9 +160,23 @@
                                 @endif
                             </td>
                             <td class="py-3.5 px-4 text-center">
-                                <button type="button" onclick="openEditPeriodModal('{{ addslashes($p['window_name']) }}', '{{ $p['academic_year'] }}', '{{ addslashes($p['cohort']) }}', '{{ $p['start_date'] }}', '{{ $p['end_date'] }}', '{{ $p['hearing_date'] }}', '{{ $p['status'] }}')" class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors">
-                                    Edit
-                                </button>
+                                <div class="flex flex-col items-center gap-1">
+                                    @if($p['is_draft'])
+                                        <x-pg.action
+                                            :action="route('pg-research.appeal-periods.open', $p['id'])"
+                                            label="Open window"
+                                            variant="approve"
+                                            confirm="Open this window? Candidates will be able to lodge appeals immediately." />
+                                    @elseif($p['is_open'])
+                                        <x-pg.action
+                                            :action="route('pg-research.appeal-periods.close', $p['id'])"
+                                            label="Close window"
+                                            variant="reject"
+                                            confirm="Close this window? No further appeals can be lodged against it." />
+                                    @else
+                                        <span class="text-[10.5px] text-slate-500 font-semibold">{{ $p['status'] }}</span>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @endforeach
@@ -200,68 +200,55 @@
 
 </div>
 
-{{-- MODAL: ADD / EDIT APPEAL PERIOD --}}
-<div class="modal" id="period-modal" role="dialog" aria-modal="true">
-    <div class="modal-card" style="width:min(540px, 94vw);">
-        <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
-            <div>
-                <h2 class="text-sm font-bold text-white" id="period-modal-title">Configure PG Appeal Window</h2>
-                <small style="color:rgba(255,255,255,0.85);">Set submission window, deadline, and tribunal sitting dates.</small>
-            </div>
-            <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
-        </div>
-        <form class="panel-body p-5" onsubmit="event.preventDefault(); savePeriod();">
-            <div class="space-y-3">
-                <div>
-                    <label class="text-xs font-semibold text-slate-700 block mb-1">Appeal Window Title</label>
-                    <input type="text" id="modal-p-name" class="w-full border border-slate-300 rounded p-2 text-xs text-slate-800" placeholder="e.g. 2026/2027 Semester 1 Postgraduate Defense Appeals" required>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="text-xs font-semibold text-slate-700 block mb-1">Academic Year</label>
-                        <select id="modal-p-year" class="w-full border border-slate-300 rounded p-2 text-xs text-slate-800" required>
-                            <option>2026-2027</option>
-                            <option>2025-2026</option>
-                            <option>2024-2025</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-xs font-semibold text-slate-700 block mb-1">Eligible Cohort</label>
-                        <input type="text" id="modal-p-cohort" class="w-full border border-slate-300 rounded p-2 text-xs text-slate-800" placeholder="e.g. PhD & Master Candidates" required>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="text-xs font-semibold text-slate-700 block mb-1">Submission Start Date</label>
-                        <input type="text" id="modal-p-start" class="w-full border border-slate-300 rounded p-2 text-xs font-mono" placeholder="DD-MM-YYYY" value="01-09-2026" required>
-                    </div>
-                    <div>
-                        <label class="text-xs font-semibold text-slate-700 block mb-1">Submission Cutoff Date</label>
-                        <input type="text" id="modal-p-end" class="w-full border border-slate-300 rounded p-2 text-xs font-mono" placeholder="DD-MM-YYYY" value="30-09-2026" required>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="text-xs font-semibold text-slate-700 block mb-1">Board / Tribunal Hearing Date</label>
-                        <input type="text" id="modal-p-hearing" class="w-full border border-slate-300 rounded p-2 text-xs font-mono" placeholder="DD-MM-YYYY" value="15-10-2026" required>
-                    </div>
-                    <div>
-                        <label class="text-xs font-semibold text-slate-700 block mb-1">Window Status</label>
-                        <select id="modal-p-status" class="w-full border border-slate-300 rounded p-2 text-xs text-slate-800">
-                            <option value="Open">Open</option>
-                            <option value="Scheduled">Scheduled</option>
-                            <option value="Closed">Closed</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <div class="flex justify-end gap-2 mt-4 pt-3 border-t border-slate-100">
-                <button type="button" class="btn btn-secondary text-xs" data-modal-close>Cancel</button>
-                <button type="submit" class="btn text-xs bg-[#0A3E50] hover:bg-[#072c39] text-white font-semibold">Save Window</button>
-            </div>
-        </form>
+{{-- MODAL: NEW APPEAL WINDOW --}}
+<x-pg.modal-form
+    id="period-modal"
+    title="Configure PG Appeal Window"
+    subtitle="Windows are created as drafts; opening one is a separate, audited action."
+    :action="route('pg-research.appeal-periods.store')"
+    submit-label="Create draft window"
+    width="600px">
+
+    <div class="grid grid-cols-2 gap-3">
+        <x-pg.field label="Academic year" name="academic_year" required>
+            <input type="text" name="academic_year" required maxlength="20" value="{{ old('academic_year') }}"
+                   placeholder="2025/2026"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="Window label" name="term_label" required>
+            <input type="text" name="term_label" required maxlength="40" value="{{ old('term_label') }}"
+                   placeholder="Semester 1 Appeals"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
     </div>
-</div>
+
+    <x-pg.field label="Appeal category" name="category_id" hint="Leave blank to accept appeals of every category in this window.">
+        <select name="category_id" class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+            <option value="">All categories</option>
+            @foreach($categories as $category)
+                <option value="{{ $category->id }}">{{ $category->code }} — {{ $category->name }}</option>
+            @endforeach
+        </select>
+    </x-pg.field>
+
+    <div class="grid grid-cols-2 gap-3">
+        <x-pg.field label="Opens on" name="opens_on" required>
+            <input type="date" name="opens_on" required value="{{ old('opens_on') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="Closes on" name="closes_on" required>
+            <input type="date" name="closes_on" required value="{{ old('closes_on') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+    </div>
+
+    <x-pg.field label="Notes" name="notes">
+        <textarea name="notes" rows="3"
+                  class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">{{ old('notes') }}</textarea>
+    </x-pg.field>
+</x-pg.modal-form>
 
 <script>
     function toggleWorkflowGuide() {
@@ -272,44 +259,6 @@
             guide.classList.toggle('hidden', !isHidden);
             btnText.textContent = isHidden ? 'Hide Workflow Guide' : 'Show Workflow Guide';
         }
-    }
-
-    function triggerActionAlert(type, title, message) {
-        const box = document.getElementById('period-alert-box');
-        const icon = document.getElementById('alert-icon');
-        const titleEl = document.getElementById('alert-title');
-        const msgEl = document.getElementById('alert-message');
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-
-        box.className = 'mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all';
-
-        if (type === 'success') {
-            box.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-200');
-            icon.setAttribute('data-lucide', 'check-circle-2');
-            icon.className = 'w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'warning') {
-            box.classList.add('bg-amber-50', 'text-amber-900', 'border-amber-200');
-            icon.setAttribute('data-lucide', 'alert-triangle');
-            icon.className = 'w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'error') {
-            box.classList.add('bg-red-50', 'text-red-900', 'border-red-200');
-            icon.setAttribute('data-lucide', 'alert-circle');
-            icon.className = 'w-4 h-4 text-red-600 mt-0.5 flex-shrink-0';
-        } else {
-            box.classList.add('bg-blue-50', 'text-blue-900', 'border-blue-200');
-            icon.setAttribute('data-lucide', 'info');
-            icon.className = 'w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0';
-        }
-
-        box.classList.remove('hidden');
-        lucide.createIcons();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function dismissAlert() {
-        document.getElementById('period-alert-box').classList.add('hidden');
     }
 
     function openAddPeriodModal() {
@@ -329,11 +278,6 @@
         document.getElementById('modal-p-hearing').value = hearing;
         document.getElementById('modal-p-status').value = status;
         document.getElementById('period-modal').classList.add('open');
-    }
-
-    function savePeriod() {
-        document.getElementById('period-modal').classList.remove('open');
-        triggerActionAlert('success', 'Appeal Schedule Saved', 'Postgraduate appeal period successfully configured and active in portal.');
     }
 
     document.addEventListener('DOMContentLoaded', () => {

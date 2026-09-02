@@ -16,24 +16,13 @@
                 <i data-lucide="help-circle" class="w-3.5 h-3.5 text-slate-600"></i>
                 <span id="workflow-toggle-btn-text">Show Workflow Guide</span>
             </button>
-            <button type="button" onclick="openGrantWaiverModal()" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
-                Grant Provisional Waiver
+            <button type="button" data-modal-open="waiver-request-modal" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
+                Request Provisional Waiver
+            </button>
+            <button type="button" data-modal-open="candidate-create-modal" class="px-4 py-1.5 rounded-md bg-[#0A3E50] text-white font-bold text-xs hover:bg-[#0d5068] transition-colors shadow-2xs">
+                Register Candidate
             </button>
         </div>
-    </div>
-
-    {{-- Real-Time Alert Toast Container --}}
-    <div id="eligibility-alert-box" class="hidden mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all">
-        <div class="flex items-start gap-2.5">
-            <i id="alert-icon" data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            <div>
-                <strong id="alert-title" class="block font-bold"></strong>
-                <span id="alert-message" class="font-normal opacity-90"></span>
-            </div>
-        </div>
-        <button type="button" onclick="dismissAlert()" class="text-slate-400 hover:text-slate-600">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
     </div>
 
     {{-- Workflow Guide --}}
@@ -217,9 +206,39 @@
                                 @endif
                             </td>
                             <td class="py-3.5 px-4 text-center">
-                                <button type="button" onclick="openEligModal('{{ addslashes($c['student_name']) }}', '{{ $c['reg_no'] }}', '{{ addslashes($c['coursework_status']) }}', '{{ $c['fee_status'] }}', '{{ $c['eligibility_verdict'] }}')" class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors">
-                                    Audit
-                                </button>
+                                <div class="flex flex-col items-center gap-1">
+                                    <x-pg.action
+                                        :action="route('pg-research.candidates.recompute', $c['id'])"
+                                        label="Re-evaluate"
+                                        variant="primary"
+                                        title="Recompute eligibility from coursework, fees and active waivers" />
+
+                                    @if($c['pending_waiver_id'])
+                                        <div class="flex gap-1">
+                                            <x-pg.action
+                                                :action="route('pg-research.waivers.decide', $c['pending_waiver_id'])"
+                                                :fields="['decision' => 'approve']"
+                                                label="Approve waiver"
+                                                variant="approve"
+                                                confirm="Approve the pending R19 waiver for this candidate?" />
+                                            <x-pg.action
+                                                :action="route('pg-research.waivers.decide', $c['pending_waiver_id'])"
+                                                :fields="['decision' => 'reject']"
+                                                label="Reject"
+                                                variant="reject"
+                                                confirm="Reject the pending waiver request?" />
+                                        </div>
+                                    @elseif($c['approved_waiver_id'])
+                                        <form method="POST" action="{{ route('pg-research.waivers.revoke', $c['approved_waiver_id']) }}" class="flex items-center gap-1">
+                                            @csrf
+                                            <input type="text" name="reason" required minlength="5" placeholder="Revocation reason"
+                                                   class="w-32 px-1.5 py-0.5 text-[10.5px] rounded border border-slate-300">
+                                            <button type="submit" class="px-2 py-1 rounded border border-red-400 text-red-700 hover:bg-red-50 font-semibold text-[10.5px]">
+                                                Revoke
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @endforeach
@@ -243,44 +262,101 @@
 
 </div>
 
-{{-- MODAL: AUDIT / WAIVER --}}
-<div class="modal" id="elig-modal" role="dialog" aria-modal="true">
-    <div class="modal-card" style="width:min(560px, 94vw);">
-        <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
-            <div>
-                <h2 class="text-sm font-bold text-white">Postgraduate Research Eligibility Verification</h2>
-                <small style="color:rgba(255,255,255,0.85);">Authorize student access to proposal & supervisor assignment workflows.</small>
-            </div>
-            <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
-        </div>
-        <div class="panel-body p-5 text-xs space-y-3.5">
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div class="text-[11px] text-slate-500 font-semibold">Scholar Name & Registration</div>
-                <div class="font-bold text-slate-900 text-xs mt-0.5" id="modal-el-name"></div>
-                <div class="text-slate-600 text-[11px] font-mono mt-0.5" id="modal-el-reg"></div>
-            </div>
+{{-- MODAL: REQUEST PROVISIONAL WAIVER (R19) --}}
+<x-pg.modal-form
+    id="waiver-request-modal"
+    title="Request R19 Provisional Research Waiver"
+    subtitle="Lodges a waiver request against a live candidate record; a decision recalculates eligibility."
+    :action="route('pg-research.waivers.request')"
+    submit-label="Lodge waiver request">
 
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1.5">
-                <div class="flex justify-between items-center">
-                    <span class="text-slate-500 font-semibold">Coursework Units:</span>
-                    <strong class="text-slate-800" id="modal-el-course"></strong>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-slate-500 font-semibold">Fee Ledger Balance:</span>
-                    <strong class="text-emerald-700" id="modal-el-fee"></strong>
-                </div>
-            </div>
+    <x-pg.field label="Candidate" name="candidate_id" required>
+        <select name="candidate_id" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+            <option value="">Select candidate…</option>
+            @foreach($allCandidates as $option)
+                <option value="{{ $option->id }}">{{ $option->candidate_name }} — {{ $option->reg_no }}</option>
+            @endforeach
+        </select>
+    </x-pg.field>
 
-            <div class="flex justify-between items-center pt-3 border-t border-slate-100">
-                <button type="button" class="btn btn-secondary text-xs" data-modal-close>Close</button>
-                <div class="flex gap-2">
-                    <button type="button" class="px-3 py-1.5 rounded bg-blue-600 text-white font-bold text-xs" onclick="document.getElementById('elig-modal').classList.remove('open'); triggerActionAlert('info', 'Provisional Waiver Granted', 'R19 Provisional waiver applied. Candidate authorized to begin research while official marks finalize.');">Grant R19 Waiver</button>
-                    <button type="button" class="px-3 py-1.5 rounded bg-emerald-600 text-white font-bold text-xs" onclick="document.getElementById('elig-modal').classList.remove('open'); triggerActionAlert('success', 'Candidate Verified Eligible', 'Research module unlocked for student self-service and supervisor assignment.');">Confirm Full Eligibility</button>
-                </div>
-            </div>
-        </div>
+    <x-pg.field label="Waiver type" name="waiver_type">
+        <select name="waiver_type" class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+            <option value="R19_PROVISIONAL">R19 provisional research start</option>
+            <option value="FEE_DEFERRAL">Fee deferral</option>
+            <option value="COURSEWORK_CONCESSION">Coursework concession</option>
+        </select>
+    </x-pg.field>
+
+    <x-pg.field label="Justification" name="reason" required hint="Recorded verbatim on the waiver and in the research audit trail.">
+        <textarea name="reason" rows="4" required minlength="10"
+                  class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs"
+                  placeholder="e.g. DSC 902 marks pending Senate release; Dean has authorised a provisional start.">{{ old('reason') }}</textarea>
+    </x-pg.field>
+</x-pg.modal-form>
+
+{{-- MODAL: REGISTER RESEARCH CANDIDATE --}}
+<x-pg.modal-form
+    id="candidate-create-modal"
+    title="Register Postgraduate Research Candidate"
+    subtitle="Creates the candidate record; eligibility is computed from the figures entered, not typed in."
+    :action="route('pg-research.candidates.store')"
+    submit-label="Register candidate"
+    width="640px">
+
+    <div class="grid grid-cols-2 gap-3">
+        <x-pg.field label="Registration number" name="reg_no" required>
+            <input type="text" name="reg_no" required maxlength="60" value="{{ old('reg_no') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs font-mono" placeholder="PHD-CS/2026/001">
+        </x-pg.field>
+
+        <x-pg.field label="Candidate name" name="candidate_name" required>
+            <input type="text" name="candidate_name" required maxlength="190" value="{{ old('candidate_name') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="Degree level" name="degree_level" required>
+            <select name="degree_level" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+                <option value="MASTERS">Masters</option>
+                <option value="PHD">PhD</option>
+            </select>
+        </x-pg.field>
+
+        <x-pg.field label="Programme" name="programme_title" required>
+            <input type="text" name="programme_title" required maxlength="190" value="{{ old('programme_title') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="Academic year" name="academic_year">
+            <input type="text" name="academic_year" maxlength="20" value="{{ old('academic_year') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs" placeholder="2026/2027">
+        </x-pg.field>
+
+        <x-pg.field label="Registration status" name="registration_status">
+            <input type="text" name="registration_status" maxlength="40" value="{{ old('registration_status', 'ACTIVE') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="Coursework units required" name="coursework_units_total" required>
+            <input type="number" name="coursework_units_total" min="0" max="60" required value="{{ old('coursework_units_total', 0) }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="Coursework units passed" name="coursework_units_passed" required>
+            <input type="number" name="coursework_units_passed" min="0" max="60" required value="{{ old('coursework_units_passed', 0) }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="GPA" name="gpa">
+            <input type="number" step="0.01" min="0" max="5" name="gpa" value="{{ old('gpa') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="Fee balance (KES)" name="fee_balance" hint="A non-zero balance blocks research registration unless waived.">
+            <input type="number" step="0.01" min="0" name="fee_balance" value="{{ old('fee_balance', 0) }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
     </div>
-</div>
+</x-pg.modal-form>
 
 <script>
     function toggleWorkflowGuide() {
@@ -291,56 +367,6 @@
             guide.classList.toggle('hidden', !isHidden);
             btnText.textContent = isHidden ? 'Hide Workflow Guide' : 'Show Workflow Guide';
         }
-    }
-
-    function triggerActionAlert(type, title, message) {
-        const box = document.getElementById('eligibility-alert-box');
-        const icon = document.getElementById('alert-icon');
-        const titleEl = document.getElementById('alert-title');
-        const msgEl = document.getElementById('alert-message');
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-
-        box.className = 'mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all';
-
-        if (type === 'success') {
-            box.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-200');
-            icon.setAttribute('data-lucide', 'check-circle-2');
-            icon.className = 'w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'warning') {
-            box.classList.add('bg-amber-50', 'text-amber-900', 'border-amber-200');
-            icon.setAttribute('data-lucide', 'alert-triangle');
-            icon.className = 'w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'error') {
-            box.classList.add('bg-red-50', 'text-red-900', 'border-red-200');
-            icon.setAttribute('data-lucide', 'alert-circle');
-            icon.className = 'w-4 h-4 text-red-600 mt-0.5 flex-shrink-0';
-        } else {
-            box.classList.add('bg-blue-50', 'text-blue-900', 'border-blue-200');
-            icon.setAttribute('data-lucide', 'info');
-            icon.className = 'w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0';
-        }
-
-        box.classList.remove('hidden');
-        lucide.createIcons();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function dismissAlert() {
-        document.getElementById('eligibility-alert-box').classList.add('hidden');
-    }
-
-    function openEligModal(name, reg, course, fee, verdict) {
-        document.getElementById('modal-el-name').textContent = name;
-        document.getElementById('modal-el-reg').textContent = reg;
-        document.getElementById('modal-el-course').textContent = course;
-        document.getElementById('modal-el-fee').textContent = fee;
-        document.getElementById('elig-modal').classList.add('open');
-    }
-
-    function openGrantWaiverModal() {
-        triggerActionAlert('info', 'R19 Policy Provision', 'Select candidate with pending exam marks to issue a Dean Provisional Research Start Waiver.');
     }
 
     document.addEventListener('DOMContentLoaded', () => {

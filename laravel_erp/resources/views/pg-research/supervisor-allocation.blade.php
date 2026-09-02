@@ -16,24 +16,10 @@
                 <i data-lucide="help-circle" class="w-3.5 h-3.5 text-slate-600"></i>
                 <span id="workflow-toggle-btn-text">Show Workflow Guide</span>
             </button>
-            <button type="button" onclick="openAssignSupervisorModal()" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
+            <button type="button" data-modal-open="allocate-supervisor-modal" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
                 Assign Supervisors
             </button>
         </div>
-    </div>
-
-    {{-- Real-Time Alert Toast Container --}}
-    <div id="alloc-alert-box" class="hidden mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all">
-        <div class="flex items-start gap-2.5">
-            <i id="alert-icon" data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            <div>
-                <strong id="alert-title" class="block font-bold"></strong>
-                <span id="alert-message" class="font-normal opacity-90"></span>
-            </div>
-        </div>
-        <button type="button" onclick="dismissAlert()" class="text-slate-400 hover:text-slate-600">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
     </div>
 
     {{-- Workflow Guide --}}
@@ -213,9 +199,21 @@
                                 @endif
                             </td>
                             <td class="py-3.5 px-4 text-center">
-                                <button type="button" onclick="openModifyAllocModal('{{ addslashes($al['student_name']) }}', '{{ $al['reg_no'] }}', '{{ addslashes($al['degree_level']) }}', '{{ addslashes($al['supervisor_1']) }}')" class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors">
-                                    Allocate
-                                </button>
+                                <div class="flex flex-col items-center gap-1">
+                                    <button type="button" data-modal-open="allocate-supervisor-modal"
+                                            data-candidate="{{ $al['id'] }}"
+                                            class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors alloc-trigger">
+                                        {{ $al['lead_allocation_id'] ? 'Reassign' : 'Allocate' }}
+                                    </button>
+                                    @if($al['lead_allocation_id'])
+                                        <form method="POST" action="{{ route('pg-research.allocations.end', $al['lead_allocation_id']) }}" class="flex items-center gap-1">
+                                            @csrf
+                                            <input type="text" name="reason" required minlength="5" placeholder="Reason"
+                                                   class="w-24 px-1.5 py-0.5 text-[10.5px] rounded border border-slate-300">
+                                            <button type="submit" class="px-2 py-1 rounded border border-red-400 text-red-700 hover:bg-red-50 font-semibold text-[10.5px]">End</button>
+                                        </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @endforeach
@@ -239,55 +237,46 @@
 
 </div>
 
-{{-- MODAL: ASSIGN SUPERVISOR --}}
-<div class="modal" id="assign-modal" role="dialog" aria-modal="true">
-    <div class="modal-card" style="width:min(580px, 94vw);">
-        <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
-            <div>
-                <h2 class="text-sm font-bold text-white">Postgraduate Supervisor Allocation (HOD Desk)</h2>
-                <small style="color:rgba(255,255,255,0.85);">Assign academic advisors adhering to CUE and Senate degree level policy.</small>
-            </div>
-            <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
-        </div>
-        <form class="panel-body p-5 text-xs space-y-3.5" onsubmit="event.preventDefault(); saveAllocation();">
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div class="text-[11px] text-slate-500 font-semibold">Scholar Name & Degree Rule</div>
-                <div class="font-bold text-slate-900 text-xs mt-0.5" id="modal-al-name"></div>
-                <div class="text-slate-600 text-[11px] font-mono mt-0.5" id="modal-al-reg"></div>
-            </div>
+{{-- MODAL: ALLOCATE SUPERVISOR --}}
+<x-pg.modal-form
+    id="allocate-supervisor-modal"
+    title="Allocate Research Supervisor"
+    subtitle="Promoting a new lead automatically ends the incumbent's tenure in the same transaction."
+    :action="route('pg-research.allocations.store')"
+    submit-label="Allocate supervisor">
 
-            <div>
-                <label class="text-xs font-semibold text-slate-700 block mb-1">Supervisor 1 (Lead Internal Advisor - Mandatory)</label>
-                <select class="w-full border border-slate-300 rounded p-2 text-xs text-slate-800" required>
-                    <option>Prof. James Mwangi (School of Business - Load: 3/5)</option>
-                    <option>Dr. Amina Hassan (School of Computing - Load: 4/5)</option>
-                    <option>Dr. Daniel Otieno (Department of Economics - Load: 2/5)</option>
-                    <option>Dr. Grace Njeri (School of Education - Load: 3/8)</option>
-                </select>
-            </div>
+    <x-pg.field label="Candidate" name="candidate_id" required>
+        <select name="candidate_id" id="alloc-candidate" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+            <option value="">Select candidate…</option>
+            @foreach($allCandidates as $option)
+                <option value="{{ $option->id }}">{{ $option->candidate_name }} — {{ $option->reg_no }}</option>
+            @endforeach
+        </select>
+    </x-pg.field>
 
-            <div>
-                <label class="text-xs font-semibold text-slate-700 block mb-1">Supervisor 2 (Co-Supervisor - Mandatory for PhD, Optional for MSc)</label>
-                <select class="w-full border border-slate-300 rounded p-2 text-xs text-slate-800">
-                    <option value="">None (Master's Single Supervisor Policy)</option>
-                    <option>Dr. Amina Hassan (School of Computing)</option>
-                    <option>Dr. Jeremiah Onunga (Department of Statistics)</option>
-                    <option>Dr. Sarah Rotich (Kenyatta University - External)</option>
-                </select>
-            </div>
+    <x-pg.field label="Supervisor" name="supervisor_id" required hint="Supervisors at full load are rejected by the workflow.">
+        <select name="supervisor_id" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+            <option value="">Select supervisor…</option>
+            @foreach($supervisors as $sup)
+                <option value="{{ $sup->id }}" @disabled($sup->active_load >= $sup->max_load)>
+                    {{ $sup->full_name }} ({{ $sup->academic_rank }}) — {{ $sup->active_load }}/{{ $sup->max_load }} slots
+                </option>
+            @endforeach
+        </select>
+    </x-pg.field>
 
-            <div>
-                <label class="text-xs font-semibold text-slate-700 block mb-1">Academic Mentor / Industry Specialist (Optional)</label>
-                <input type="text" class="w-full border border-slate-300 rounded p-2 text-xs text-slate-800" placeholder="e.g. Prof. David Ndetei (Industry Fellow)">
-            </div>
+    <x-pg.field label="Role" name="role" required>
+        <select name="role" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+            <option value="LEAD">Lead supervisor</option>
+            <option value="CO">Co-supervisor</option>
+            <option value="EXTERNAL">External mentor</option>
+        </select>
+    </x-pg.field>
 
-            <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                <button type="button" class="btn btn-secondary text-xs" data-modal-close>Cancel</button>
-                <button type="submit" class="btn text-xs bg-[#0A3E50] hover:bg-[#072c39] text-white font-semibold">Confirm Allocation</button>
-            </div>
-        </form>
-    </div>
-</div>
+    <x-pg.field label="Notes" name="notes">
+        <textarea name="notes" rows="3" class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">{{ old('notes') }}</textarea>
+    </x-pg.field>
+</x-pg.modal-form>
 
 <script>
     function toggleWorkflowGuide() {
@@ -300,60 +289,14 @@
         }
     }
 
-    function triggerActionAlert(type, title, message) {
-        const box = document.getElementById('alloc-alert-box');
-        const icon = document.getElementById('alert-icon');
-        const titleEl = document.getElementById('alert-title');
-        const msgEl = document.getElementById('alert-message');
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-
-        box.className = 'mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all';
-
-        if (type === 'success') {
-            box.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-200');
-            icon.setAttribute('data-lucide', 'check-circle-2');
-            icon.className = 'w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'warning') {
-            box.classList.add('bg-amber-50', 'text-amber-900', 'border-amber-200');
-            icon.setAttribute('data-lucide', 'alert-triangle');
-            icon.className = 'w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'error') {
-            box.classList.add('bg-red-50', 'text-red-900', 'border-red-200');
-            icon.setAttribute('data-lucide', 'alert-circle');
-            icon.className = 'w-4 h-4 text-red-600 mt-0.5 flex-shrink-0';
-        } else {
-            box.classList.add('bg-blue-50', 'text-blue-900', 'border-blue-200');
-            icon.setAttribute('data-lucide', 'info');
-            icon.className = 'w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0';
-        }
-
-        box.classList.remove('hidden');
-        lucide.createIcons();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function dismissAlert() {
-        document.getElementById('alloc-alert-box').classList.add('hidden');
-    }
-
-    function openModifyAllocModal(name, reg, level, sup1) {
-        document.getElementById('modal-al-name').textContent = name + ' (' + level + ')';
-        document.getElementById('modal-al-reg').textContent = reg;
-        document.getElementById('assign-modal').classList.add('open');
-    }
-
-    function openAssignSupervisorModal() {
-        triggerActionAlert('info', 'Workload Balancing Desk', 'Select eligible candidate to assign internal Supervisor 1 and optional Co-Supervisor/Mentor.');
-    }
-
-    function saveAllocation() {
-        document.getElementById('assign-modal').classList.remove('open');
-        triggerActionAlert('success', 'Supervisor Allocated', 'Supervisors officially assigned. Proposal submission portal unlocked for student.');
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.alloc-trigger').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const select = document.getElementById('alloc-candidate');
+                if (select) select.value = btn.dataset.candidate;
+            });
+        });
+
         const searchInput = document.getElementById('alloc-search');
         const rows = document.querySelectorAll('.alloc-row');
 

@@ -16,24 +16,10 @@
                 <i data-lucide="help-circle" class="w-3.5 h-3.5 text-slate-600"></i>
                 <span id="workflow-toggle-btn-text">Show Workflow Guide</span>
             </button>
-            <button type="button" onclick="openAppointReaderModal()" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
+            <button type="button" data-modal-open="proposal-submit-modal" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
                 Appoint Reader
             </button>
         </div>
-    </div>
-
-    {{-- Real-Time Alert Toast Container --}}
-    <div id="reader-alert-box" class="hidden mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all">
-        <div class="flex items-start gap-2.5">
-            <i id="alert-icon" data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            <div>
-                <strong id="alert-title" class="block font-bold"></strong>
-                <span id="alert-message" class="font-normal opacity-90"></span>
-            </div>
-        </div>
-        <button type="button" onclick="dismissAlert()" class="text-slate-400 hover:text-slate-600">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
     </div>
 
     {{-- Workflow Guide --}}
@@ -215,9 +201,24 @@
                                 @endif
                             </td>
                             <td class="py-3.5 px-4 text-center">
-                                <button type="button" onclick="openReaderModal('{{ addslashes($p['student_name']) }}', '{{ $p['reg_no'] }}', '{{ addslashes($p['proposal_title']) }}', '{{ addslashes($p['appointed_reader']) }}', '{{ addslashes($p['comments_summary']) }}')" class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors">
-                                    Critique
-                                </button>
+                                <div class="flex flex-col items-center gap-1">
+                                    @if($p['is_open'])
+                                        <button type="button" data-modal-open="proposal-review-modal"
+                                                data-proposal="{{ $p['id'] }}"
+                                                data-student="{{ $p['student_name'] }}"
+                                                data-title="{{ $p['proposal_title'] }}"
+                                                class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors review-trigger">
+                                            Record verdict
+                                        </button>
+                                        <button type="button" data-modal-open="proposal-reader-modal"
+                                                data-proposal="{{ $p['id'] }}"
+                                                class="px-3 py-1 rounded border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold text-[10.5px] transition-colors reader-trigger">
+                                            Appoint reader
+                                        </button>
+                                    @else
+                                        <span class="text-[10.5px] text-slate-500 font-semibold">{{ $p['status'] }}</span>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @endforeach
@@ -241,47 +242,107 @@
 
 </div>
 
-{{-- MODAL: PROPOSAL CRITIQUE --}}
-<div class="modal" id="reader-modal" role="dialog" aria-modal="true">
-    <div class="modal-card" style="width:min(580px, 94vw);">
-        <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
-            <div>
-                <h2 class="text-sm font-bold text-white">Proposal Reader Evaluation & Audit</h2>
-                <small style="color:rgba(255,255,255,0.85);">Conduct individual evaluation before oral proposal defense panel.</small>
-            </div>
-            <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
-        </div>
-        <div class="panel-body p-5 text-xs space-y-3.5">
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div class="text-[11px] text-slate-500 font-semibold">Scholar Name & Title</div>
-                <div class="font-bold text-slate-900 text-xs mt-0.5" id="modal-pr-student"></div>
-                <div class="text-slate-700 text-xs mt-1" id="modal-pr-title"></div>
-            </div>
+{{-- MODAL: SUBMIT PROPOSAL --}}
+<x-pg.modal-form
+    id="proposal-submit-modal"
+    title="Submit Research Proposal"
+    subtitle="Versioning is automatic; a candidate blocked on eligibility is refused."
+    :action="route('pg-research.proposals.store')"
+    submit-label="Submit proposal"
+    width="620px">
 
-            <div class="p-3 border border-slate-200 rounded-lg flex items-center justify-between bg-slate-50">
-                <div class="flex items-center gap-3">
-                    <i data-lucide="file-text" class="w-5 h-5 text-[#0A3E50]"></i>
-                    <div>
-                        <div class="text-xs font-bold text-slate-800">Proposal_Manuscript_Final.pdf</div>
-                        <small class="text-slate-400">Chapters 1–3 Draft (2.2 MB)</small>
-                    </div>
+    <x-pg.field label="Candidate" name="candidate_id" required>
+        <select name="candidate_id" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+            <option value="">Select candidate…</option>
+            @foreach($allCandidates as $option)
+                <option value="{{ $option->id }}">{{ $option->candidate_name }} — {{ $option->reg_no }}</option>
+            @endforeach
+        </select>
+    </x-pg.field>
+
+    <x-pg.field label="Proposal title" name="title" required>
+        <input type="text" name="title" required maxlength="190" value="{{ old('title') }}"
+               class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+    </x-pg.field>
+
+    <x-pg.field label="Abstract" name="abstract">
+        <textarea name="abstract" rows="4" class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">{{ old('abstract') }}</textarea>
+    </x-pg.field>
+</x-pg.modal-form>
+
+{{-- MODAL: APPOINT READER --}}
+<div class="modal" id="proposal-reader-modal" role="dialog" aria-modal="true">
+    <div class="modal-card" style="width:min(520px, 94vw);">
+        <form method="POST" action="{{ route('pg-research.proposals.reader', 0) }}" id="reader-form">
+            @csrf
+            <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
+                <div>
+                    <h2 class="text-sm font-bold text-white">Appoint Proposal Reader</h2>
+                    <small style="color:rgba(255,255,255,0.85);">Moves the proposal into formal reader review.</small>
                 </div>
-                <button type="button" class="px-2.5 py-1 bg-white border border-slate-200 rounded font-semibold text-slate-700 hover:bg-slate-50" onclick="triggerActionAlert('info', 'Document Downloaded', 'Proposal_Manuscript_Final.pdf downloaded.')">Download</button>
+                <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
             </div>
-
-            <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                <div class="text-[11px] text-emerald-800 font-semibold">Reader Written Critique</div>
-                <div class="text-xs text-slate-800 mt-1" id="modal-pr-critique"></div>
-            </div>
-
-            <div class="flex justify-between items-center pt-3 border-t border-slate-100">
-                <button type="button" class="btn btn-secondary text-xs" data-modal-close>Close</button>
-                <div class="flex gap-2">
-                    <button type="button" class="px-3 py-1.5 rounded bg-amber-600 text-white font-bold text-xs" onclick="document.getElementById('reader-modal').classList.remove('open'); triggerActionAlert('warning', 'Revisions Requested', 'Proposal critique sent to scholar and supervisors for pre-defense amendment.');">Request Revisions</button>
-                    <button type="button" class="px-3 py-1.5 rounded bg-emerald-600 text-white font-bold text-xs" onclick="document.getElementById('reader-modal').classList.remove('open'); triggerActionAlert('success', 'Cleared for Proposal Panel', 'Proposal reader clearance issued. Candidate unlocked for formal oral defense scheduling.');">Clear for Panel Defence</button>
+            <div class="panel-body p-5 text-xs space-y-3.5">
+                <x-pg.field label="Reader" name="reader_id" required>
+                    <select name="reader_id" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+                        <option value="">Select reader…</option>
+                        @foreach($readers as $reader)
+                            <option value="{{ $reader->id }}">{{ $reader->full_name }} ({{ $reader->academic_rank }})</option>
+                        @endforeach
+                    </select>
+                </x-pg.field>
+                <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+                    <button type="button" class="btn btn-secondary text-xs" data-modal-close>Cancel</button>
+                    <button type="submit" class="px-3.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">Appoint reader</button>
                 </div>
             </div>
-        </div>
+        </form>
+    </div>
+</div>
+
+{{-- MODAL: RECORD READER VERDICT --}}
+<div class="modal" id="proposal-review-modal" role="dialog" aria-modal="true">
+    <div class="modal-card" style="width:min(600px, 94vw);">
+        <form method="POST" action="{{ route('pg-research.proposals.review', 0) }}" id="review-form">
+            @csrf
+            <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
+                <div>
+                    <h2 class="text-sm font-bold text-white">Record Reader Verdict</h2>
+                    <small style="color:rgba(255,255,255,0.85);">An approval advances the candidate to fieldwork.</small>
+                </div>
+                <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
+            </div>
+            <div class="panel-body p-5 text-xs space-y-3.5">
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div class="font-bold text-slate-900 text-xs" id="review-student"></div>
+                    <div class="text-slate-600 text-[11px] mt-0.5" id="review-title"></div>
+                </div>
+
+                <x-pg.field label="Verdict" name="verdict" required>
+                    <select name="verdict" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+                        <option value="APPROVE">Approve — clear for panel defence</option>
+                        <option value="MINOR_REVISION">Minor revision required</option>
+                        <option value="MAJOR_REVISION">Major revision required</option>
+                        <option value="REJECT">Reject</option>
+                    </select>
+                </x-pg.field>
+
+                <x-pg.field label="Score (optional)" name="score">
+                    <input type="number" step="0.01" min="0" max="100" name="score"
+                           class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+                </x-pg.field>
+
+                <x-pg.field label="Reader comments" name="comments" required>
+                    <textarea name="comments" rows="5" required minlength="10"
+                              class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs"></textarea>
+                </x-pg.field>
+
+                <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+                    <button type="button" class="btn btn-secondary text-xs" data-modal-close>Cancel</button>
+                    <button type="submit" class="px-3.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">Record verdict</button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -296,44 +357,6 @@
         }
     }
 
-    function triggerActionAlert(type, title, message) {
-        const box = document.getElementById('reader-alert-box');
-        const icon = document.getElementById('alert-icon');
-        const titleEl = document.getElementById('alert-title');
-        const msgEl = document.getElementById('alert-message');
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-
-        box.className = 'mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all';
-
-        if (type === 'success') {
-            box.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-200');
-            icon.setAttribute('data-lucide', 'check-circle-2');
-            icon.className = 'w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'warning') {
-            box.classList.add('bg-amber-50', 'text-amber-900', 'border-amber-200');
-            icon.setAttribute('data-lucide', 'alert-triangle');
-            icon.className = 'w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'error') {
-            box.classList.add('bg-red-50', 'text-red-900', 'border-red-200');
-            icon.setAttribute('data-lucide', 'alert-circle');
-            icon.className = 'w-4 h-4 text-red-600 mt-0.5 flex-shrink-0';
-        } else {
-            box.classList.add('bg-blue-50', 'text-blue-900', 'border-blue-200');
-            icon.setAttribute('data-lucide', 'info');
-            icon.className = 'w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0';
-        }
-
-        box.classList.remove('hidden');
-        lucide.createIcons();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function dismissAlert() {
-        document.getElementById('reader-alert-box').classList.add('hidden');
-    }
-
     function openReaderModal(student, reg, title, reader, critique) {
         document.getElementById('modal-pr-student').textContent = student + ' (' + reg + ')';
         document.getElementById('modal-pr-title').textContent = title;
@@ -341,11 +364,24 @@
         document.getElementById('reader-modal').classList.add('open');
     }
 
-    function openAppointReaderModal() {
-        triggerActionAlert('info', 'Proposal Reader Appointment Desk', 'Select submitted proposal to allocate designated internal examiner reader.');
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
+        const readerBase = @js(route('pg-research.proposals.reader', 0));
+        const reviewBase = @js(route('pg-research.proposals.review', 0));
+
+        document.querySelectorAll('.reader-trigger').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('reader-form').action = readerBase.replace(/0$/, btn.dataset.proposal);
+            });
+        });
+
+        document.querySelectorAll('.review-trigger').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('review-form').action = reviewBase.replace(/\/0\//, '/' + btn.dataset.proposal + '/');
+                document.getElementById('review-student').textContent = btn.dataset.student;
+                document.getElementById('review-title').textContent = btn.dataset.title;
+            });
+        });
+
         const searchInput = document.getElementById('reader-search');
         const rows = document.querySelectorAll('.reader-row');
 

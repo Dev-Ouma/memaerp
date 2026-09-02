@@ -16,119 +16,188 @@
 
 <div class="ouk-dashboard-container font-quicksand">
     <div class="sr-only">College-wide operations, people and academic performance.</div>
+    
+    {{-- TOP ACTION BAR WITH EXPORT & AUDIT STATUS --}}
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 bg-white p-4 rounded-xl border border-slate-200/90 shadow-2xs">
+        <div>
+            <div class="flex items-center gap-2">
+                <h1 class="text-base font-bold text-slate-900 tracking-tight">Institutional Intelligence & Operations Scorecard</h1>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Live PostgreSQL Data
+                </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">Real-time metrics, student admissions lifecycle, financial governance, and academic telemetry.</p>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+            {{-- Quick Export Dropdown --}}
+            <div class="relative inline-block text-left" id="exportDropdownContainer">
+                <button type="button" onclick="openDashboardExportModal()" class="px-3.5 py-1.5 rounded-lg bg-[#0A3E50] hover:bg-[#072c39] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
+                    <i data-lucide="download" class="w-3.5 h-3.5 text-[#E67E22]"></i> Export Report / Data
+                </button>
+            </div>
+            <a href="{{ route('admissions.reports') }}" class="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-300/80 flex items-center gap-1.5">
+                <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> Detailed Reports
+            </a>
+        </div>
+    </div>
 
     {{-- SECTION 1: APPLICATION OVERVIEW (KPI CARDS) --}}
     <section class="ouk-section mb-6">
-        <h2 class="ouk-section-title">Application Overview</h2>
+        <div class="flex justify-between items-center mb-3">
+            <h2 class="ouk-section-title mb-0">Application Overview</h2>
+            <span class="text-xs text-slate-500">Click any card or metric to drill down into records</span>
+        </div>
         <div class="ouk-kpi-grid">
             
             {{-- Card 1: Applications --}}
-            <div class="ouk-kpi-card">
-                <div class="kpi-header">
-                    <span class="kpi-label">Applications</span>
+            <div class="ouk-kpi-card hover:border-[#0A3E50] transition-all cursor-pointer group" onclick="window.location.href='{{ route('admissions.workspace.dashboard') }}'">
+                <div class="kpi-header flex justify-between items-center">
+                    <span class="kpi-label group-hover:text-[#0A3E50]">Applications</span>
+                    <span class="text-[10px] text-slate-400 group-hover:text-[#0A3E50] font-bold">Drill Down &rarr;</span>
                 </div>
                 <div class="kpi-body">
                     <div class="kpi-metric-row">
                         <span class="kpi-big-number">{{ number_format($apps) }}</span>
-                        <span class="kpi-sub-pill">In Progress: {{ number_format($inProg) }} <i data-lucide="line-chart" class="w-3.5 h-3.5 inline text-teal-600"></i></span>
+                        <a href="{{ route('admissions.workspace.reviews') }}" onclick="event.stopPropagation();" class="kpi-sub-pill hover:bg-teal-100 transition-colors" title="View in-progress applications">
+                            In Progress: {{ number_format($inProg) }} <i data-lucide="line-chart" class="w-3.5 h-3.5 inline text-teal-600"></i>
+                        </a>
                     </div>
                     <div class="kpi-subtitle">Current applied status</div>
                     <div class="kpi-badge-list">
-                        <div class="kpi-badge kpi-badge-blue">
+                        <a href="{{ route('admissions.reports.applications') }}" onclick="event.stopPropagation();" class="kpi-badge kpi-badge-blue hover:bg-blue-100 transition-colors" title="View all applicants">
                             <i data-lucide="users" class="w-3.5 h-3.5"></i>
                             <span>Interested Applicants: {{ number_format($interested) }}</span>
-                        </div>
-                        <div class="kpi-badge kpi-badge-blue">
+                        </a>
+                        <a href="{{ route('admissions.workspace.reviews') }}" onclick="event.stopPropagation();" class="kpi-badge kpi-badge-blue hover:bg-blue-100 transition-colors" title="Documents requiring re-verification">
                             <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
                             <span>Reverify: {{ $reverify }}</span>
-                        </div>
+                        </a>
                     </div>
                 </div>
-                <div class="kpi-footer">
-                    <button type="button" class="kpi-eye-btn" title="View details" aria-label="View Applications details">
+                <div class="kpi-footer flex justify-between items-center">
+                    <div class="flex items-center gap-1.5">
+                        <a href="{{ route('dashboard.export', ['dataset' => 'applications', 'format' => 'xlsx']) }}" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-emerald-700 font-bold" title="Export Excel">.XLSX</a>
+                        <span class="text-slate-300">•</span>
+                        <a href="{{ route('dashboard.export', ['dataset' => 'applications', 'format' => 'csv']) }}" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-blue-700 font-bold" title="Export CSV">.CSV</a>
+                        <span class="text-slate-300">•</span>
+                        <a href="{{ route('dashboard.export', ['dataset' => 'applications', 'format' => 'pdf']) }}" target="_blank" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-red-700 font-bold" title="Printable PDF">.PDF</a>
+                    </div>
+                    <a href="{{ route('admissions.workspace.dashboard') }}" class="kpi-eye-btn" title="View details" aria-label="View Applications details">
                         <i data-lucide="eye" class="w-4 h-4"></i>
-                    </button>
+                    </a>
                 </div>
             </div>
 
             {{-- Card 2: Admitted --}}
-            <div class="ouk-kpi-card">
-                <div class="kpi-header">
-                    <span class="kpi-label">Admitted</span>
+            <div class="ouk-kpi-card hover:border-[#0A3E50] transition-all cursor-pointer group" onclick="window.location.href='{{ route('admissions.workspace.shortlists') }}'">
+                <div class="kpi-header flex justify-between items-center">
+                    <span class="kpi-label group-hover:text-[#0A3E50]">Admitted</span>
+                    <span class="text-[10px] text-slate-400 group-hover:text-[#0A3E50] font-bold">Drill Down &rarr;</span>
                 </div>
                 <div class="kpi-body">
                     <div class="kpi-metric-row">
                         <span class="kpi-big-number">{{ number_format($admitted) }}</span>
-                        <span class="kpi-sub-pill">In Review: {{ number_format($inRev) }}</span>
+                        <a href="{{ route('admissions.workspace.reviews') }}" onclick="event.stopPropagation();" class="kpi-sub-pill hover:bg-slate-200 transition-colors">
+                            In Review: {{ number_format($inRev) }}
+                        </a>
                     </div>
                     <div class="kpi-subtitle">Current admitted student status</div>
                     <div class="kpi-badge-list">
-                        <div class="kpi-badge kpi-badge-red">
+                        <a href="{{ route('admissions.workspace.reviews') }}" onclick="event.stopPropagation();" class="kpi-badge kpi-badge-red hover:bg-rose-100 transition-colors">
                             <i data-lucide="x-circle" class="w-3.5 h-3.5"></i>
                             <span>L2 Rejected: {{ number_format($l2Rejected) }}</span>
-                        </div>
-                        <div class="kpi-badge kpi-badge-red">
+                        </a>
+                        <a href="{{ route('admissions.workspace.offers') }}" onclick="event.stopPropagation();" class="kpi-badge kpi-badge-red hover:bg-rose-100 transition-colors">
                             <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
                             <span>Offer Rejected: {{ number_format($offerRej) }}</span>
-                        </div>
+                        </a>
                     </div>
                 </div>
-                <div class="kpi-footer">
-                    <button type="button" class="kpi-eye-btn" title="View details" aria-label="View Admitted details">
+                <div class="kpi-footer flex justify-between items-center">
+                    <div class="flex items-center gap-1.5">
+                        <a href="{{ route('dashboard.export', ['dataset' => 'admissions', 'format' => 'xlsx']) }}" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-emerald-700 font-bold" title="Export Excel">.XLSX</a>
+                        <span class="text-slate-300">•</span>
+                        <a href="{{ route('dashboard.export', ['dataset' => 'admissions', 'format' => 'csv']) }}" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-blue-700 font-bold" title="Export CSV">.CSV</a>
+                        <span class="text-slate-300">•</span>
+                        <a href="{{ route('dashboard.export', ['dataset' => 'admissions', 'format' => 'pdf']) }}" target="_blank" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-red-700 font-bold" title="Printable PDF">.PDF</a>
+                    </div>
+                    <a href="{{ route('admissions.workspace.shortlists') }}" class="kpi-eye-btn" title="View details" aria-label="View Admitted details">
                         <i data-lucide="eye" class="w-4 h-4"></i>
-                    </button>
+                    </a>
                 </div>
             </div>
 
             {{-- Card 3: Enrolled --}}
-            <div class="ouk-kpi-card">
-                <div class="kpi-header">
-                    <span class="kpi-label">Enrolled</span>
+            <div class="ouk-kpi-card hover:border-[#0A3E50] transition-all cursor-pointer group" onclick="window.location.href='{{ route('registration.student-registrations') }}'">
+                <div class="kpi-header flex justify-between items-center">
+                    <span class="kpi-label group-hover:text-[#0A3E50]">Enrolled</span>
+                    <span class="text-[10px] text-slate-400 group-hover:text-[#0A3E50] font-bold">Drill Down &rarr;</span>
                 </div>
                 <div class="kpi-body">
                     <div class="kpi-metric-row">
                         <span class="kpi-big-number">{{ number_format($enrolled) }}</span>
-                        <span class="kpi-sub-pill">In Review: {{ number_format($enrolledInRev) }}</span>
+                        <a href="{{ route('admissions.workspace.admission-rolls') }}" onclick="event.stopPropagation();" class="kpi-sub-pill hover:bg-slate-200 transition-colors">
+                            In Review: {{ number_format($enrolledInRev) }}
+                        </a>
                     </div>
                     <div class="kpi-subtitle">Current registered status</div>
                     <div class="kpi-badge-list">
-                        <div class="kpi-badge kpi-badge-green">
+                        <a href="{{ route('admissions.workspace.offers') }}" onclick="event.stopPropagation();" class="kpi-badge kpi-badge-green hover:bg-emerald-100 transition-colors">
                             <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
                             <span>Accepted: {{ number_format($accepted) }}</span>
-                        </div>
-                        <div class="kpi-badge kpi-badge-green">
+                        </a>
+                        <a href="{{ route('admissions.workspace.reviews') }}" onclick="event.stopPropagation();" class="kpi-badge kpi-badge-green hover:bg-emerald-100 transition-colors">
                             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
                             <span>Initiated: {{ number_format($initiated) }}</span>
-                        </div>
+                        </a>
                     </div>
                 </div>
-                <div class="kpi-footer">
-                    <button type="button" class="kpi-eye-btn" title="View details" aria-label="View Enrolled details">
+                <div class="kpi-footer flex justify-between items-center">
+                    <div class="flex items-center gap-1.5">
+                        <a href="{{ route('dashboard.export', ['dataset' => 'enrolments', 'format' => 'xlsx']) }}" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-emerald-700 font-bold" title="Export Excel">.XLSX</a>
+                        <span class="text-slate-300">•</span>
+                        <a href="{{ route('dashboard.export', ['dataset' => 'enrolments', 'format' => 'csv']) }}" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-blue-700 font-bold" title="Export CSV">.CSV</a>
+                        <span class="text-slate-300">•</span>
+                        <a href="{{ route('dashboard.export', ['dataset' => 'enrolments', 'format' => 'pdf']) }}" target="_blank" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-red-700 font-bold" title="Printable PDF">.PDF</a>
+                    </div>
+                    <a href="{{ route('registration.student-registrations') }}" class="kpi-eye-btn" title="View details" aria-label="View Enrolled details">
                         <i data-lucide="eye" class="w-4 h-4"></i>
-                    </button>
+                    </a>
                 </div>
             </div>
 
             {{-- Card 4: Graduated --}}
-            <div class="ouk-kpi-card">
+            <div class="ouk-kpi-card hover:border-[#0A3E50] transition-all cursor-pointer group" onclick="window.location.href='{{ route('graduation.alumni-list') }}'">
                 <div class="kpi-header flex justify-between items-center">
-                    <span class="kpi-label">Graduated</span>
+                    <span class="kpi-label group-hover:text-[#0A3E50]">Graduated</span>
                     <span class="kpi-alumni-tag">Alumni: {{ $alumni }}</span>
                 </div>
                 <div class="kpi-body">
                     <div class="kpi-metric-row">
                         <span class="kpi-big-number">{{ number_format($graduated) }}</span>
-                        <span class="kpi-sub-pill">Programmes: 1</span>
+                        <a href="{{ route('curriculum.programme') }}" onclick="event.stopPropagation();" class="kpi-sub-pill hover:bg-slate-200 transition-colors">
+                            Programmes: {{ $m['programmesCount'] ?? 1 }}
+                        </a>
                     </div>
-                    <div class="kpi-subtitle">Current graduation list status</div>
+                    <div class="kpi-subtitle">Current graduation & alumni roster</div>
                     <div class="kpi-badge-list">
-                        <div class="kpi-empty-slot" style="min-height: 56px;"></div>
+                        <a href="{{ route('graduation.alumni-list') }}" onclick="event.stopPropagation();" class="kpi-badge kpi-badge-blue hover:bg-blue-100 transition-colors">
+                            <i data-lucide="award" class="w-3.5 h-3.5"></i>
+                            <span>Alumni Database: {{ number_format($alumni) }}</span>
+                        </a>
                     </div>
                 </div>
-                <div class="kpi-footer">
-                    <button type="button" class="kpi-eye-btn" title="View details" aria-label="View Graduated details">
+                <div class="kpi-footer flex justify-between items-center">
+                    <div class="flex items-center gap-1.5">
+                        <a href="{{ route('dashboard.export', ['dataset' => 'graduated', 'format' => 'xlsx']) }}" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-emerald-700 font-bold" title="Export Excel">.XLSX</a>
+                        <span class="text-slate-300">•</span>
+                        <a href="{{ route('dashboard.export', ['dataset' => 'graduated', 'format' => 'csv']) }}" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-blue-700 font-bold" title="Export CSV">.CSV</a>
+                        <span class="text-slate-300">•</span>
+                        <a href="{{ route('dashboard.export', ['dataset' => 'graduated', 'format' => 'pdf']) }}" target="_blank" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-red-700 font-bold" title="Printable PDF">.PDF</a>
+                    </div>
+                    <a href="{{ route('graduation.alumni-list') }}" class="kpi-eye-btn" title="View details" aria-label="View Graduated details">
                         <i data-lucide="eye" class="w-4 h-4"></i>
-                    </button>
+                    </a>
                 </div>
             </div>
 
@@ -142,28 +211,40 @@
             
             {{-- Left Summary Stats Column --}}
             <div class="ouk-panel ouk-stats-summary-panel">
-                <div class="stat-block">
-                    <div class="stat-title-caps">ADMITTED</div>
+                <a href="{{ route('admissions.workspace.shortlists') }}" class="stat-block hover:bg-slate-50 transition-colors block rounded-lg p-2.5 -m-2.5 mb-1 group" title="View shortlisted/admitted candidates">
+                    <div class="stat-title-caps group-hover:text-[#0A3E50] flex justify-between items-center">
+                        <span>ADMITTED</span>
+                        <span class="text-[10px] text-slate-400 font-normal">View List &rarr;</span>
+                    </div>
                     <div class="stat-val-large">{{ number_format($admitted) }}</div>
-                </div>
+                </a>
 
-                <div class="stat-block">
-                    <div class="stat-title-regular">Pending Admissions</div>
+                <a href="{{ route('admissions.workspace.offers') }}" class="stat-block hover:bg-slate-50 transition-colors block rounded-lg p-2.5 -m-2.5 mb-1 group" title="View pending admission offers">
+                    <div class="stat-title-regular group-hover:text-[#0A3E50] flex justify-between items-center">
+                        <span>Pending Admissions</span>
+                        <span class="text-[10px] text-slate-400 font-normal">Offers &rarr;</span>
+                    </div>
                     <div class="stat-val-medium">{{ number_format($pendingApps) }}</div>
                     <div class="stat-note">Students offered admission but not confirmed</div>
-                </div>
+                </a>
 
-                <div class="stat-block">
-                    <div class="stat-title-caps">DROP-OFF RATE</div>
+                <a href="{{ route('admissions.reports') }}" class="stat-block hover:bg-slate-50 transition-colors block rounded-lg p-2.5 -m-2.5 mb-1 group" title="View conversion and drop-off analytics">
+                    <div class="stat-title-caps group-hover:text-[#0A3E50] flex justify-between items-center">
+                        <span>DROP-OFF RATE</span>
+                        <span class="text-[10px] text-slate-400 font-normal">Analytics &rarr;</span>
+                    </div>
                     <div class="stat-rate-row">
                         <span class="stat-rate-val text-emerald-600">{{ $dropOff }}</span>
                         <span class="stat-accepted-tag">Accepted: {{ number_format($accepted) }}</span>
                     </div>
                     <div class="stat-note">Confirmed but didn't register</div>
-                </div>
+                </a>
 
-                <div class="stat-block">
-                    <div class="stat-title-caps">ADMISSIONS BY SOURCE</div>
+                <a href="{{ route('admissions.reports.applications') }}" class="stat-block hover:bg-slate-50 transition-colors block rounded-lg p-2.5 -m-2.5 group" title="View admissions by intake source">
+                    <div class="stat-title-caps group-hover:text-[#0A3E50] flex justify-between items-center">
+                        <span>ADMISSIONS BY SOURCE</span>
+                        <span class="text-[10px] text-slate-400 font-normal">Details &rarr;</span>
+                    </div>
                     <div class="source-list">
                         <?php foreach($sources as $source => $count): ?>
                             <div class="source-item">
@@ -172,7 +253,7 @@
                             </div>
                         <?php endforeach; ?>
                     </div>
-                </div>
+                </a>
             </div>
 
             {{-- Right Chart: Application Trends Over Time --}}
@@ -1260,5 +1341,84 @@
             </div>
         </div>
     </section>
+
+    {{-- DASHBOARD EXPORT MODAL --}}
+    <div class="modal" id="dashboard-export-modal" role="dialog" aria-modal="true">
+        <div class="modal-card" style="width:min(520px, 94vw);">
+            <div class="panel-head" style="background:#0A3E50;color:#fff;padding:14px 20px;border-radius:10px 10px 0 0;">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4 text-[#E67E22]"></i>
+                    <div>
+                        <h2 class="text-sm font-bold text-white">Export Institutional Intelligence Data</h2>
+                        <small style="color:rgba(255,255,255,0.85);">Export live filtered datasets in Excel, CSV, or formatted PDF</small>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
+            </div>
+            <form class="panel-body p-5" method="GET" action="{{ route('dashboard.export') }}" target="_blank">
+                <div class="space-y-4 text-xs">
+                    <div>
+                        <label class="font-bold text-slate-700 block mb-1">Select Dataset to Export <span class="text-red-500">*</span></label>
+                        <select name="dataset" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 font-semibold focus:outline-none focus:border-[#0A3E50]">
+                            <option value="applications" selected>Admission Applications Register (Full Details)</option>
+                            <option value="admissions">Official Admitted Candidates Roster</option>
+                            <option value="enrolments">Enrolled Student Nominal Roll (Active & Registered)</option>
+                            <option value="graduated">Graduation & Alumni Registry</option>
+                            <option value="programmes">Academic Programmes & Curriculum Roster</option>
+                            <option value="financials">Financial Collections & Fee Payment Ledger</option>
+                            <option value="demographics">Applicant Demographics & Regional Distribution</option>
+                            <option value="staff">University Staff & Academic Faculty Directory</option>
+                            <option value="executive_kpis">Institutional Executive Scorecard & KPIs</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="font-bold text-slate-700 block mb-1">Export Format <span class="text-red-500">*</span></label>
+                        <div class="grid grid-cols-3 gap-2.5">
+                            <label class="border border-slate-300 rounded-lg p-3 flex flex-col items-center justify-center cursor-pointer hover:border-[#0A3E50] has-[:checked]:border-[#0A3E50] has-[:checked]:bg-teal-50/50 transition-all">
+                                <input type="radio" name="format" value="xlsx" checked class="sr-only">
+                                <i data-lucide="file-spreadsheet" class="w-5 h-5 text-emerald-600 mb-1"></i>
+                                <span class="font-bold text-slate-800 text-[11px]">Excel (.xlsx)</span>
+                                <span class="text-[9.5px] text-slate-500">OpenXML Sheet</span>
+                            </label>
+                            <label class="border border-slate-300 rounded-lg p-3 flex flex-col items-center justify-center cursor-pointer hover:border-[#0A3E50] has-[:checked]:border-[#0A3E50] has-[:checked]:bg-teal-50/50 transition-all">
+                                <input type="radio" name="format" value="csv" class="sr-only">
+                                <i data-lucide="file-text" class="w-5 h-5 text-blue-600 mb-1"></i>
+                                <span class="font-bold text-slate-800 text-[11px]">CSV (.csv)</span>
+                                <span class="text-[9.5px] text-slate-500">UTF-8 Comma</span>
+                            </label>
+                            <label class="border border-slate-300 rounded-lg p-3 flex flex-col items-center justify-center cursor-pointer hover:border-[#0A3E50] has-[:checked]:border-[#0A3E50] has-[:checked]:bg-teal-50/50 transition-all">
+                                <input type="radio" name="format" value="pdf" class="sr-only">
+                                <i data-lucide="file" class="w-5 h-5 text-rose-600 mb-1"></i>
+                                <span class="font-bold text-slate-800 text-[11px]">Print / PDF</span>
+                                <span class="text-[9.5px] text-slate-500">Quicksand report</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-[11px] text-slate-600 space-y-1">
+                        <div class="font-bold text-[#0A3E50] flex items-center gap-1.5">
+                            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+                            Live PostgreSQL Direct Extraction
+                        </div>
+                        <p>Exports reflect the current verified state of the database with institutional header, font typography in <strong>Quicksand</strong>, and system brand colors <strong>#0A3E50</strong> (Primary Dark Teal) and <strong>#E67E22</strong> (Accent Orange).</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 mt-5 pt-3 border-t border-slate-100">
+                    <button type="button" class="btn btn-secondary text-xs" data-modal-close>Cancel</button>
+                    <button type="submit" class="btn text-xs bg-[#0A3E50] hover:bg-[#072c39] text-white font-bold flex items-center gap-1.5 shadow-xs">
+                        <i data-lucide="download" class="w-3.5 h-3.5 text-[#E67E22]"></i> Download Dataset
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openDashboardExportModal() {
+            document.getElementById('dashboard-export-modal').classList.add('open');
+        }
+    </script>
 
 </div>

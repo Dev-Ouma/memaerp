@@ -19,6 +19,7 @@ use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\ImprestController;
 use App\Http\Controllers\LmsController;
 use App\Http\Controllers\LoadBalancerController;
+use App\Http\Controllers\PgResearchActionController;
 use App\Http\Controllers\PgResearchController;
 use App\Http\Controllers\PublicAdmissionController;
 use App\Http\Controllers\RecycleBinController;
@@ -65,6 +66,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/admissions/setups/versions/{version}/publish', [AdminSetupController::class, 'publish'])->name('admissions.setups.publish');
     Route::patch('/admissions/setups/versions/{version}/status', [AdminSetupController::class, 'status'])->name('admissions.setups.status');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/dashboard/export', [\App\Http\Controllers\DashboardExportController::class, 'export'])->name('dashboard.export');
     Route::get('/account/{section}', [AccountController::class, 'show'])->name('account.show');
     Route::put('/account/preferences', [AccountController::class, 'preferences'])->name('account.preferences');
     Route::post('/account/switch-role', [AccountController::class, 'switchRole'])->name('account.switch-role');
@@ -229,6 +231,68 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/legacy-migration', [PgResearchController::class, 'legacyMigration'])->name('legacy-migration');
         Route::get('/appeal-period-setup', [PgResearchController::class, 'appealPeriodSetup'])->name('appeal-period-setup');
         Route::get('/appeal-category', [PgResearchController::class, 'appealCategory'])->name('appeal-category');
+
+        // Write operations. Every control on the screens above resolves to one of these.
+        Route::controller(PgResearchActionController::class)->group(function (): void {
+            Route::post('/candidates', 'storeCandidate')->name('candidates.store');
+            Route::post('/candidates/{candidate}/recompute-eligibility', 'recomputeEligibility')->name('candidates.recompute');
+            Route::post('/waivers', 'requestWaiver')->name('waivers.request');
+            Route::post('/waivers/{waiver}/decide', 'decideWaiver')->name('waivers.decide');
+            Route::post('/waivers/{waiver}/revoke', 'revokeWaiver')->name('waivers.revoke');
+
+            Route::post('/supervisors', 'storeSupervisor')->name('supervisors.store');
+            Route::post('/supervisors/{supervisor}/toggle', 'toggleSupervisor')->name('supervisors.toggle');
+            Route::post('/allocations', 'allocateSupervisor')->name('allocations.store');
+            Route::post('/allocations/{allocation}/end', 'endAllocation')->name('allocations.end');
+
+            Route::post('/proposals', 'submitProposal')->name('proposals.store');
+            Route::post('/proposals/{proposal}/reader', 'appointReader')->name('proposals.reader');
+            Route::post('/proposals/{proposal}/review', 'reviewProposal')->name('proposals.review');
+
+            Route::post('/seminars', 'scheduleSeminar')->name('seminars.store');
+            Route::post('/seminars/{seminar}/conclude', 'concludeSeminar')->name('seminars.conclude');
+
+            Route::post('/progress-reports', 'submitProgressReport')->name('progress-reports.store');
+            Route::post('/progress-reports/{report}/decide', 'decideProgressReport')->name('progress-reports.decide');
+
+            Route::post('/scans', 'recordScan')->name('scans.store');
+            Route::post('/scans/{scan}/override', 'overrideScan')->name('scans.override');
+
+            Route::post('/defence-requests', 'requestDefence')->name('defence-requests.store');
+            Route::post('/defence-requests/{defenceRequest}/decide', 'decideDefence')->name('defence-requests.decide');
+
+            Route::post('/examiners', 'appointExaminer')->name('examiners.store');
+            Route::post('/examiners/{examiner}/report', 'submitExaminerReport')->name('examiners.report');
+
+            Route::post('/vivas', 'scheduleViva')->name('vivas.store');
+            Route::post('/vivas/{viva}/verdict', 'recordVivaVerdict')->name('vivas.verdict');
+
+            Route::post('/marks/{mark}/ratify', 'ratifyMark')->name('marks.ratify');
+            Route::post('/marks/{mark}/return', 'returnMark')->name('marks.return');
+
+            Route::post('/resubmissions/{resubmission}/submit', 'submitResubmission')->name('resubmissions.submit');
+            Route::post('/resubmissions/{resubmission}/verify', 'verifyResubmission')->name('resubmissions.verify');
+
+            Route::post('/publications', 'submitPublication')->name('publications.store');
+            Route::post('/publications/{publication}/decide', 'decidePublication')->name('publications.decide');
+
+            Route::post('/legacy', 'stageLegacyRecord')->name('legacy.store');
+            Route::post('/legacy/batch-import', 'importLegacyBatch')->name('legacy.batch');
+            Route::post('/legacy/{migration}/import', 'importLegacyRecord')->name('legacy.import');
+            Route::post('/legacy/{migration}/verify', 'verifyLegacyRecord')->name('legacy.verify');
+
+            Route::post('/appeal-categories', 'storeAppealCategory')->name('appeal-categories.store');
+            Route::put('/appeal-categories/{category}', 'updateAppealCategory')->name('appeal-categories.update');
+            Route::post('/appeal-categories/{category}/toggle', 'toggleAppealCategory')->name('appeal-categories.toggle');
+
+            Route::post('/appeal-periods', 'storeAppealPeriod')->name('appeal-periods.store');
+            Route::post('/appeal-periods/{period}/open', 'openAppealPeriod')->name('appeal-periods.open');
+            Route::post('/appeal-periods/{period}/close', 'closeAppealPeriod')->name('appeal-periods.close');
+
+            Route::post('/appeals', 'lodgeAppeal')->name('appeals.store');
+            Route::post('/appeals/{appeal}/assign', 'assignAppeal')->name('appeals.assign');
+            Route::post('/appeals/{appeal}/decide', 'decideAppeal')->name('appeals.decide');
+        });
     });
 
     // Curriculum Setup Module Routes

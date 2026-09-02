@@ -16,24 +16,10 @@
                 <i data-lucide="help-circle" class="w-3.5 h-3.5 text-slate-600"></i>
                 <span id="workflow-toggle-btn-text">Show Workflow Guide</span>
             </button>
-            <button type="button" onclick="openAddPubModal()" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
-                Log Article
+            <button type="button" data-modal-open="pub-add-modal" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
+                Record Publication
             </button>
         </div>
-    </div>
-
-    {{-- Real-Time Alert Toast Container --}}
-    <div id="pub-alert-box" class="hidden mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all">
-        <div class="flex items-start gap-2.5">
-            <i id="alert-icon" data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            <div>
-                <strong id="alert-title" class="block font-bold"></strong>
-                <span id="alert-message" class="font-normal opacity-90"></span>
-            </div>
-        </div>
-        <button type="button" onclick="dismissAlert()" class="text-slate-400 hover:text-slate-600">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
     </div>
 
     {{-- Workflow Guide --}}
@@ -217,9 +203,19 @@
                                 @endif
                             </td>
                             <td class="py-3.5 px-4 text-center">
-                                <button type="button" onclick="openPubModal('{{ addslashes($pb['author_name']) }}', '{{ addslashes($pb['article_title']) }}', '{{ addslashes($pb['journal_name']) }}', '{{ $pb['doi_link'] }}')" class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors">
-                                    Verify
-                                </button>
+                                @if($pb['is_open'])
+                                    <button type="button" data-modal-open="pub-decide-modal"
+                                            data-pub="{{ $pb['id'] }}"
+                                            data-author="{{ $pb['author_name'] }}"
+                                            data-title="{{ $pb['article_title'] }}"
+                                            data-journal="{{ $pb['journal_name'] }}"
+                                            data-doi="{{ $pb['doi_link'] }}"
+                                            class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors pub-decide-trigger">
+                                        Review article
+                                    </button>
+                                @else
+                                    <span class="text-[10.5px] text-slate-500 font-semibold">{{ $pb['status'] }}</span>
+                                @endif
                             </td>
                         </tr>
                     @endforeach
@@ -243,37 +239,85 @@
 
 </div>
 
-{{-- MODAL: VERIFY PUBLICATION --}}
-<div class="modal" id="pub-modal" role="dialog" aria-modal="true">
-    <div class="modal-card" style="width:min(560px, 94vw);">
-        <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
-            <div>
-                <h2 class="text-sm font-bold text-white">Postgraduate Publication Audit & Verification</h2>
-                <small style="color:rgba(255,255,255,0.85);">Verify journal indexation, DOI, and co-authorship credentials.</small>
-            </div>
-            <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
-        </div>
-        <div class="panel-body p-5 text-xs space-y-3.5">
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div class="text-[11px] text-slate-500 font-semibold">Scholar Author</div>
-                <div class="font-bold text-slate-900 text-xs mt-0.5" id="modal-pb-author"></div>
-            </div>
+{{-- MODAL: RECORD PUBLICATION --}}
+<x-pg.modal-form
+    id="pub-add-modal"
+    title="Record a Candidate Publication"
+    subtitle="Submitted articles enter the review queue; only accepted ones count toward the CUE requirement."
+    :action="route('pg-research.publications.store')"
+    submit-label="Submit for review"
+    width="600px">
 
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div class="text-[11px] text-slate-500 font-semibold">Article Title & Publisher</div>
-                <div class="font-medium text-slate-800 mt-0.5 leading-snug" id="modal-pb-title"></div>
-                <div class="text-blue-900 font-semibold text-[11px] mt-1" id="modal-pb-journal"></div>
-                <div class="text-slate-500 font-mono text-[11px] mt-0.5" id="modal-pb-doi"></div>
-            </div>
+    <x-pg.field label="Candidate" name="candidate_id" required>
+        <select name="candidate_id" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+            <option value="">Select candidate…</option>
+            @foreach($allCandidates as $option)
+                <option value="{{ $option->id }}">{{ $option->candidate_name }} — {{ $option->reg_no }}</option>
+            @endforeach
+        </select>
+    </x-pg.field>
 
-            <div class="flex justify-between items-center pt-3 border-t border-slate-100">
-                <button type="button" class="btn btn-secondary text-xs" data-modal-close>Close</button>
-                <div class="flex gap-2">
-                    <button type="button" class="px-3 py-1.5 rounded bg-red-600 text-white font-bold text-xs" onclick="document.getElementById('pub-modal').classList.remove('open'); triggerActionAlert('error', 'Article Flagged Non-CUE', 'Journal indexing rejected due to unaccredited publisher status.');">Flag Non-CUE</button>
-                    <button type="button" class="px-3 py-1.5 rounded bg-emerald-600 text-white font-bold text-xs" onclick="document.getElementById('pub-modal').classList.remove('open'); triggerActionAlert('success', 'Article Verified', 'Publication officially credited toward candidate degree requirement.');">Verify & Credit</button>
+    <x-pg.field label="Article title" name="article_title" required>
+        <input type="text" name="article_title" required maxlength="190" value="{{ old('article_title') }}"
+               class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+    </x-pg.field>
+
+    <x-pg.field label="Journal" name="journal_name" required>
+        <input type="text" name="journal_name" required maxlength="190" value="{{ old('journal_name') }}"
+               class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+    </x-pg.field>
+
+    <div class="grid grid-cols-2 gap-3">
+        <x-pg.field label="DOI" name="doi">
+            <input type="text" name="doi" maxlength="190" value="{{ old('doi') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="Indexed in" name="indexed_in" hint="e.g. Scopus, Web of Science, CUE-accredited">
+            <input type="text" name="indexed_in" maxlength="190" value="{{ old('indexed_in') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+    </div>
+</x-pg.modal-form>
+
+{{-- MODAL: REVIEW PUBLICATION --}}
+<div class="modal" id="pub-decide-modal" role="dialog" aria-modal="true">
+    <div class="modal-card" style="width:min(580px, 94vw);">
+        <form method="POST" action="{{ route('pg-research.publications.decide', 0) }}" id="pub-decide-form">
+            @csrf
+            <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
+                <div>
+                    <h2 class="text-sm font-bold text-white">Verify Journal Indexing</h2>
+                    <small style="color:rgba(255,255,255,0.85);">Only an accepted article is credited toward the degree requirement.</small>
+                </div>
+                <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
+            </div>
+            <div class="panel-body p-5 text-xs space-y-3.5">
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div class="font-bold text-slate-900 text-xs" id="pub-author"></div>
+                    <div class="text-slate-800 text-[11px] mt-1 leading-snug" id="pub-title"></div>
+                    <div class="text-slate-600 text-[11px] mt-1" id="pub-journal"></div>
+                    <div class="text-slate-500 text-[11px] font-mono mt-0.5" id="pub-doi"></div>
+                </div>
+
+                <x-pg.field label="Reviewer notes" name="notes">
+                    <textarea name="notes" rows="3"
+                              class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs"></textarea>
+                </x-pg.field>
+
+                <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+                    <button type="button" class="btn btn-secondary text-xs" data-modal-close>Close</button>
+                    <div class="flex gap-2">
+                        <button type="submit" name="decision" value="UNDER_REVIEW"
+                                class="px-3 py-1.5 rounded border border-slate-300 text-slate-700 hover:bg-slate-50 font-bold text-xs">Keep under review</button>
+                        <button type="submit" name="decision" value="REJECTED"
+                                class="px-3 py-1.5 rounded bg-red-600 hover:bg-red-700 text-white font-bold text-xs">Flag non-CUE</button>
+                        <button type="submit" name="decision" value="ACCEPTED"
+                                class="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">Verify &amp; credit</button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -288,44 +332,6 @@
         }
     }
 
-    function triggerActionAlert(type, title, message) {
-        const box = document.getElementById('pub-alert-box');
-        const icon = document.getElementById('alert-icon');
-        const titleEl = document.getElementById('alert-title');
-        const msgEl = document.getElementById('alert-message');
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-
-        box.className = 'mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all';
-
-        if (type === 'success') {
-            box.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-200');
-            icon.setAttribute('data-lucide', 'check-circle-2');
-            icon.className = 'w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'warning') {
-            box.classList.add('bg-amber-50', 'text-amber-900', 'border-amber-200');
-            icon.setAttribute('data-lucide', 'alert-triangle');
-            icon.className = 'w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'error') {
-            box.classList.add('bg-red-50', 'text-red-900', 'border-red-200');
-            icon.setAttribute('data-lucide', 'alert-circle');
-            icon.className = 'w-4 h-4 text-red-600 mt-0.5 flex-shrink-0';
-        } else {
-            box.classList.add('bg-blue-50', 'text-blue-900', 'border-blue-200');
-            icon.setAttribute('data-lucide', 'info');
-            icon.className = 'w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0';
-        }
-
-        box.classList.remove('hidden');
-        lucide.createIcons();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function dismissAlert() {
-        document.getElementById('pub-alert-box').classList.add('hidden');
-    }
-
     function openPubModal(author, title, journal, doi) {
         document.getElementById('modal-pb-author').textContent = author;
         document.getElementById('modal-pb-title').textContent = title;
@@ -334,11 +340,18 @@
         document.getElementById('pub-modal').classList.add('open');
     }
 
-    function openAddPubModal() {
-        triggerActionAlert('info', 'Article Intake Portal', 'Scholar can upload article PDF manuscript, DOI link, and supervisor endorsement letter.');
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
+        const pubBase = @js(route('pg-research.publications.decide', 0));
+        document.querySelectorAll('.pub-decide-trigger').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('pub-decide-form').action = pubBase.replace(/\/0\//, '/' + btn.dataset.pub + '/');
+                document.getElementById('pub-author').textContent = btn.dataset.author;
+                document.getElementById('pub-title').textContent = btn.dataset.title;
+                document.getElementById('pub-journal').textContent = btn.dataset.journal;
+                document.getElementById('pub-doi').textContent = btn.dataset.doi;
+            });
+        });
+
         const searchInput = document.getElementById('pub-search');
         const rows = document.querySelectorAll('.pub-row');
 

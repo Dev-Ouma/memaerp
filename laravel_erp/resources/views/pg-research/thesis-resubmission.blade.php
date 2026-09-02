@@ -19,20 +19,6 @@
         </div>
     </div>
 
-    {{-- Real-Time Alert Toast Container --}}
-    <div id="resub-alert-box" class="hidden mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all">
-        <div class="flex items-start gap-2.5">
-            <i id="alert-icon" data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            <div>
-                <strong id="alert-title" class="block font-bold"></strong>
-                <span id="alert-message" class="font-normal opacity-90"></span>
-            </div>
-        </div>
-        <button type="button" onclick="dismissAlert()" class="text-slate-400 hover:text-slate-600">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
-    </div>
-
     {{-- Workflow Guide --}}
     <div id="admin-workflow-guide" class="mb-5 bg-white border border-slate-200 rounded-xl p-4.5 shadow-xs bg-linear-to-r from-slate-50/70 to-slate-50/40">
         <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
@@ -213,9 +199,27 @@
                                 @endif
                             </td>
                             <td class="py-3.5 px-4 text-center">
-                                <button type="button" onclick="openCertifyModal('{{ addslashes($sub['student_name']) }}', '{{ $sub['reg_no'] }}', '{{ addslashes($sub['thesis_title']) }}', '{{ addslashes($sub['corrections_matrix']) }}')" class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors">
-                                    Certify
-                                </button>
+                                @if($sub['is_awaiting'])
+                                    <button type="button" data-modal-open="resub-file-modal"
+                                            data-resub="{{ $sub['id'] }}"
+                                            data-student="{{ $sub['student_name'] }}"
+                                            data-title="{{ $sub['thesis_title'] }}"
+                                            class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors resub-file-trigger">
+                                        File corrections
+                                    </button>
+                                @elseif($sub['is_submitted'])
+                                    <button type="button" data-modal-open="resub-verify-modal"
+                                            data-resub="{{ $sub['id'] }}"
+                                            data-student="{{ $sub['student_name'] }}"
+                                            data-reg="{{ $sub['reg_no'] }}"
+                                            data-title="{{ $sub['thesis_title'] }}"
+                                            data-matrix="{{ $sub['corrections_matrix'] }}"
+                                            class="px-3 py-1 rounded border border-emerald-400 text-emerald-700 hover:bg-emerald-50 font-semibold text-xs transition-colors resub-verify-trigger">
+                                        Verify corrections
+                                    </button>
+                                @else
+                                    <span class="text-[10.5px] text-slate-500 font-semibold">{{ $sub['status'] }}</span>
+                                @endif
                             </td>
                         </tr>
                     @endforeach
@@ -239,42 +243,80 @@
 
 </div>
 
-{{-- MODAL: CERTIFY RESUBMISSION --}}
-<div class="modal" id="certify-modal" role="dialog" aria-modal="true">
-    <div class="modal-card" style="width:min(580px, 94vw);">
-        <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
-            <div>
-                <h2 class="text-sm font-bold text-white">Certificate of Thesis Corrections Verification</h2>
-                <small style="color:rgba(255,255,255,0.85);">Authorize final hardbound thesis binding and senate graduation listing.</small>
+{{-- MODAL: FILE CORRECTIONS --}}
+<div class="modal" id="resub-file-modal" role="dialog" aria-modal="true">
+    <div class="modal-card" style="width:min(560px, 94vw);">
+        <form method="POST" action="{{ route('pg-research.resubmissions.submit', 0) }}" id="resub-file-form">
+            @csrf
+            <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
+                <div>
+                    <h2 class="text-sm font-bold text-white">File Corrected Thesis</h2>
+                    <small style="color:rgba(255,255,255,0.85);">Records the corrections matrix and stamps the submission date.</small>
+                </div>
+                <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
             </div>
-            <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
-        </div>
-        <div class="panel-body p-5 text-xs space-y-3.5">
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div class="text-[11px] text-slate-500 font-semibold">Scholar Name & Registration</div>
-                <div class="font-bold text-slate-900 text-xs mt-0.5" id="modal-c-student"></div>
-                <div class="text-slate-600 text-[11px] font-mono mt-0.5" id="modal-c-reg"></div>
-            </div>
-
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div class="text-[11px] text-slate-500 font-semibold">Thesis Title</div>
-                <div class="font-medium text-slate-800 mt-0.5 leading-snug" id="modal-c-title"></div>
-            </div>
-
-            <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                <div class="text-[11px] text-emerald-800 font-semibold">Corrections Audit Status</div>
-                <div class="text-xs font-bold text-emerald-950 mt-0.5" id="modal-c-matrix"></div>
-                <div class="text-emerald-700 text-[11px] mt-1">✓ Verified by Lead Supervisor & Internal Viva Panellist</div>
-            </div>
-
-            <div class="flex justify-between items-center pt-3 border-t border-slate-100">
-                <button type="button" class="btn btn-secondary text-xs" data-modal-close>Close</button>
-                <div class="flex gap-2">
-                    <button type="button" class="px-3 py-1.5 rounded bg-red-600 text-white font-bold text-xs" onclick="document.getElementById('certify-modal').classList.remove('open'); triggerActionAlert('error', 'Corrections Rejected', 'Resubmitted draft returned to candidate for further editing.');">Request Revision</button>
-                    <button type="button" class="px-3 py-1.5 rounded bg-emerald-600 text-white font-bold text-xs" onclick="document.getElementById('certify-modal').classList.remove('open'); triggerActionAlert('success', 'Approved for Binding', 'Certificate of Corrections issued. Scholar authorized to print gold-embossed hardbound copies.');">Authorize Hardbound</button>
+            <div class="panel-body p-5 text-xs space-y-3.5">
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div class="font-bold text-slate-900 text-xs" id="file-student"></div>
+                    <div class="text-slate-600 text-[11px] mt-0.5 leading-snug" id="file-title"></div>
+                </div>
+                <x-pg.field label="Corrections matrix" name="corrections_summary" required
+                            hint="Summarise how each examiner comment was addressed.">
+                    <textarea name="corrections_summary" rows="6" required minlength="10"
+                              class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs"></textarea>
+                </x-pg.field>
+                <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+                    <button type="button" class="btn btn-secondary text-xs" data-modal-close>Cancel</button>
+                    <button type="submit" class="px-3.5 py-1.5 rounded bg-[#0A3E50] hover:bg-[#072c39] text-white font-bold text-xs">File corrections</button>
                 </div>
             </div>
-        </div>
+        </form>
+    </div>
+</div>
+
+{{-- MODAL: VERIFY CORRECTIONS --}}
+<div class="modal" id="resub-verify-modal" role="dialog" aria-modal="true">
+    <div class="modal-card" style="width:min(580px, 94vw);">
+        <form method="POST" action="{{ route('pg-research.resubmissions.verify', 0) }}" id="resub-verify-form">
+            @csrf
+            <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
+                <div>
+                    <h2 class="text-sm font-bold text-white">Certificate of Thesis Corrections</h2>
+                    <small style="color:rgba(255,255,255,0.85);">Accepting completes the candidate; rejecting reopens the cycle.</small>
+                </div>
+                <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
+            </div>
+            <div class="panel-body p-5 text-xs space-y-3.5">
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div class="text-[11px] text-slate-500 font-semibold">Scholar &amp; registration</div>
+                    <div class="font-bold text-slate-900 text-xs mt-0.5" id="verify-student"></div>
+                    <div class="text-slate-600 text-[11px] font-mono mt-0.5" id="verify-reg"></div>
+                </div>
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div class="text-[11px] text-slate-500 font-semibold">Thesis title</div>
+                    <div class="font-medium text-slate-800 mt-0.5 leading-snug" id="verify-title"></div>
+                </div>
+                <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                    <div class="text-[11px] text-emerald-800 font-semibold">Corrections matrix as filed</div>
+                    <div class="text-xs text-emerald-950 mt-0.5 leading-snug" id="verify-matrix"></div>
+                </div>
+
+                <x-pg.field label="Verification notes" name="notes">
+                    <textarea name="notes" rows="3"
+                              class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs"></textarea>
+                </x-pg.field>
+
+                <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+                    <button type="button" class="btn btn-secondary text-xs" data-modal-close>Close</button>
+                    <div class="flex gap-2">
+                        <button type="submit" name="decision" value="reject"
+                                class="px-3 py-1.5 rounded bg-red-600 hover:bg-red-700 text-white font-bold text-xs">Request revision</button>
+                        <button type="submit" name="decision" value="accept"
+                                class="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">Authorize hardbound</button>
+                    </div>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -289,44 +331,6 @@
         }
     }
 
-    function triggerActionAlert(type, title, message) {
-        const box = document.getElementById('resub-alert-box');
-        const icon = document.getElementById('alert-icon');
-        const titleEl = document.getElementById('alert-title');
-        const msgEl = document.getElementById('alert-message');
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-
-        box.className = 'mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all';
-
-        if (type === 'success') {
-            box.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-200');
-            icon.setAttribute('data-lucide', 'check-circle-2');
-            icon.className = 'w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'warning') {
-            box.classList.add('bg-amber-50', 'text-amber-900', 'border-amber-200');
-            icon.setAttribute('data-lucide', 'alert-triangle');
-            icon.className = 'w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'error') {
-            box.classList.add('bg-red-50', 'text-red-900', 'border-red-200');
-            icon.setAttribute('data-lucide', 'alert-circle');
-            icon.className = 'w-4 h-4 text-red-600 mt-0.5 flex-shrink-0';
-        } else {
-            box.classList.add('bg-blue-50', 'text-blue-900', 'border-blue-200');
-            icon.setAttribute('data-lucide', 'info');
-            icon.className = 'w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0';
-        }
-
-        box.classList.remove('hidden');
-        lucide.createIcons();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function dismissAlert() {
-        document.getElementById('resub-alert-box').classList.add('hidden');
-    }
-
     function openCertifyModal(student, reg, title, matrix) {
         document.getElementById('modal-c-student').textContent = student;
         document.getElementById('modal-c-reg').textContent = reg;
@@ -336,6 +340,22 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        const bind = (selector, formId, base, fields) => {
+            document.querySelectorAll(selector).forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.getElementById(formId).action = base.replace(/\/0\//, '/' + btn.dataset.resub + '/');
+                    Object.entries(fields).forEach(([id, key]) => {
+                        const el = document.getElementById(id);
+                        if (el) el.textContent = btn.dataset[key] || '';
+                    });
+                });
+            });
+        };
+        bind('.resub-file-trigger', 'resub-file-form', @js(route('pg-research.resubmissions.submit', 0)),
+             {'file-student': 'student', 'file-title': 'title'});
+        bind('.resub-verify-trigger', 'resub-verify-form', @js(route('pg-research.resubmissions.verify', 0)),
+             {'verify-student': 'student', 'verify-reg': 'reg', 'verify-title': 'title', 'verify-matrix': 'matrix'});
+
         const searchInput = document.getElementById('resub-search');
         const rows = document.querySelectorAll('.resub-row');
 

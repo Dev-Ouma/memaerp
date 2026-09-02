@@ -19,20 +19,6 @@
         </div>
     </div>
 
-    {{-- Real-Time Alert Toast Container --}}
-    <div id="defence-alert-box" class="hidden mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all">
-        <div class="flex items-start gap-2.5">
-            <i id="alert-icon" data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            <div>
-                <strong id="alert-title" class="block font-bold"></strong>
-                <span id="alert-message" class="font-normal opacity-90"></span>
-            </div>
-        </div>
-        <button type="button" onclick="dismissAlert()" class="text-slate-400 hover:text-slate-600">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
-    </div>
-
     {{-- Workflow Guide --}}
     <div id="admin-workflow-guide" class="mb-5 bg-white border border-slate-200 rounded-xl p-4.5 shadow-xs bg-linear-to-r from-slate-50/70 to-slate-50/40">
         <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
@@ -220,9 +206,23 @@
                                 @endif
                             </td>
                             <td class="py-3.5 px-4 text-center">
-                                <button type="button" onclick="openReviewModal('{{ addslashes($req['student_name']) }}', '{{ $req['reg_no'] }}', '{{ addslashes($req['thesis_title']) }}', '{{ $req['turnitin_score'] }}', '{{ addslashes($req['lead_supervisor']) }}')" class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors">
-                                    Review
-                                </button>
+                                @if($req['is_pending'])
+                                    <div class="flex flex-col items-center gap-1">
+                                        <x-pg.action
+                                            :action="route('pg-research.defence-requests.decide', $req['id'])"
+                                            :fields="['decision' => 'APPROVED']"
+                                            label="Approve"
+                                            variant="approve"
+                                            confirm="Grant defence clearance? Examiners become appointable." />
+                                        <button type="button" data-modal-open="defence-return-modal"
+                                                data-request="{{ $req['id'] }}"
+                                                class="px-3 py-1 rounded border border-amber-400 text-amber-700 hover:bg-amber-50 font-semibold text-[10.5px] transition-colors defence-return-trigger">
+                                            Send back
+                                        </button>
+                                    </div>
+                                @else
+                                    <span class="text-[10.5px] text-slate-500 font-semibold">{{ $req['status'] }}</span>
+                                @endif
                             </td>
                         </tr>
                     @endforeach
@@ -246,48 +246,60 @@
 
 </div>
 
-{{-- MODAL: DEFENCE REVIEW & APPROVAL --}}
-<div class="modal" id="review-modal" role="dialog" aria-modal="true">
-    <div class="modal-card" style="width:min(580px, 94vw);">
-        <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
-            <div>
-                <h2 class="text-sm font-bold text-white">Postgraduate Defence Eligibility Review</h2>
-                <small style="color:rgba(255,255,255,0.85);">Authorize candidate clearance for oral viva board examination.</small>
-            </div>
-            <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
-        </div>
-        <div class="panel-body p-5 text-xs space-y-3.5">
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div class="text-[11px] text-slate-500 font-semibold">Scholar Name & Registration</div>
-                <div class="font-bold text-slate-900 text-xs mt-0.5" id="modal-r-student"></div>
-                <div class="text-slate-600 text-[11px] font-mono mt-0.5" id="modal-r-reg"></div>
-            </div>
+{{-- MODAL: RAISE DEFENCE REQUEST --}}
+<x-pg.modal-form
+    id="defence-request-modal"
+    title="Raise Defence Clearance Request"
+    subtitle="Requires a thesis similarity scan on file; a flagged, unresolved scan blocks the request."
+    :action="route('pg-research.defence-requests.store')"
+    submit-label="Raise request"
+    width="600px">
 
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div class="text-[11px] text-slate-500 font-semibold">Thesis Title</div>
-                <div class="font-medium text-slate-800 mt-0.5 leading-snug" id="modal-r-title"></div>
-                <div class="text-slate-500 text-[11px] mt-1.5" id="modal-r-supervisor"></div>
-            </div>
+    <x-pg.field label="Candidate" name="candidate_id" required>
+        <select name="candidate_id" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+            <option value="">Select candidate…</option>
+            @foreach($allCandidates as $option)
+                <option value="{{ $option->id }}">{{ $option->candidate_name }} — {{ $option->reg_no }}</option>
+            @endforeach
+        </select>
+    </x-pg.field>
 
-            <div class="grid grid-cols-2 gap-2">
-                <div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
-                    <span class="text-[11px] text-emerald-800 font-semibold block">Turnitin Similarity Index</span>
-                    <span class="text-sm font-extrabold text-emerald-900 font-mono" id="modal-r-turnitin"></span>
-                </div>
-                <div class="p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-center">
-                    <span class="text-[11px] text-blue-800 font-semibold block">Publications Requirement</span>
-                    <span class="text-xs font-bold text-blue-950">2 Articles Verified (Scopus)</span>
-                </div>
-            </div>
+    <x-pg.field label="Thesis title" name="thesis_title" required>
+        <input type="text" name="thesis_title" required maxlength="190" value="{{ old('thesis_title') }}"
+               class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+    </x-pg.field>
+</x-pg.modal-form>
 
-            <div class="flex justify-between items-center pt-3 border-t border-slate-100">
-                <button type="button" class="btn btn-secondary text-xs" data-modal-close>Close</button>
-                <div class="flex gap-2">
-                    <button type="button" class="px-3 py-1.5 rounded bg-red-600 text-white font-bold text-xs" onclick="document.getElementById('review-modal').classList.remove('open'); triggerActionAlert('error', 'Request Sent Back', 'Candidate dossier sent back to Lead Supervisor for corrections.');">Send Back</button>
-                    <button type="button" class="px-3 py-1.5 rounded bg-emerald-600 text-white font-bold text-xs" onclick="document.getElementById('review-modal').classList.remove('open'); triggerActionAlert('success', 'Cleared for Viva Examination', 'Candidate cleared for oral defense. Viva scheduling panel notified.');">Clear For Viva</button>
+{{-- MODAL: SEND DEFENCE REQUEST BACK --}}
+<div class="modal" id="defence-return-modal" role="dialog" aria-modal="true">
+    <div class="modal-card" style="width:min(540px, 94vw);">
+        <form method="POST" action="{{ route('pg-research.defence-requests.decide', 0) }}" id="defence-return-form">
+            @csrf
+            <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
+                <div>
+                    <h2 class="text-sm font-bold text-white">Return Defence Request</h2>
+                    <small style="color:rgba(255,255,255,0.85);">Records the decision and the reason against the request.</small>
+                </div>
+                <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
+            </div>
+            <div class="panel-body p-5 text-xs space-y-3.5">
+                <x-pg.field label="Decision" name="decision" required>
+                    <select name="decision" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+                        <option value="RETURNED">Send back for correction</option>
+                        <option value="REJECTED">Reject outright</option>
+                    </select>
+                </x-pg.field>
+
+                <x-pg.field label="Reason" name="notes" required>
+                    <textarea name="notes" rows="4" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs"></textarea>
+                </x-pg.field>
+
+                <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+                    <button type="button" class="btn btn-secondary text-xs" data-modal-close>Cancel</button>
+                    <button type="submit" class="px-3.5 py-1.5 rounded bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs">Record decision</button>
                 </div>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -302,44 +314,6 @@
         }
     }
 
-    function triggerActionAlert(type, title, message) {
-        const box = document.getElementById('defence-alert-box');
-        const icon = document.getElementById('alert-icon');
-        const titleEl = document.getElementById('alert-title');
-        const msgEl = document.getElementById('alert-message');
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-
-        box.className = 'mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all';
-
-        if (type === 'success') {
-            box.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-200');
-            icon.setAttribute('data-lucide', 'check-circle-2');
-            icon.className = 'w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'warning') {
-            box.classList.add('bg-amber-50', 'text-amber-900', 'border-amber-200');
-            icon.setAttribute('data-lucide', 'alert-triangle');
-            icon.className = 'w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'error') {
-            box.classList.add('bg-red-50', 'text-red-900', 'border-red-200');
-            icon.setAttribute('data-lucide', 'alert-circle');
-            icon.className = 'w-4 h-4 text-red-600 mt-0.5 flex-shrink-0';
-        } else {
-            box.classList.add('bg-blue-50', 'text-blue-900', 'border-blue-200');
-            icon.setAttribute('data-lucide', 'info');
-            icon.className = 'w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0';
-        }
-
-        box.classList.remove('hidden');
-        lucide.createIcons();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function dismissAlert() {
-        document.getElementById('defence-alert-box').classList.add('hidden');
-    }
-
     function openReviewModal(student, reg, title, turnitin, supervisor) {
         document.getElementById('modal-r-student').textContent = student;
         document.getElementById('modal-r-reg').textContent = reg;
@@ -350,6 +324,13 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        const defenceBase = @js(route('pg-research.defence-requests.decide', 0));
+        document.querySelectorAll('.defence-return-trigger').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('defence-return-form').action = defenceBase.replace(/\/0\//, '/' + btn.dataset.request + '/');
+            });
+        });
+
         const searchInput = document.getElementById('defence-search');
         const rows = document.querySelectorAll('.defence-row');
 

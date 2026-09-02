@@ -16,24 +16,10 @@
                 <i data-lucide="help-circle" class="w-3.5 h-3.5 text-slate-600"></i>
                 <span id="workflow-toggle-btn-text">Show Workflow Guide</span>
             </button>
-            <button type="button" onclick="openScheduleSeminarModal()" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
+            <button type="button" data-modal-open="seminar-schedule-modal" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
                 Schedule Seminar
             </button>
         </div>
-    </div>
-
-    {{-- Real-Time Alert Toast Container --}}
-    <div id="seminar-alert-box" class="hidden mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all">
-        <div class="flex items-start gap-2.5">
-            <i id="alert-icon" data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            <div>
-                <strong id="alert-title" class="block font-bold"></strong>
-                <span id="alert-message" class="font-normal opacity-90"></span>
-            </div>
-        </div>
-        <button type="button" onclick="dismissAlert()" class="text-slate-400 hover:text-slate-600">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
     </div>
 
     {{-- Workflow Guide --}}
@@ -216,9 +202,16 @@
                                 @endif
                             </td>
                             <td class="py-3.5 px-4 text-center">
-                                <button type="button" onclick="openCertifySeminarModal('{{ addslashes($s['candidate_name']) }}', '{{ $s['reg_no'] }}', '{{ addslashes($s['seminar_type']) }}', '{{ addslashes($s['panel_feedback']) }}')" class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors">
-                                    Certify
-                                </button>
+                                @if($s['is_open'])
+                                    <button type="button" data-modal-open="seminar-conclude-modal"
+                                            data-seminar="{{ $s['id'] }}"
+                                            data-candidate="{{ $s['candidate_name'] }}"
+                                            class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors conclude-trigger">
+                                        Record outcome
+                                    </button>
+                                @else
+                                    <span class="text-[10.5px] text-slate-500 font-semibold">{{ $s['status'] }}</span>
+                                @endif
                             </td>
                         </tr>
                     @endforeach
@@ -242,33 +235,84 @@
 
 </div>
 
-{{-- MODAL: CERTIFY SEMINAR --}}
-<div class="modal" id="sem-modal" role="dialog" aria-modal="true">
+{{-- MODAL: SCHEDULE SEMINAR --}}
+<x-pg.modal-form
+    id="seminar-schedule-modal"
+    title="Schedule Research Seminar"
+    :action="route('pg-research.seminars.store')"
+    submit-label="Schedule seminar"
+    width="600px">
+
+    <x-pg.field label="Candidate" name="candidate_id" required>
+        <select name="candidate_id" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+            <option value="">Select candidate…</option>
+            @foreach($allCandidates as $option)
+                <option value="{{ $option->id }}">{{ $option->candidate_name }} — {{ $option->reg_no }}</option>
+            @endforeach
+        </select>
+    </x-pg.field>
+
+    <div class="grid grid-cols-2 gap-3">
+        <x-pg.field label="Seminar type" name="seminar_type" required>
+            <select name="seminar_type" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+                <option value="PROPOSAL">Departmental proposal seminar</option>
+                <option value="PROGRESS">Progress seminar</option>
+                <option value="PRE_DEFENCE">Pre-defence seminar</option>
+            </select>
+        </x-pg.field>
+
+        <x-pg.field label="Date &amp; time" name="scheduled_for" required>
+            <input type="datetime-local" name="scheduled_for" required
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="Venue" name="venue" required>
+            <input type="text" name="venue" required maxlength="190" value="{{ old('venue') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="Panel chair" name="panel_chair">
+            <input type="text" name="panel_chair" maxlength="190" value="{{ old('panel_chair') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+    </div>
+</x-pg.modal-form>
+
+{{-- MODAL: RECORD SEMINAR OUTCOME --}}
+<div class="modal" id="seminar-conclude-modal" role="dialog" aria-modal="true">
     <div class="modal-card" style="width:min(560px, 94vw);">
-        <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
-            <div>
-                <h2 class="text-sm font-bold text-white">Certify Postgraduate Seminar Milestone</h2>
-                <small style="color:rgba(255,255,255,0.85);">Official HOD certification of seminar attendance and presentation.</small>
+        <form method="POST" action="{{ route('pg-research.seminars.conclude', 0) }}" id="conclude-form">
+            @csrf
+            <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
+                <div>
+                    <h2 class="text-sm font-bold text-white">Record Seminar Outcome</h2>
+                    <small style="color:rgba(255,255,255,0.85);">Only a scheduled seminar can be concluded.</small>
+                </div>
+                <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
             </div>
-            <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
-        </div>
-        <div class="panel-body p-5 text-xs space-y-3.5">
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div class="text-[11px] text-slate-500 font-semibold">Scholar Name & Registration</div>
-                <div class="font-bold text-slate-900 text-xs mt-0.5" id="modal-sm-name"></div>
-                <div class="text-purple-900 font-semibold text-xs mt-1" id="modal-sm-type"></div>
-            </div>
+            <div class="panel-body p-5 text-xs space-y-3.5">
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-900 text-xs" id="conclude-candidate"></div>
 
-            <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                <div class="text-[11px] text-emerald-800 font-semibold">Panel Feedback & Recommendations</div>
-                <div class="text-xs text-slate-800 mt-1 leading-snug" id="modal-sm-feedback"></div>
-            </div>
+                <x-pg.field label="Outcome" name="status" required>
+                    <select name="status" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+                        <option value="PASSED">Passed</option>
+                        <option value="HELD">Held — outcome pending</option>
+                        <option value="FAILED">Failed</option>
+                        <option value="DEFERRED">Deferred</option>
+                        <option value="CANCELLED">Cancelled</option>
+                    </select>
+                </x-pg.field>
 
-            <div class="flex justify-between items-center pt-3 border-t border-slate-100">
-                <button type="button" class="btn btn-secondary text-xs" data-modal-close>Close</button>
-                <button type="button" class="btn text-xs bg-[#0A3E50] hover:bg-[#072c39] text-white font-semibold" onclick="document.getElementById('sem-modal').classList.remove('open'); triggerActionAlert('success', 'Seminar Certified', 'Seminar milestone certified. Record updated in student postgraduate ledger.');">Certify Milestone</button>
+                <x-pg.field label="Panel feedback" name="outcome_notes">
+                    <textarea name="outcome_notes" rows="4" class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs"></textarea>
+                </x-pg.field>
+
+                <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+                    <button type="button" class="btn btn-secondary text-xs" data-modal-close>Cancel</button>
+                    <button type="submit" class="px-3.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">Record outcome</button>
+                </div>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -283,44 +327,6 @@
         }
     }
 
-    function triggerActionAlert(type, title, message) {
-        const box = document.getElementById('seminar-alert-box');
-        const icon = document.getElementById('alert-icon');
-        const titleEl = document.getElementById('alert-title');
-        const msgEl = document.getElementById('alert-message');
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-
-        box.className = 'mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all';
-
-        if (type === 'success') {
-            box.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-200');
-            icon.setAttribute('data-lucide', 'check-circle-2');
-            icon.className = 'w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'warning') {
-            box.classList.add('bg-amber-50', 'text-amber-900', 'border-amber-200');
-            icon.setAttribute('data-lucide', 'alert-triangle');
-            icon.className = 'w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'error') {
-            box.classList.add('bg-red-50', 'text-red-900', 'border-red-200');
-            icon.setAttribute('data-lucide', 'alert-circle');
-            icon.className = 'w-4 h-4 text-red-600 mt-0.5 flex-shrink-0';
-        } else {
-            box.classList.add('bg-blue-50', 'text-blue-900', 'border-blue-200');
-            icon.setAttribute('data-lucide', 'info');
-            icon.className = 'w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0';
-        }
-
-        box.classList.remove('hidden');
-        lucide.createIcons();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function dismissAlert() {
-        document.getElementById('seminar-alert-box').classList.add('hidden');
-    }
-
     function openCertifySeminarModal(name, reg, type, feedback) {
         document.getElementById('modal-sm-name').textContent = name + ' (' + reg + ')';
         document.getElementById('modal-sm-type').textContent = type;
@@ -328,11 +334,15 @@
         document.getElementById('sem-modal').classList.add('open');
     }
 
-    function openScheduleSeminarModal() {
-        triggerActionAlert('info', 'Seminar Scheduling Portal', 'Select candidate and presentation tier (Departmental Concept, Progress, or Pre-Defense).');
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
+        const concludeBase = @js(route('pg-research.seminars.conclude', 0));
+        document.querySelectorAll('.conclude-trigger').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('conclude-form').action = concludeBase.replace(/\/0\//, '/' + btn.dataset.seminar + '/');
+                document.getElementById('conclude-candidate').textContent = btn.dataset.candidate;
+            });
+        });
+
         const searchInput = document.getElementById('seminar-search');
         const rows = document.querySelectorAll('.seminar-row');
 

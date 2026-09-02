@@ -16,24 +16,13 @@
                 <i data-lucide="help-circle" class="w-3.5 h-3.5 text-slate-600"></i>
                 <span id="workflow-toggle-btn-text">Show Workflow Guide</span>
             </button>
-            <button type="button" onclick="openImportBatchModal()" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
-                Import Legacy Batch
+            <button type="button" data-modal-open="legacy-stage-modal" class="px-4 py-1.5 rounded-md border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-xs transition-colors shadow-2xs">
+                Stage Legacy Record
+            </button>
+            <button type="button" data-modal-open="legacy-batch-modal" class="px-4 py-1.5 rounded-md bg-[#0A3E50] hover:bg-[#072c39] text-white font-bold text-xs transition-colors shadow-2xs">
+                Import Batch
             </button>
         </div>
-    </div>
-
-    {{-- Real-Time Alert Toast Container --}}
-    <div id="mig-alert-box" class="hidden mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all">
-        <div class="flex items-start gap-2.5">
-            <i id="alert-icon" data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            <div>
-                <strong id="alert-title" class="block font-bold"></strong>
-                <span id="alert-message" class="font-normal opacity-90"></span>
-            </div>
-        </div>
-        <button type="button" onclick="dismissAlert()" class="text-slate-400 hover:text-slate-600">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
     </div>
 
     {{-- Workflow Guide --}}
@@ -215,9 +204,23 @@
                                 @endif
                             </td>
                             <td class="py-3.5 px-4 text-center">
-                                <button type="button" onclick="openMigModal('{{ addslashes($m['student_name']) }}', '{{ $m['reg_no'] }}', '{{ addslashes($m['source_module']) }}', '{{ addslashes($m['migrated_artifacts']) }}', '{{ addslashes($m['target_stage']) }}')" class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors">
-                                    Inspect
-                                </button>
+                                <div class="flex flex-col items-center gap-1">
+                                    @if($m['is_pending'])
+                                        <x-pg.action
+                                            :action="route('pg-research.legacy.import', $m['id'])"
+                                            label="Import"
+                                            variant="primary"
+                                            confirm="Import this legacy record into the live research register?" />
+                                    @elseif($m['is_imported'])
+                                        <x-pg.action
+                                            :action="route('pg-research.legacy.verify', $m['id'])"
+                                            label="Confirm &amp; sync"
+                                            variant="approve"
+                                            confirm="Confirm the imported dossier reconciles with the source system?" />
+                                    @else
+                                        <span class="text-[10.5px] text-slate-500 font-semibold">{{ $m['validation_status'] }}</span>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @endforeach
@@ -241,43 +244,60 @@
 
 </div>
 
-{{-- MODAL: INSPECT MIGRATION --}}
-<div class="modal" id="mig-modal" role="dialog" aria-modal="true">
-    <div class="modal-card" style="width:min(580px, 94vw);">
-        <div class="panel-head" style="background:var(--primary);color:#fff;padding:12px 18px;border-radius:7px 7px 0 0;">
-            <div>
-                <h2 class="text-sm font-bold text-white">Legacy Research Dossier Inspection</h2>
-                <small style="color:rgba(255,255,255,0.85);">Verify legacy artifacts mapped into current ERP lifecycle.</small>
-            </div>
-            <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
-        </div>
-        <div class="panel-body p-5 text-xs space-y-3.5">
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div class="text-[11px] text-slate-500 font-semibold">Scholar & Source System</div>
-                <div class="font-bold text-slate-900 text-xs mt-0.5" id="modal-mg-student"></div>
-                <div class="text-blue-900 font-semibold text-xs mt-1" id="modal-mg-source"></div>
-            </div>
+{{-- MODAL: STAGE LEGACY RECORD --}}
+<x-pg.modal-form
+    id="legacy-stage-modal"
+    title="Stage a Legacy Record for Import"
+    subtitle="Staging is idempotent — re-staging the same batch and source reference updates the existing row."
+    :action="route('pg-research.legacy.store')"
+    submit-label="Stage record"
+    width="620px">
 
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div class="text-[11px] text-slate-500 font-semibold">Preserved Artifacts</div>
-                <div class="text-xs text-slate-800 mt-1 leading-snug" id="modal-mg-artifacts"></div>
-            </div>
+    <div class="grid grid-cols-2 gap-3">
+        <x-pg.field label="Batch reference" name="batch_reference" required hint="Records sharing a batch can be imported together.">
+            <input type="text" name="batch_reference" required maxlength="60" value="{{ old('batch_reference') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
 
-            <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex justify-between items-center">
-                <div>
-                    <span class="text-[11px] text-emerald-800 font-semibold block">Mapped Research Phase</span>
-                    <strong class="text-sm text-emerald-950 font-bold" id="modal-mg-stage"></strong>
-                </div>
-                <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-600 text-white">Zero Re-Work</span>
-            </div>
-
-            <div class="flex justify-between items-center pt-3 border-t border-slate-100">
-                <button type="button" class="btn btn-secondary text-xs" data-modal-close>Close</button>
-                <button type="button" class="btn text-xs bg-[#0A3E50] hover:bg-[#072c39] text-white font-semibold" onclick="document.getElementById('mig-modal').classList.remove('open'); triggerActionAlert('success', 'Legacy Dossier Confirmed', 'Legacy submission verified and synchronized into ERP production workflow.');">Confirm & Sync</button>
-            </div>
-        </div>
+        <x-pg.field label="Source module" name="source_module" required>
+            <input type="text" name="source_module" required maxlength="60" value="{{ old('source_module') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
     </div>
-</div>
+
+    <x-pg.field label="Source reference" name="source_reference" required hint="Must match the candidate registration number for the import to bind.">
+        <input type="text" name="source_reference" required maxlength="100" value="{{ old('source_reference') }}"
+               class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+    </x-pg.field>
+
+    <x-pg.field label="Target stage" name="target_stage" required>
+        <select name="target_stage" required class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+            @foreach(\App\Models\PgResearch\PgResearchCandidate::STAGES as $stage)
+                <option value="{{ $stage }}">{{ ucfirst(strtolower($stage)) }}</option>
+            @endforeach
+        </select>
+    </x-pg.field>
+
+    <x-pg.field label="Artefacts carried over" name="artifacts">
+        <textarea name="artifacts" rows="3"
+                  class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">{{ old('artifacts') }}</textarea>
+    </x-pg.field>
+</x-pg.modal-form>
+
+{{-- MODAL: IMPORT WHOLE BATCH --}}
+<x-pg.modal-form
+    id="legacy-batch-modal"
+    title="Import an Entire Batch"
+    subtitle="Every pending or previously failed record in the batch is attempted; failures keep their error message."
+    :action="route('pg-research.legacy.batch')"
+    submit-label="Run batch import"
+    width="480px">
+
+    <x-pg.field label="Batch reference" name="batch_reference" required>
+        <input type="text" name="batch_reference" required maxlength="60"
+               class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+    </x-pg.field>
+</x-pg.modal-form>
 
 <script>
     function toggleWorkflowGuide() {
@@ -290,54 +310,12 @@
         }
     }
 
-    function triggerActionAlert(type, title, message) {
-        const box = document.getElementById('mig-alert-box');
-        const icon = document.getElementById('alert-icon');
-        const titleEl = document.getElementById('alert-title');
-        const msgEl = document.getElementById('alert-message');
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-
-        box.className = 'mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-start justify-between gap-3 shadow-sm transition-all';
-
-        if (type === 'success') {
-            box.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-200');
-            icon.setAttribute('data-lucide', 'check-circle-2');
-            icon.className = 'w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'warning') {
-            box.classList.add('bg-amber-50', 'text-amber-900', 'border-amber-200');
-            icon.setAttribute('data-lucide', 'alert-triangle');
-            icon.className = 'w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0';
-        } else if (type === 'error') {
-            box.classList.add('bg-red-50', 'text-red-900', 'border-red-200');
-            icon.setAttribute('data-lucide', 'alert-circle');
-            icon.className = 'w-4 h-4 text-red-600 mt-0.5 flex-shrink-0';
-        } else {
-            box.classList.add('bg-blue-50', 'text-blue-900', 'border-blue-200');
-            icon.setAttribute('data-lucide', 'info');
-            icon.className = 'w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0';
-        }
-
-        box.classList.remove('hidden');
-        lucide.createIcons();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function dismissAlert() {
-        document.getElementById('mig-alert-box').classList.add('hidden');
-    }
-
     function openMigModal(name, reg, source, artifacts, stage) {
         document.getElementById('modal-mg-student').textContent = name + ' (' + reg + ')';
         document.getElementById('modal-mg-source').textContent = 'Source: ' + source;
         document.getElementById('modal-mg-artifacts').textContent = artifacts;
         document.getElementById('modal-mg-stage').textContent = stage;
         document.getElementById('mig-modal').classList.add('open');
-    }
-
-    function openImportBatchModal() {
-        triggerActionAlert('info', 'Legacy Intake Engine', 'Initiate batch synchronization from DSC800 database and interim Google Drive repositories.');
     }
 
     document.addEventListener('DOMContentLoaded', () => {
