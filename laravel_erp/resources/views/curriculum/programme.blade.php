@@ -11,7 +11,17 @@
             <h1 class="text-xl font-bold text-slate-900 tracking-tight">Academic Programme Catalogue</h1>
             <p class="text-xs text-slate-500 mt-0.5 font-medium">Manage degree and diploma programmes, awarding titles, host academic departments, and CUE accreditation codes</p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
+            <a href="{{ route('admissions.catalogue') }}" target="_blank" class="px-3.5 py-1.5 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors shadow-2xs flex items-center gap-1.5">
+                <i data-lucide="external-link" class="w-3.5 h-3.5 text-[#E67E22]"></i> Public View
+            </a>
+            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-md border border-slate-200">
+                <a href="{{ route('dashboard.export', ['dataset' => 'programmes', 'format' => 'xlsx']) }}" class="px-2 py-0.5 text-[10.5px] font-bold text-slate-700 hover:text-emerald-700">.XLSX</a>
+                <span class="text-slate-300">•</span>
+                <a href="{{ route('dashboard.export', ['dataset' => 'programmes', 'format' => 'csv']) }}" class="px-2 py-0.5 text-[10.5px] font-bold text-slate-700 hover:text-blue-700">.CSV</a>
+                <span class="text-slate-300">•</span>
+                <a href="{{ route('dashboard.export', ['dataset' => 'programmes', 'format' => 'pdf']) }}" target="_blank" class="px-2 py-0.5 text-[10.5px] font-bold text-slate-700 hover:text-red-700">.PDF</a>
+            </div>
             <button type="button" onclick="openCreateProgModal()" class="px-4 py-1.5 rounded-md bg-[#E67E22] hover:bg-[#d35400] text-white font-bold text-xs transition-colors shadow-xs flex items-center gap-1.5">
                 <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Add Programme
             </button>
@@ -84,11 +94,22 @@
                     @forelse($programmes as $p)
                         <tr class="hover:bg-slate-50/70 transition-colors prog-row" data-status="{{ strtolower($p->status) }}" data-search="{{ strtolower($p->code.' '.$p->title.' '.$p->school.' '.$p->department.' '.$p->award.' '.$p->cue_code.' '.$p->level) }}">
                             <td class="py-3.5 px-4">
-                                <span class="font-mono text-[11px] font-bold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">{{ $p->code }}</span>
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="font-mono text-[11px] font-bold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">{{ $p->code }}</span>
+                                    @if($p->duration_semesters)
+                                        <span class="text-[10px] text-slate-500">{{ $p->duration_semesters }} Semesters • {{ $p->total_credits }} Credits</span>
+                                    @endif
+                                </div>
                                 <div class="font-bold text-slate-900 text-xs mt-1">{{ $p->title }}</div>
-                                @if($p->duration_semesters)
-                                    <div class="text-[10.5px] text-slate-500 mt-0.5">{{ $p->duration_semesters }} Semesters • {{ $p->total_credits }} Credits</div>
-                                @endif
+                                <div class="flex items-center gap-2 mt-1.5 pt-1 border-t border-slate-100">
+                                    <a href="{{ route('curriculum.programme-curriculum') }}" class="text-[10.5px] font-bold text-teal-700 hover:text-teal-900 flex items-center gap-0.5" title="View & Edit Course Units">
+                                        <i data-lucide="layers" class="w-3 h-3"></i> Curriculum
+                                    </a>
+                                    <span class="text-slate-300">•</span>
+                                    <a href="{{ route('admissions.workspace.applications') }}" class="text-[10.5px] font-bold text-[#E67E22] hover:text-[#d35400] flex items-center gap-0.5" title="View Admissions Funnel">
+                                        <i data-lucide="users" class="w-3 h-3"></i> Applicants
+                                    </a>
+                                </div>
                             </td>
                             <td class="py-3.5 px-4 font-semibold text-slate-800 text-xs">
                                 <div>{{ $p->school ?: '—' }}</div>
