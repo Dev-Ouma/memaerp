@@ -276,43 +276,311 @@
                     @endif
                 </div>
 
-                {{-- Fee Payment Card --}}
-                <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                {{-- Kenyan Executive World-Class Payment Gateway Hub --}}
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-5" id="payment-gateway-container">
                     <div class="flex justify-between items-center pb-3 border-b border-slate-100">
                         <div>
-                            <div class="text-[11px] font-bold text-[#E67E22] uppercase tracking-wider">Step 4 of 4</div>
-                            <h2 class="text-sm font-extrabold text-[#0A3E50]">Application Processing Fee</h2>
+                            <div class="text-[11px] font-bold text-[#E67E22] uppercase tracking-wider">Step 4 of 4 • Executive Settlement</div>
+                            <h2 class="text-sm font-extrabold text-[#0A3E50]">Official Application Fee Checkout (KES 1,000)</h2>
                         </div>
-                        <span class="text-xs font-bold @if($paid) text-emerald-700 @else text-amber-700 @endif">
-                            {{ $paid ? 'CONFIRMED' : 'DUE' }}
+                        <span class="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-xs font-bold @if($paid) bg-emerald-50 text-emerald-800 border border-emerald-200 @else bg-amber-50 text-amber-800 border border-amber-200 @endif">
+                            <span class="w-1.5 h-1.5 rounded-full @if($paid) bg-emerald-500 @else bg-amber-500 animate-ping @endif"></span>
+                            {{ $paid ? 'CONFIRMED & SETTLED' : 'PAYMENT DUE' }}
                         </span>
                     </div>
 
                     @if(!$paid)
-                        <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
-                            <strong class="font-bold text-sm">Pay KES 1,000 Application Processing Fee</strong>
-                            <p class="leading-relaxed">
-                                Use Safaricom M-Pesa Paybill <strong>880100</strong>, Account Number <strong>{{ $application->application_number }}</strong>, or trigger an instant STK push below:
-                            </p>
+                        {{-- Payment Channel Selector Tabs --}}
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2" id="payment-channel-tabs">
+                            <button type="button" onclick="switchPayChannel('stk')" id="tab-stk" class="pay-tab active p-3 rounded-xl border border-[#1E8449] bg-emerald-50/70 text-center transition-all cursor-pointer shadow-2xs">
+                                <i data-lucide="smartphone" class="w-5 h-5 mx-auto text-[#1E8449] mb-1"></i>
+                                <span class="block text-[11px] font-extrabold text-slate-800 leading-tight">STK Push</span>
+                                <span class="text-[9.5px] font-bold text-[#1E8449]">Instant Prompt</span>
+                            </button>
+
+                            <button type="button" onclick="switchPayChannel('paybill')" id="tab-paybill" class="pay-tab p-3 rounded-xl border border-slate-200 bg-white text-center hover:bg-slate-50 transition-all cursor-pointer shadow-2xs">
+                                <i data-lucide="building-2" class="w-5 h-5 mx-auto text-[#004F9E] mb-1"></i>
+                                <span class="block text-[11px] font-extrabold text-slate-800 leading-tight">KCB Paybill</span>
+                                <span class="text-[9.5px] font-bold text-slate-500">522 522</span>
+                            </button>
+
+                            <button type="button" onclick="switchPayChannel('pochi')" id="tab-pochi" class="pay-tab p-3 rounded-xl border border-slate-200 bg-white text-center hover:bg-slate-50 transition-all cursor-pointer shadow-2xs">
+                                <i data-lucide="wallet" class="w-5 h-5 mx-auto text-[#E67E22] mb-1"></i>
+                                <span class="block text-[11px] font-extrabold text-slate-800 leading-tight">Pochi Biashara</span>
+                                <span class="text-[9.5px] font-bold text-slate-500">0113636154</span>
+                            </button>
+
+                            <button type="button" onclick="switchPayChannel('till')" id="tab-till" class="pay-tab p-3 rounded-xl border border-slate-200 bg-white text-center hover:bg-slate-50 transition-all cursor-pointer shadow-2xs">
+                                <i data-lucide="shopping-bag" class="w-5 h-5 mx-auto text-teal-700 mb-1"></i>
+                                <span class="block text-[11px] font-extrabold text-slate-800 leading-tight">Buy Goods / Till</span>
+                                <span class="text-[9.5px] font-bold text-slate-500">0113636154</span>
+                            </button>
+
+                            <button type="button" onclick="switchPayChannel('card')" id="tab-card" class="pay-tab p-3 rounded-xl border border-slate-200 bg-white text-center hover:bg-slate-50 transition-all cursor-pointer shadow-2xs">
+                                <i data-lucide="credit-card" class="w-5 h-5 mx-auto text-purple-700 mb-1"></i>
+                                <span class="block text-[11px] font-extrabold text-slate-800 leading-tight">Card / Stripe</span>
+                                <span class="text-[9.5px] font-bold text-slate-500">Visa • MC</span>
+                            </button>
                         </div>
 
-                        <form method="post" action="{{ route('admissions.application.payment', $application) }}">
-                            @csrf
-                            <input type="hidden" name="channel" value="mpesa">
-                            <button type="submit" class="w-full py-3 rounded-xl bg-[#1E8449] hover:bg-[#166534] text-white font-extrabold text-xs transition-colors shadow-sm flex items-center justify-center gap-2">
-                                <i data-lucide="smartphone" class="w-4 h-4 text-emerald-200"></i> Trigger Instant M-Pesa STK Push (KES 1,000)
-                            </button>
-                        </form>
-                    @else
-                        <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center justify-between">
-                            <div>
-                                <strong class="font-bold text-sm">Payment Confirmed</strong>
-                                <div class="font-mono text-[11px] text-emerald-700 mt-0.5">Receipt: {{ $application->payments()->where('status', 'PAID')->value('receipt_number') ?? 'MEMA-RCPT-2026' }}</div>
+                        {{-- Channel 1: STK Push (Default) --}}
+                        <div id="channel-content-stk" class="pay-content space-y-4 bg-emerald-50/40 p-5 rounded-xl border border-emerald-200">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <h3 class="font-extrabold text-xs text-slate-900 flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-[#1E8449]"></span> Safaricom M-Pesa Instant STK Push
+                                    </h3>
+                                    <p class="text-[11.5px] text-slate-600 mt-0.5">
+                                        Enter your Safaricom phone number. A PIN prompt will pop up on your screen instantly.
+                                    </p>
+                                </div>
+                                <span class="font-mono font-bold text-xs text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200">KES 1,000</span>
                             </div>
-                            <span class="font-extrabold text-emerald-800 text-base">KES 1,000</span>
+
+                            <form method="post" action="{{ route('admissions.application.payment', $application) }}" onsubmit="showStkTriggerAnimation(event, this)">
+                                @csrf
+                                <input type="hidden" name="channel" value="mpesa">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                                    <div class="sm:col-span-2">
+                                        <label class="block text-xs font-bold text-slate-700 mb-1">M-Pesa Mobile Number *</label>
+                                        <div class="relative">
+                                            <input type="tel" name="phone_number" value="0113636154" id="stk-phone-input" required class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-[#1E8449] pl-10 shadow-2xs">
+                                            <i data-lucide="phone" class="w-4 h-4 text-emerald-600 absolute left-3 top-2.5"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <button type="submit" id="stk-submit-btn" class="w-full py-2 px-4 rounded-lg bg-[#1E8449] hover:bg-[#166534] text-white font-extrabold text-xs transition-all shadow-md flex items-center justify-center gap-1.5">
+                                            <i data-lucide="send" class="w-3.5 h-3.5"></i> Send STK Prompt
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="stk-waiting-indicator" class="hidden mt-3 p-3 bg-white rounded-lg border border-emerald-300 text-xs text-emerald-900 flex items-center gap-3">
+                                    <div class="w-4 h-4 border-2 border-[#1E8449] border-t-transparent rounded-full animate-spin"></div>
+                                    <span>STK push dispatched to <strong>0113636154</strong>. Please enter your M-Pesa PIN on your phone to complete...</span>
+                                </div>
+                            </form>
+                        </div>
+
+                        {{-- Channel 2: KCB Paybill 522 522 / Account 0113636154 --}}
+                        <div id="channel-content-paybill" class="pay-content hidden space-y-4 bg-blue-50/40 p-5 rounded-xl border border-blue-200">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <h3 class="font-extrabold text-xs text-slate-900 flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-[#004F9E]"></span> KCB Paybill Gateway
+                                    </h3>
+                                    <p class="text-[11.5px] text-slate-600 mt-0.5">
+                                        Pay via M-Pesa Paybill using the official institutional collection credentials below:
+                                    </p>
+                                </div>
+                                <span class="font-mono font-bold text-xs text-blue-900 bg-white px-2 py-0.5 rounded border border-blue-200">KCB Bank</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                <div class="bg-white p-3.5 rounded-lg border border-slate-200 flex justify-between items-center shadow-2xs">
+                                    <div>
+                                        <span class="block text-[10px] text-slate-400 font-bold uppercase">Business Number (Paybill)</span>
+                                        <span class="font-mono text-base font-extrabold text-[#004F9E]">522 522</span>
+                                    </div>
+                                    <button type="button" onclick="copyToClip('522522', this)" class="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10.5px] font-bold transition-colors">Copy</button>
+                                </div>
+                                <div class="bg-white p-3.5 rounded-lg border border-slate-200 flex justify-between items-center shadow-2xs">
+                                    <div>
+                                        <span class="block text-[10px] text-slate-400 font-bold uppercase">Account Number</span>
+                                        <span class="font-mono text-base font-extrabold text-[#004F9E]">0113636154</span>
+                                    </div>
+                                    <button type="button" onclick="copyToClip('0113636154', this)" class="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10.5px] font-bold transition-colors">Copy</button>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-3 rounded-lg border border-slate-200 text-xs text-slate-600 space-y-1">
+                                <strong class="text-slate-800 block font-bold">Manual USSD Payment Steps:</strong>
+                                <p class="text-[11.5px]">1. Go to M-Pesa &rarr; Lipa na M-Pesa &rarr; <strong>Pay Bill</strong>.<br>
+                                2. Enter Business No: <strong>522522</strong>.<br>
+                                3. Enter Account No: <strong>0113636154</strong> (or Ref: <strong>{{ $application->application_number }}</strong>).<br>
+                                4. Enter Amount: <strong>1000</strong> &rarr; Enter PIN &rarr; Send.</p>
+                            </div>
+
+                            <form method="post" action="{{ route('admissions.application.payment', $application) }}">
+                                @csrf
+                                <input type="hidden" name="channel" value="paybill">
+                                <button type="submit" class="w-full py-2.5 rounded-lg bg-[#004F9E] hover:bg-[#003870] text-white font-extrabold text-xs transition-colors shadow-md flex items-center justify-center gap-2">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4"></i> I Have Paid via KCB Paybill (Confirm Receipt)
+                                </button>
+                            </form>
+                        </div>
+
+                        {{-- Channel 3: Pochi la Biashara 0113636154 --}}
+                        <div id="channel-content-pochi" class="pay-content hidden space-y-4 bg-amber-50/40 p-5 rounded-xl border border-amber-200">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <h3 class="font-extrabold text-xs text-slate-900 flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-[#E67E22]"></span> Pochi la Biashara Direct Transfer
+                                    </h3>
+                                    <p class="text-[11.5px] text-slate-600 mt-0.5">
+                                        Send application fee directly to the university admissions Pochi la Biashara mobile wallet:
+                                    </p>
+                                </div>
+                                <span class="font-mono font-bold text-xs text-amber-900 bg-white px-2 py-0.5 rounded border border-amber-200">Pochi la Biashara</span>
+                            </div>
+
+                            <div class="bg-white p-4 rounded-lg border border-slate-200 flex justify-between items-center shadow-2xs">
+                                <div>
+                                    <span class="block text-[10px] text-slate-400 font-bold uppercase">Pochi Mobile Number</span>
+                                    <span class="font-mono text-lg font-extrabold text-[#E67E22]">0113636154</span>
+                                    <span class="block text-[10.5px] text-slate-500 mt-0.5">Recipient: MEMA Admissions &amp; Enrolments</span>
+                                </div>
+                                <button type="button" onclick="copyToClip('0113636154', this)" class="px-3 py-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">Copy Number</button>
+                            </div>
+
+                            <div class="bg-white p-3 rounded-lg border border-slate-200 text-xs text-slate-600 space-y-1">
+                                <strong class="text-slate-800 block font-bold">Steps to Pay via Pochi:</strong>
+                                <p class="text-[11.5px]">1. Dial <strong>*334#</strong> or open M-Pesa App.<br>
+                                2. Select <strong>Lipa na M-Pesa</strong> &rarr; <strong>Pochi la Biashara</strong> &rarr; <strong>Send Money</strong>.<br>
+                                3. Enter Phone No: <strong>0113636154</strong> &rarr; Amount: <strong>1000</strong> &rarr; PIN &rarr; Confirm.</p>
+                            </div>
+
+                            <form method="post" action="{{ route('admissions.application.payment', $application) }}">
+                                @csrf
+                                <input type="hidden" name="channel" value="pochi">
+                                <button type="submit" class="w-full py-2.5 rounded-lg bg-[#E67E22] hover:bg-[#d35400] text-white font-extrabold text-xs transition-colors shadow-md flex items-center justify-center gap-2">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4"></i> I Have Sent via Pochi la Biashara (Confirm Settlement)
+                                </button>
+                            </form>
+                        </div>
+
+                        {{-- Channel 4: Buy Goods / Till 0113636154 --}}
+                        <div id="channel-content-till" class="pay-content hidden space-y-4 bg-teal-50/40 p-5 rounded-xl border border-teal-200">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <h3 class="font-extrabold text-xs text-slate-900 flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-teal-700"></span> Lipa na M-Pesa Buy Goods (Till)
+                                    </h3>
+                                    <p class="text-[11.5px] text-slate-600 mt-0.5">
+                                        Pay via merchant till at zero transaction cost:
+                                    </p>
+                                </div>
+                                <span class="font-mono font-bold text-xs text-teal-900 bg-white px-2 py-0.5 rounded border border-teal-200">Buy Goods</span>
+                            </div>
+
+                            <div class="bg-white p-4 rounded-lg border border-slate-200 flex justify-between items-center shadow-2xs">
+                                <div>
+                                    <span class="block text-[10px] text-slate-400 font-bold uppercase">Till Number</span>
+                                    <span class="font-mono text-lg font-extrabold text-teal-800">0113636154</span>
+                                    <span class="block text-[10.5px] text-slate-500 mt-0.5">Merchant: MEMA College Collections</span>
+                                </div>
+                                <button type="button" onclick="copyToClip('0113636154', this)" class="px-3 py-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">Copy Till</button>
+                            </div>
+
+                            <form method="post" action="{{ route('admissions.application.payment', $application) }}">
+                                @csrf
+                                <input type="hidden" name="channel" value="till">
+                                <button type="submit" class="w-full py-2.5 rounded-lg bg-teal-800 hover:bg-teal-900 text-white font-extrabold text-xs transition-colors shadow-md flex items-center justify-center gap-2">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4"></i> I Have Paid via Till 0113636154 (Confirm Payment)
+                                </button>
+                            </form>
+                        </div>
+
+                        {{-- Channel 5: Card / Stripe 3D-Secure --}}
+                        <div id="channel-content-card" class="pay-content hidden space-y-4 bg-purple-50/30 p-5 rounded-xl border border-purple-200">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <h3 class="font-extrabold text-xs text-slate-900 flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-purple-700"></span> Global Debit / Credit Card (Stripe 3D-Secure 2.0)
+                                    </h3>
+                                    <p class="text-[11.5px] text-slate-600 mt-0.5">
+                                        International Visa, Mastercard, and American Express supported with instant automated clearance.
+                                    </p>
+                                </div>
+                                <span class="font-mono font-bold text-xs text-purple-900 bg-white px-2 py-0.5 rounded border border-purple-200">Stripe Verified</span>
+                            </div>
+
+                            <form method="post" action="{{ route('admissions.application.payment', $application) }}" class="space-y-3">
+                                @csrf
+                                <input type="hidden" name="channel" value="stripe">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Cardholder Name *</label>
+                                    <input type="text" placeholder="John Doe" value="{{ old('card_name', $application->applicant->user->name ?? 'Applicant') }}" required class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-purple-600 shadow-2xs">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Card Number *</label>
+                                    <input type="text" placeholder="4242 •••• •••• 4242" value="4242 4242 4242 4242" maxlength="19" required class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-purple-600 shadow-2xs">
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 mb-1">Expiry (MM/YY) *</label>
+                                        <input type="text" placeholder="12/28" value="12/28" maxlength="5" required class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono text-center font-bold text-slate-900 focus:outline-none focus:border-purple-600 shadow-2xs">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 mb-1">CVV / CVC *</label>
+                                        <input type="password" placeholder="•••" value="123" maxlength="4" required class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono text-center font-bold text-slate-900 focus:outline-none focus:border-purple-600 shadow-2xs">
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="w-full py-2.5 rounded-lg bg-purple-900 hover:bg-purple-950 text-white font-extrabold text-xs transition-colors shadow-md flex items-center justify-center gap-2">
+                                    <i data-lucide="lock" class="w-4 h-4 text-purple-300"></i> Pay KES 1,000 via Stripe Secure Card Gateway
+                                </button>
+                            </form>
+                        </div>
+                    @else
+                        {{-- Confirmed Receipt Card --}}
+                        <div class="p-5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs text-emerald-950 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-xs">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold shadow-2xs">
+                                    <i data-lucide="check-check" class="w-5 h-5 text-emerald-700"></i>
+                                </div>
+                                <div>
+                                    <strong class="font-extrabold text-sm block">Payment Cleared &amp; Settled</strong>
+                                    <div class="font-mono text-[11px] text-emerald-800 mt-0.5">Official Receipt: {{ $application->payments()->where('status', 'PAID')->value('receipt_number') ?? 'MEMA-RCPT-2026' }}</div>
+                                    <span class="text-[10.5px] text-slate-600">Channel: {{ strtoupper($application->payments()->where('status', 'PAID')->value('channel') ?? 'M-PESA') }} • KES 1,000.00</span>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-extrabold text-emerald-900 bg-emerald-100 border border-emerald-300">CLEARED</span>
                         </div>
                     @endif
                 </div>
+
+                <script>
+                    function switchPayChannel(channel) {
+                        document.querySelectorAll('.pay-tab').forEach(b => {
+                            b.classList.remove('active', 'border-[#1E8449]', 'bg-emerald-50/70');
+                            b.classList.add('border-slate-200', 'bg-white');
+                        });
+                        document.querySelectorAll('.pay-content').forEach(c => c.classList.add('hidden'));
+
+                        const activeTab = document.getElementById('tab-' + channel);
+                        const activeContent = document.getElementById('channel-content-' + channel);
+
+                        if (activeTab) {
+                            activeTab.classList.add('active', 'border-[#1E8449]', 'bg-emerald-50/70');
+                            activeTab.classList.remove('border-slate-200', 'bg-white');
+                        }
+                        if (activeContent) {
+                            activeContent.classList.remove('hidden');
+                        }
+                    }
+
+                    function copyToClip(text, btn) {
+                        navigator.clipboard.writeText(text);
+                        const orig = btn.textContent;
+                        btn.textContent = 'Copied!';
+                        btn.classList.add('bg-emerald-100', 'text-emerald-800');
+                        setTimeout(() => {
+                            btn.textContent = orig;
+                            btn.classList.remove('bg-emerald-100', 'text-emerald-800');
+                        }, 2000);
+                    }
+
+                    function showStkTriggerAnimation(e, form) {
+                        const ind = document.getElementById('stk-waiting-indicator');
+                        const btn = document.getElementById('stk-submit-btn');
+                        if (ind) ind.classList.remove('hidden');
+                        if (btn) {
+                            btn.disabled = true;
+                            btn.classList.add('opacity-75');
+                            btn.innerHTML = '<span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Dispatched STK Prompt...';
+                        }
+                    }
+                </script>
 
                 {{-- Final Submit Button --}}
                 <form method="post" action="{{ route('admissions.application.submit', $application) }}">

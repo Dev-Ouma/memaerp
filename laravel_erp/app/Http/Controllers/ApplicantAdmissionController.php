@@ -65,7 +65,7 @@ final class ApplicantAdmissionController extends Controller
     public function payment(Request $request, AdmissionApplication $application, AdmissionPipeline $pipeline): RedirectResponse
     {
         $this->own($request, $application);
-        $data = $request->validate(['channel' => ['required', 'in:mpesa,card,bank,cashier']]);
+        $data = $request->validate(['channel' => ['required', 'in:mpesa,card,bank,cashier,pochi,paybill,till,stripe']]);
         $key = (string) Str::uuid();
         $payment = ApplicationPaymentAttempt::create(['admission_application_id' => $application->id, 'reference' => 'PAY-'.strtoupper(Str::random(10)), 'channel' => $data['channel'], 'amount' => 1000, 'currency' => 'KES', 'status' => 'PAID', 'idempotency_key' => $key, 'paid_at' => now(), 'receipt_number' => 'MEMA-RCPT-'.now()->format('Ymd').'-'.str_pad((string) (ApplicationPaymentAttempt::count() + 1), 5, '0', STR_PAD_LEFT), 'provider_payload' => ['mode' => 'sandbox', 'confirmed' => true]]);
         AuditLog::record('application_fee.paid', $payment, null, $payment->toArray());
