@@ -67,6 +67,7 @@ Route::middleware('auth')->group(function (): void {
     Route::patch('/admissions/setups/versions/{version}/status', [AdminSetupController::class, 'status'])->name('admissions.setups.status');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/dashboard/export', [\App\Http\Controllers\DashboardExportController::class, 'export'])->name('dashboard.export');
+    Route::get('/dashboard/records-preview', [\App\Http\Controllers\DashboardExportController::class, 'preview'])->name('dashboard.records-preview');
     Route::get('/account/{section}', [AccountController::class, 'show'])->name('account.show');
     Route::put('/account/preferences', [AccountController::class, 'preferences'])->name('account.preferences');
     Route::post('/account/switch-role', [AccountController::class, 'switchRole'])->name('account.switch-role');

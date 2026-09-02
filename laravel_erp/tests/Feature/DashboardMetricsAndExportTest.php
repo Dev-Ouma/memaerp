@@ -115,4 +115,21 @@ final class DashboardMetricsAndExportTest extends TestCase
             $pdfRes->assertOk();
         }
     }
+
+    public function test_dashboard_records_preview_endpoint_returns_json_payload(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)->get(route('dashboard.records-preview', ['dataset' => 'applications']));
+
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'dataset',
+            'title',
+            'headers',
+            'rows',
+            'total',
+            'summary',
+        ]);
+    }
 }

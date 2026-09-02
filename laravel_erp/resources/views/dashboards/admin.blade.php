@@ -50,124 +50,103 @@
         <div class="ouk-kpi-grid">
             
             {{-- Card 1: Applications --}}
-            <div class="ouk-kpi-card hover:border-[#0A3E50] transition-all cursor-pointer group" onclick="window.location.href='{{ route('admissions.workspace.dashboard') }}'">
+            <div class="ouk-kpi-card hover:border-[#0A3E50] transition-all cursor-pointer group" onclick="openDataViewModal('applications')">
                 <div class="kpi-header flex justify-between items-center">
                     <span class="kpi-label group-hover:text-[#0A3E50]">Applications</span>
-                    <span class="text-[10px] text-slate-400 group-hover:text-[#0A3E50] font-bold">Drill Down &rarr;</span>
                 </div>
                 <div class="kpi-body">
                     <div class="kpi-metric-row">
                         <span class="kpi-big-number">{{ number_format($apps) }}</span>
-                        <a href="{{ route('admissions.workspace.reviews') }}" onclick="event.stopPropagation();" class="kpi-sub-pill hover:bg-teal-100 transition-colors" title="View in-progress applications">
+                        <span onclick="openDataViewModal('in_progress'); event.stopPropagation();" class="kpi-sub-pill hover:bg-teal-100 transition-colors cursor-pointer" title="View in-progress applications">
                             In Progress: {{ number_format($inProg) }} <i data-lucide="line-chart" class="w-3.5 h-3.5 inline text-teal-600"></i>
-                        </a>
+                        </span>
                     </div>
                     <div class="kpi-subtitle">Current applied status</div>
                     <div class="kpi-badge-list">
-                        <a href="{{ route('admissions.reports.applications') }}" onclick="event.stopPropagation();" class="kpi-badge kpi-badge-blue hover:bg-blue-100 transition-colors" title="View all applicants">
+                        <span onclick="openDataViewModal('interested'); event.stopPropagation();" class="kpi-badge kpi-badge-blue hover:bg-blue-100 transition-colors cursor-pointer" title="View all applicants">
                             <i data-lucide="users" class="w-3.5 h-3.5"></i>
                             <span>Interested Applicants: {{ number_format($interested) }}</span>
-                        </a>
-                        <a href="{{ route('admissions.workspace.reviews') }}" onclick="event.stopPropagation();" class="kpi-badge kpi-badge-blue hover:bg-blue-100 transition-colors" title="Documents requiring re-verification">
+                        </span>
+                        <span onclick="openDataViewModal('reverify'); event.stopPropagation();" class="kpi-badge kpi-badge-blue hover:bg-blue-100 transition-colors cursor-pointer" title="Documents requiring re-verification">
                             <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
                             <span>Reverify: {{ $reverify }}</span>
-                        </a>
+                        </span>
                     </div>
                 </div>
                 <div class="kpi-footer flex justify-between items-center">
-                    <div class="flex items-center gap-1.5">
-                        <a href="{{ route('dashboard.export', ['dataset' => 'applications', 'format' => 'xlsx']) }}" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-emerald-700 font-bold" title="Export Excel">.XLSX</a>
-                        <span class="text-slate-300">•</span>
-                        <a href="{{ route('dashboard.export', ['dataset' => 'applications', 'format' => 'csv']) }}" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-blue-700 font-bold" title="Export CSV">.CSV</a>
-                        <span class="text-slate-300">•</span>
-                        <a href="{{ route('dashboard.export', ['dataset' => 'applications', 'format' => 'pdf']) }}" target="_blank" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-red-700 font-bold" title="Printable PDF">.PDF</a>
-                    </div>
-                    <a href="{{ route('admissions.workspace.dashboard') }}" class="kpi-eye-btn" title="View details" aria-label="View Applications details">
+                    <span></span>
+                    <button type="button" onclick="openDataViewModal('applications'); event.stopPropagation();" class="kpi-eye-btn" title="View details" aria-label="View Applications details">
                         <i data-lucide="eye" class="w-4 h-4"></i>
-                    </a>
+                    </button>
                 </div>
             </div>
 
             {{-- Card 2: Admitted --}}
-            <div class="ouk-kpi-card hover:border-[#0A3E50] transition-all cursor-pointer group" onclick="window.location.href='{{ route('admissions.workspace.shortlists') }}'">
+            <div class="ouk-kpi-card hover:border-[#0A3E50] transition-all cursor-pointer group" onclick="openDataViewModal('admissions')">
                 <div class="kpi-header flex justify-between items-center">
                     <span class="kpi-label group-hover:text-[#0A3E50]">Admitted</span>
-                    <span class="text-[10px] text-slate-400 group-hover:text-[#0A3E50] font-bold">Drill Down &rarr;</span>
                 </div>
                 <div class="kpi-body">
                     <div class="kpi-metric-row">
                         <span class="kpi-big-number">{{ number_format($admitted) }}</span>
-                        <a href="{{ route('admissions.workspace.reviews') }}" onclick="event.stopPropagation();" class="kpi-sub-pill hover:bg-slate-200 transition-colors">
+                        <span onclick="openDataViewModal('in_progress'); event.stopPropagation();" class="kpi-sub-pill hover:bg-slate-200 transition-colors cursor-pointer">
                             In Review: {{ number_format($inRev) }}
-                        </a>
+                        </span>
                     </div>
                     <div class="kpi-subtitle">Current admitted student status</div>
                     <div class="kpi-badge-list">
-                        <a href="{{ route('admissions.workspace.reviews') }}" onclick="event.stopPropagation();" class="kpi-badge kpi-badge-red hover:bg-rose-100 transition-colors">
+                        <span onclick="openDataViewModal('l2_rejected'); event.stopPropagation();" class="kpi-badge kpi-badge-red hover:bg-rose-100 transition-colors cursor-pointer">
                             <i data-lucide="x-circle" class="w-3.5 h-3.5"></i>
                             <span>L2 Rejected: {{ number_format($l2Rejected) }}</span>
-                        </a>
-                        <a href="{{ route('admissions.workspace.offers') }}" onclick="event.stopPropagation();" class="kpi-badge kpi-badge-red hover:bg-rose-100 transition-colors">
+                        </span>
+                        <span onclick="openDataViewModal('offer_rejected'); event.stopPropagation();" class="kpi-badge kpi-badge-red hover:bg-rose-100 transition-colors cursor-pointer">
                             <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
                             <span>Offer Rejected: {{ number_format($offerRej) }}</span>
-                        </a>
+                        </span>
                     </div>
                 </div>
                 <div class="kpi-footer flex justify-between items-center">
-                    <div class="flex items-center gap-1.5">
-                        <a href="{{ route('dashboard.export', ['dataset' => 'admissions', 'format' => 'xlsx']) }}" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-emerald-700 font-bold" title="Export Excel">.XLSX</a>
-                        <span class="text-slate-300">•</span>
-                        <a href="{{ route('dashboard.export', ['dataset' => 'admissions', 'format' => 'csv']) }}" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-blue-700 font-bold" title="Export CSV">.CSV</a>
-                        <span class="text-slate-300">•</span>
-                        <a href="{{ route('dashboard.export', ['dataset' => 'admissions', 'format' => 'pdf']) }}" target="_blank" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-red-700 font-bold" title="Printable PDF">.PDF</a>
-                    </div>
-                    <a href="{{ route('admissions.workspace.shortlists') }}" class="kpi-eye-btn" title="View details" aria-label="View Admitted details">
+                    <span></span>
+                    <button type="button" onclick="openDataViewModal('admissions'); event.stopPropagation();" class="kpi-eye-btn" title="View details" aria-label="View Admitted details">
                         <i data-lucide="eye" class="w-4 h-4"></i>
-                    </a>
+                    </button>
                 </div>
             </div>
 
             {{-- Card 3: Enrolled --}}
-            <div class="ouk-kpi-card hover:border-[#0A3E50] transition-all cursor-pointer group" onclick="window.location.href='{{ route('registration.student-registrations') }}'">
+            <div class="ouk-kpi-card hover:border-[#0A3E50] transition-all cursor-pointer group" onclick="openDataViewModal('enrolments')">
                 <div class="kpi-header flex justify-between items-center">
                     <span class="kpi-label group-hover:text-[#0A3E50]">Enrolled</span>
-                    <span class="text-[10px] text-slate-400 group-hover:text-[#0A3E50] font-bold">Drill Down &rarr;</span>
                 </div>
                 <div class="kpi-body">
                     <div class="kpi-metric-row">
                         <span class="kpi-big-number">{{ number_format($enrolled) }}</span>
-                        <a href="{{ route('admissions.workspace.admission-rolls') }}" onclick="event.stopPropagation();" class="kpi-sub-pill hover:bg-slate-200 transition-colors">
+                        <span onclick="openDataViewModal('in_progress'); event.stopPropagation();" class="kpi-sub-pill hover:bg-slate-200 transition-colors cursor-pointer">
                             In Review: {{ number_format($enrolledInRev) }}
-                        </a>
+                        </span>
                     </div>
                     <div class="kpi-subtitle">Current registered status</div>
                     <div class="kpi-badge-list">
-                        <a href="{{ route('admissions.workspace.offers') }}" onclick="event.stopPropagation();" class="kpi-badge kpi-badge-green hover:bg-emerald-100 transition-colors">
+                        <span onclick="openDataViewModal('accepted'); event.stopPropagation();" class="kpi-badge kpi-badge-green hover:bg-emerald-100 transition-colors cursor-pointer">
                             <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
                             <span>Accepted: {{ number_format($accepted) }}</span>
-                        </a>
-                        <a href="{{ route('admissions.workspace.reviews') }}" onclick="event.stopPropagation();" class="kpi-badge kpi-badge-green hover:bg-emerald-100 transition-colors">
+                        </span>
+                        <span onclick="openDataViewModal('initiated'); event.stopPropagation();" class="kpi-badge kpi-badge-green hover:bg-emerald-100 transition-colors cursor-pointer">
                             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
                             <span>Initiated: {{ number_format($initiated) }}</span>
-                        </a>
+                        </span>
                     </div>
                 </div>
                 <div class="kpi-footer flex justify-between items-center">
-                    <div class="flex items-center gap-1.5">
-                        <a href="{{ route('dashboard.export', ['dataset' => 'enrolments', 'format' => 'xlsx']) }}" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-emerald-700 font-bold" title="Export Excel">.XLSX</a>
-                        <span class="text-slate-300">•</span>
-                        <a href="{{ route('dashboard.export', ['dataset' => 'enrolments', 'format' => 'csv']) }}" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-blue-700 font-bold" title="Export CSV">.CSV</a>
-                        <span class="text-slate-300">•</span>
-                        <a href="{{ route('dashboard.export', ['dataset' => 'enrolments', 'format' => 'pdf']) }}" target="_blank" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-red-700 font-bold" title="Printable PDF">.PDF</a>
-                    </div>
-                    <a href="{{ route('registration.student-registrations') }}" class="kpi-eye-btn" title="View details" aria-label="View Enrolled details">
+                    <span></span>
+                    <button type="button" onclick="openDataViewModal('enrolments'); event.stopPropagation();" class="kpi-eye-btn" title="View details" aria-label="View Enrolled details">
                         <i data-lucide="eye" class="w-4 h-4"></i>
-                    </a>
+                    </button>
                 </div>
             </div>
 
             {{-- Card 4: Graduated --}}
-            <div class="ouk-kpi-card hover:border-[#0A3E50] transition-all cursor-pointer group" onclick="window.location.href='{{ route('graduation.alumni-list') }}'">
+            <div class="ouk-kpi-card hover:border-[#0A3E50] transition-all cursor-pointer group" onclick="openDataViewModal('graduated')">
                 <div class="kpi-header flex justify-between items-center">
                     <span class="kpi-label group-hover:text-[#0A3E50]">Graduated</span>
                     <span class="kpi-alumni-tag">Alumni: {{ $alumni }}</span>
@@ -175,29 +154,17 @@
                 <div class="kpi-body">
                     <div class="kpi-metric-row">
                         <span class="kpi-big-number">{{ number_format($graduated) }}</span>
-                        <a href="{{ route('curriculum.programme') }}" onclick="event.stopPropagation();" class="kpi-sub-pill hover:bg-slate-200 transition-colors">
+                        <span onclick="openDataViewModal('programmes'); event.stopPropagation();" class="kpi-sub-pill hover:bg-slate-200 transition-colors cursor-pointer">
                             Programmes: {{ $m['programmesCount'] ?? 1 }}
-                        </a>
+                        </span>
                     </div>
-                    <div class="kpi-subtitle">Current graduation & alumni roster</div>
-                    <div class="kpi-badge-list">
-                        <a href="{{ route('graduation.alumni-list') }}" onclick="event.stopPropagation();" class="kpi-badge kpi-badge-blue hover:bg-blue-100 transition-colors">
-                            <i data-lucide="award" class="w-3.5 h-3.5"></i>
-                            <span>Alumni Database: {{ number_format($alumni) }}</span>
-                        </a>
-                    </div>
+                    <div class="kpi-subtitle">Current graduation list status</div>
                 </div>
                 <div class="kpi-footer flex justify-between items-center">
-                    <div class="flex items-center gap-1.5">
-                        <a href="{{ route('dashboard.export', ['dataset' => 'graduated', 'format' => 'xlsx']) }}" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-emerald-700 font-bold" title="Export Excel">.XLSX</a>
-                        <span class="text-slate-300">•</span>
-                        <a href="{{ route('dashboard.export', ['dataset' => 'graduated', 'format' => 'csv']) }}" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-blue-700 font-bold" title="Export CSV">.CSV</a>
-                        <span class="text-slate-300">•</span>
-                        <a href="{{ route('dashboard.export', ['dataset' => 'graduated', 'format' => 'pdf']) }}" target="_blank" onclick="event.stopPropagation();" class="text-[10.5px] text-slate-500 hover:text-red-700 font-bold" title="Printable PDF">.PDF</a>
-                    </div>
-                    <a href="{{ route('graduation.alumni-list') }}" class="kpi-eye-btn" title="View details" aria-label="View Graduated details">
+                    <span></span>
+                    <button type="button" onclick="openDataViewModal('graduated'); event.stopPropagation();" class="kpi-eye-btn" title="View details" aria-label="View Graduated details">
                         <i data-lucide="eye" class="w-4 h-4"></i>
-                    </a>
+                    </button>
                 </div>
             </div>
 
@@ -1415,9 +1382,213 @@
         </div>
     </div>
 
+    {{-- INTERACTIVE WEB VIEW DATA MODAL (SCREENSHOT 3 & 4 STYLE) --}}
+    <div id="web-data-view-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-xs hidden" style="z-index:9999;">
+        <div class="bg-white w-full max-w-7xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+            
+            {{-- Teal Header --}}
+            <div class="bg-[#007A8C] text-white px-6 py-3.5 flex items-center justify-between shadow-sm">
+                <div class="flex items-center gap-2.5">
+                    <i data-lucide="table" class="w-5 h-5 text-teal-200"></i>
+                    <h2 class="text-base font-extrabold text-white tracking-tight" id="data-modal-title">Applied</h2>
+                </div>
+                <button type="button" onclick="closeDataViewModal()" class="w-8 h-8 rounded-lg bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors cursor-pointer text-lg font-bold">
+                    &times;
+                </button>
+            </div>
+
+            {{-- Action Bar: EXCEL, PDF, CSV, Search --}}
+            <div class="px-6 py-3 bg-white border-b border-slate-200 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="exportDataModal('xlsx')" class="px-3.5 py-1 rounded border border-orange-400 text-orange-600 bg-white hover:bg-orange-50 font-extrabold text-xs tracking-wider transition-colors shadow-2xs cursor-pointer">
+                        EXCEL
+                    </button>
+                    <button type="button" onclick="exportDataModal('pdf')" class="px-3.5 py-1 rounded border border-red-300 text-red-600 bg-white hover:bg-red-50 font-extrabold text-xs tracking-wider transition-colors shadow-2xs cursor-pointer">
+                        PDF
+                    </button>
+                    <button type="button" onclick="exportDataModal('csv')" class="px-3.5 py-1 rounded border border-blue-300 text-blue-600 bg-white hover:bg-blue-50 font-extrabold text-xs tracking-wider transition-colors shadow-2xs cursor-pointer">
+                        CSV
+                    </button>
+                    <span class="text-xs text-slate-500 font-medium ml-2" id="data-modal-count-badge"></span>
+                </div>
+
+                <div class="relative w-full sm:w-72">
+                    <input type="text" id="data-modal-search" placeholder="Search..." oninput="filterDataModalTable()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#007A8C] shadow-2xs">
+                </div>
+            </div>
+
+            {{-- Table Container --}}
+            <div class="flex-1 overflow-auto p-0 min-h-[300px]">
+                <table class="w-full text-left border-collapse text-xs" id="data-modal-table">
+                    <thead class="sticky top-0 z-10">
+                        <tr class="bg-[#007A8C] text-white" id="data-modal-thead-tr">
+                            <th class="py-2.5 px-3 font-bold text-white uppercase text-[11px] border-r border-white/20 whitespace-nowrap">S.No</th>
+                            <th class="py-2.5 px-3 font-bold text-white uppercase text-[11px] border-r border-white/20 whitespace-nowrap">Reference Number</th>
+                            <th class="py-2.5 px-3 font-bold text-white uppercase text-[11px] border-r border-white/20 whitespace-nowrap">First Name</th>
+                            <th class="py-2.5 px-3 font-bold text-white uppercase text-[11px] border-r border-white/20 whitespace-nowrap">Surname</th>
+                            <th class="py-2.5 px-3 font-bold text-white uppercase text-[11px] border-r border-white/20 whitespace-nowrap">Programme Name</th>
+                            <th class="py-2.5 px-3 font-bold text-white uppercase text-[11px] border-r border-white/20 whitespace-nowrap">Application Status</th>
+                            <th class="py-2.5 px-3 font-bold text-white uppercase text-[11px] border-r border-white/20 whitespace-nowrap">Username / Email</th>
+                            <th class="py-2.5 px-3 font-bold text-white uppercase text-[11px] border-r border-white/20 whitespace-nowrap">Mobile Number</th>
+                            <th class="py-2.5 px-3 font-bold text-white uppercase text-[11px] border-r border-white/20 whitespace-nowrap">Date Of Birth</th>
+                            <th class="py-2.5 px-3 font-bold text-white uppercase text-[11px] border-r border-white/20 whitespace-nowrap">Gender</th>
+                            <th class="py-2.5 px-3 font-bold text-white uppercase text-[11px] border-r border-white/20 whitespace-nowrap">Country</th>
+                            <th class="py-2.5 px-3 font-bold text-white uppercase text-[11px] whitespace-nowrap">County</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 bg-white" id="data-modal-tbody">
+                        <tr>
+                            <td colspan="12" class="p-8 text-center text-slate-400">
+                                <span class="w-4 h-4 border-2 border-[#007A8C] border-t-transparent rounded-full animate-spin inline-block mr-2"></span>
+                                Fetching records from live database...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            {{-- Footer --}}
+            <div class="px-6 py-2.5 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500">
+                <span class="text-[11px]">Real-time Database Telemetry • MEMA ERP</span>
+                <button type="button" onclick="closeDataViewModal()" class="px-3.5 py-1 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition-colors cursor-pointer">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        let currentModalDataset = 'applications';
+        let currentModalRawRows = [];
+        let currentModalHeaders = [];
+
         function openDashboardExportModal() {
             document.getElementById('dashboard-export-modal').classList.add('open');
+        }
+
+        const datasetTitles = {
+            'applications': 'Applied',
+            'in_progress': 'Applications In Progress',
+            'interested': 'Interested Applicants',
+            'reverify': 'Documents Requiring Re-verification',
+            'admissions': 'Admitted',
+            'l2_rejected': 'L2 Rejected Applications',
+            'offer_rejected': 'Offer Rejected Applications',
+            'enrolments': 'Enrolled Students Nominal Roll',
+            'accepted': 'Accepted Offers',
+            'initiated': 'Initiated Draft Applications',
+            'graduated': 'Graduation & Alumni Registry',
+            'programmes': 'Academic Programmes & Curriculum',
+            'financials': 'Financial Collections & Fees Ledger'
+        };
+
+        function openDataViewModal(dataset) {
+            currentModalDataset = dataset;
+            const modal = document.getElementById('web-data-view-modal');
+            const titleElem = document.getElementById('data-modal-title');
+            const countBadge = document.getElementById('data-modal-count-badge');
+            const tbody = document.getElementById('data-modal-tbody');
+            const searchInput = document.getElementById('data-modal-search');
+
+            if (titleElem) titleElem.textContent = datasetTitles[dataset] || dataset.toUpperCase();
+            if (searchInput) searchInput.value = '';
+            if (countBadge) countBadge.textContent = 'Querying live database...';
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="12" class="p-8 text-center text-slate-400"><span class="w-4 h-4 border-2 border-[#007A8C] border-t-transparent rounded-full animate-spin inline-block mr-2"></span>Loading records...</td></tr>`;
+            }
+
+            modal.classList.remove('hidden');
+
+            fetch(`{{ route('dashboard.records-preview') }}?dataset=${encodeURIComponent(dataset)}`)
+                .then(r => r.json())
+                .then(data => {
+                    currentModalHeaders = data.headers || [];
+                    currentModalRawRows = data.rows || [];
+                    if (titleElem && data.title) titleElem.textContent = datasetTitles[dataset] || data.title;
+                    if (countBadge) countBadge.textContent = `Showing ${currentModalRawRows.length} records`;
+                    renderModalTableHeader(currentModalHeaders);
+                    renderModalTableRows(currentModalRawRows);
+                })
+                .catch(err => {
+                    if (tbody) {
+                        tbody.innerHTML = `<tr><td colspan="12" class="p-8 text-center text-rose-600 font-bold">Failed to load dataset records. Please try again.</td></tr>`;
+                    }
+                });
+        }
+
+        function closeDataViewModal() {
+            document.getElementById('web-data-view-modal').classList.add('hidden');
+        }
+
+        function renderModalTableHeader(headers) {
+            const tr = document.getElementById('data-modal-thead-tr');
+            if (!tr) return;
+            let html = '<th class="py-2.5 px-3 font-bold text-white uppercase text-[11px] border-r border-white/20 whitespace-nowrap">S.No</th>';
+            headers.forEach((h, idx) => {
+                const border = (idx < headers.length - 1) ? 'border-r border-white/20' : '';
+                html += `<th class="py-2.5 px-3 font-bold text-white uppercase text-[11px] ${border} whitespace-nowrap">${h}</th>`;
+            });
+            tr.innerHTML = html;
+        }
+
+        function renderModalTableRows(rows) {
+            const tbody = document.getElementById('data-modal-tbody');
+            if (!tbody) return;
+            if (rows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${currentModalHeaders.length + 1}" class="p-8 text-center text-slate-400">No records found matching current criteria.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            rows.forEach((row, i) => {
+                const bg = i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+                html += `<tr class="${bg} hover:bg-teal-50/40 transition-colors border-b border-slate-100">`;
+                html += `<td class="py-2.5 px-3 text-slate-500 font-mono text-[11px]">${i + 1}</td>`;
+                row.forEach(cell => {
+                    const text = (cell === null || cell === undefined || cell === '') ? 'NA' : cell;
+                    let badgeClass = '';
+                    if (text === 'ENROLLED' || text === 'ACCEPTED' || text === 'PAID' || text === 'VERIFIED') {
+                        badgeClass = 'bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[10.5px] inline-block';
+                    } else if (text === 'SUBMITTED' || text === 'UNDER_REVIEW' || text === 'READY_TO_ENROL' || text === 'FOLLOW UP') {
+                        badgeClass = 'bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-bold text-[10.5px] inline-block';
+                    } else if (text === 'REJECTED' || text === 'DECLINED') {
+                        badgeClass = 'bg-rose-50 text-rose-800 border border-rose-200 px-2 py-0.5 rounded font-bold text-[10.5px] inline-block';
+                    }
+
+                    if (badgeClass) {
+                        html += `<td class="py-2.5 px-3"><span class="${badgeClass}">${text}</span></td>`;
+                    } else {
+                        html += `<td class="py-2.5 px-3 text-slate-800 font-medium whitespace-nowrap">${text}</td>`;
+                    }
+                });
+                html += `</tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function filterDataModalTable() {
+            const query = (document.getElementById('data-modal-search').value || '').toLowerCase().trim();
+            if (!query) {
+                renderModalTableRows(currentModalRawRows);
+                document.getElementById('data-modal-count-badge').textContent = `Showing ${currentModalRawRows.length} records`;
+                return;
+            }
+
+            const filtered = currentModalRawRows.filter(row => {
+                return row.some(cell => String(cell || '').toLowerCase().includes(query));
+            });
+
+            renderModalTableRows(filtered);
+            document.getElementById('data-modal-count-badge').textContent = `Showing ${filtered.length} of ${currentModalRawRows.length} records`;
+        }
+
+        function exportDataModal(format) {
+            const url = `{{ route('dashboard.export') }}?dataset=${encodeURIComponent(currentModalDataset)}&format=${encodeURIComponent(format)}`;
+            if (format === 'pdf') {
+                window.open(url, '_blank');
+            } else {
+                window.location.href = url;
+            }
         }
     </script>
 

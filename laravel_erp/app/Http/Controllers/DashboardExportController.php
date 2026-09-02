@@ -62,6 +62,21 @@ final class DashboardExportController extends Controller
         );
     }
 
+    public function preview(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $dataset = $request->query('dataset', 'applications');
+        [$headers, $rows, $reportTitle, $summaryStats] = $this->fetchDataset($dataset);
+
+        return response()->json([
+            'dataset' => $dataset,
+            'title' => $reportTitle,
+            'headers' => $headers,
+            'rows' => $rows,
+            'total' => count($rows),
+            'summary' => $summaryStats,
+        ]);
+    }
+
     private function fetchDataset(string $dataset): array
     {
         return match ($dataset) {
@@ -73,6 +88,13 @@ final class DashboardExportController extends Controller
             'demographics' => $this->demographicsData(),
             'staff' => $this->staffData(),
             'executive_kpis' => $this->kpiData(),
+            'in_progress' => $this->inProgressData(),
+            'interested' => $this->interestedData(),
+            'reverify' => $this->reverifyData(),
+            'l2_rejected' => $this->l2RejectedData(),
+            'offer_rejected' => $this->offerRejectedData(),
+            'accepted' => $this->acceptedData(),
+            'initiated' => $this->initiatedData(),
             default => $this->applicationsData(),
         };
     }
@@ -427,6 +449,121 @@ final class DashboardExportController extends Controller
             'Operational Status' => 'All Systems Normal',
         ];
 
-        return [$headers, $rows, 'Institutional Executive Scorecard & KPI Report', $summaryStats];
+        return [$headers, $rows, 'Executive Telemetry & Institutional Performance Scorecard', $summaryStats];
+    }
+
+    private function inProgressData(): array
+    {
+        $applications = AdmissionApplication::query()
+            ->with(['applicant.user', 'offering.course', 'offering.intake'])
+            ->whereNotIn('status', ['REJECTED', 'DECLINED', 'ENROLLED', 'DRAFT'])
+            ->latest()
+            ->get();
+
+        return $this->formatApplicationRows($applications, 'In-Progress Applications Pipeline');
+    }
+
+    private function interestedData(): array
+    {
+        $profiles = ApplicantProfile::query()->with('user')->latest()->get();
+        $headers = ['Applicant No', 'Full Name', 'Email', 'Phone', 'Gender', 'County', 'Source Channel', 'Registered On'];
+        $rows = $profiles->map(fn ($p) => [
+            $p->applicant_number ?? 'APP-'.$p->id,
+            $p->user?->name ?? 'N/A',
+            $p->user?->email ?? 'N/A',
+            $p->phone_number ?? $p->user?->phone ?? 'N/A',
+            $p->user?->gender ?? 'Unspecified',
+            $p->county ?? 'Not specified',
+            $p->source_channel ?? 'Direct Portal',
+            $p->created_at?->format('d-M-Y') ?? 'N/A',
+        ])->all();
+
+        return [$headers, $rows, 'Interested Applicants Register', ['Total Profiles' => number_format(count($rows))]];
+    }
+
+    private function reverifyData(): array
+    {
+        $applications = AdmissionApplication::query()
+            ->with(['applicant.user', 'offering.course', 'offering.intake'])
+            ->whereHas('documents', fn ($q) => $q->whereIn('verification_status', ['REJECTED', 'REQUIRES_REUPLOAD']))
+            ->latest()
+            ->get();
+
+        return $this->formatApplicationRows($applications, 'Documents Requiring Re-verification');
+    }
+
+    private function l2RejectedData(): array
+    {
+        $applications = AdmissionApplication::query()
+            ->with(['applicant.user', 'offering.course', 'offering.intake'])
+            ->where('status', 'REJECTED')
+            ->latest()
+            ->get();
+
+        return $this->formatApplicationRows($applications, 'L2 Rejected Applications');
+    }
+
+    private function offerRejectedData(): array
+    {
+        $applications = AdmissionApplication::query()
+            ->with(['applicant.user', 'offering.course', 'offering.intake'])
+            ->where('status', 'DECLINED')
+            ->latest()
+            ->get();
+
+        return $this->formatApplicationRows($applications, 'Declined / Rejected Offers');
+    }
+
+    private function acceptedData(): array
+    {
+        $applications = AdmissionApplication::query()
+            ->with(['applicant.user', 'offering.course', 'offering.intake'])
+            ->whereIn('status', ['ACCEPTED', 'READY_TO_ENROL', 'ENROLLED'])
+            ->latest()
+            ->get();
+
+        return $this->formatApplicationRows($applications, 'Accepted Offers Roster');
+    }
+
+    private function initiatedData(): array
+    {
+        $applications = AdmissionApplication::query()
+            ->with(['applicant.user', 'offering.course', 'offering.intake'])
+            ->where('status', 'DRAFT')
+            ->latest()
+            ->get();
+
+        return $this->formatApplicationRows($applications, 'Draft & Initiated Applications');
+    }
+
+    private function formatApplicationRows($applications, string $title): array
+    {
+        $headers = [
+            'Reference No',
+            'Applicant Name',
+            'Email Address',
+            'Phone Number',
+            'Gender',
+            'County',
+            'Programme / Course',
+            'Intake Period',
+            'Application Status',
+            'Last Updated',
+        ];
+
+        $rows = $applications->map(fn ($app) => [
+            $app->application_number ?? 'APP-'.$app->id,
+            $app->applicant?->user?->name ?? 'N/A',
+            $app->applicant?->user?->email ?? 'N/A',
+            $app->applicant?->phone_number ?? $app->applicant?->user?->phone ?? 'N/A',
+            $app->applicant?->user?->gender ?? 'Unspecified',
+            $app->applicant?->county ?? 'Not specified',
+            $app->offering?->course?->name ?? 'Unassigned',
+            $app->offering?->intake?->name ?? 'Current Intake',
+            $app->status,
+            $app->updated_at?->format('d-M-Y H:i') ?? 'N/A',
+        ])->all();
+
+        return [$headers, $rows, $title, ['Total Records' => number_format(count($rows))]];
     }
 }
