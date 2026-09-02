@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Models\Admission;
 
+use App\Models\AdmissionApplication;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ApprovalStep extends Model
 {
@@ -31,5 +33,10 @@ class ApprovalStep extends Model
         return [
             'acted_at' => 'datetime',
         ];
+    }
+
+    public function application(): BelongsTo
+    {
+        return $this->belongsTo(AdmissionApplication::class, 'admission_application_id');
     }
 }

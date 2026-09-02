@@ -2,7 +2,11 @@
 
 namespace App\Models;
 
+use App\Models\Admission\ApprovalStep;
+use App\Models\Admission\Decision;
 use App\Models\Admission\PaymentTransaction;
+use App\Models\Admission\ReviewAssignment;
+use App\Models\Admission\StudentConversion;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -57,6 +61,26 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     public function offer(): HasOne
     {
         return $this->hasOne(AdmissionOffer::class);
+    }
+
+    public function reviewAssignments(): HasMany
+    {
+        return $this->hasMany(ReviewAssignment::class, 'admission_application_id');
+    }
+
+    public function decisions(): HasMany
+    {
+        return $this->hasMany(Decision::class, 'admission_application_id');
+    }
+
+    public function approvalSteps(): HasMany
+    {
+        return $this->hasMany(ApprovalStep::class, 'admission_application_id')->orderBy('step_order');
+    }
+
+    public function conversion(): HasOne
+    {
+        return $this->hasOne(StudentConversion::class, 'admission_application_id');
     }
 
     public function isPaid(): bool

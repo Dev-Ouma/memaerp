@@ -61,7 +61,16 @@ final class NumberGenerator
 
     public function applicationNumber(string $intakeToken): string
     {
-        return $this->next("application_number:{$intakeToken}", "MC/APL/{$intakeToken}/{seq}");
+        $year = (int) now()->format('Y');
+
+        return $this->next("college_application:{$year}", "{seq}/{$year}", 3);
+    }
+
+    public function collegeApplicationReference(?int $year = null): string
+    {
+        $year ??= (int) now()->format('Y');
+
+        return $this->next("college_application:{$year}", "{seq}/{$year}", 3);
     }
 
     public function receiptNumber(?int $year = null): string

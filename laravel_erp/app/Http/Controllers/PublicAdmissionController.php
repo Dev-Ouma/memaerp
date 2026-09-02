@@ -56,6 +56,6 @@ final class PublicAdmissionController extends Controller
     {
         $offer = AdmissionOffer::with('application.applicant.user', 'application.offering.course')->where('verification_token', $token)->firstOrFail();
 
-        return view('admissions.verify',compact('offer'));
+        return view('admissions.verify', compact('offer'));
     }
 }

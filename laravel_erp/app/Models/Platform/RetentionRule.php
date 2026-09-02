@@ -21,12 +21,20 @@ class RetentionRule extends Model
         'retention_months',
         'disposal_action',
         'is_active',
+        'version',
+        'status',
+        'effective_from',
+        'effective_to',
+        'created_by',
+        'change_reason',
     ];
 
     protected function casts(): array
     {
         return [
             'is_active' => 'boolean',
+            'effective_from' => 'immutable_date',
+            'effective_to' => 'immutable_date',
         ];
     }
 }

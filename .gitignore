@@ -27,6 +27,22 @@ apps/api/public/storage
 apps/api/public/hot
 apps/api/bootstrap/cache/*
 !apps/api/bootstrap/cache/.gitkeep
+laravel_erp/storage/*.key
+laravel_erp/storage/logs/*
+laravel_erp/storage/framework/cache/data/*
+laravel_erp/storage/framework/sessions/*
+laravel_erp/storage/framework/views/*
+laravel_erp/storage/backups/*
+!laravel_erp/storage/backups/.gitkeep
+laravel_erp/public/storage
+laravel_erp/public/hot
+laravel_erp/bootstrap/cache/*
+!laravel_erp/bootstrap/cache/.gitkeep
+laravel_erp/node_modules/
+laravel_erp/vendor/
+laravel_erp/.env
+laravel_erp/.env.backup
+laravel_erp/.env.production
 
 # Database dumps — a backup is a full copy of everyone's personal data, salaries and grades.
 # Committing one puts all of it in every clone, forever, including on machines that were never

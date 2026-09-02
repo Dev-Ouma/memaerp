@@ -24,6 +24,25 @@ final class AdminSetupTest extends TestCase
         $this->get(route('admissions.setups.show', $setup))->assertOk()->assertSee('Version history')->assertSee('KES');
     }
 
+    public function test_admin_setups_sidebar_opens_the_platform_setup_hub(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('<span>Admin Setups</span>', false)
+            ->assertSee(route('admin.setups.index'), false);
+
+        $this->get(route('admin.setups.index'))
+            ->assertOk()
+            ->assertSee('Platform administration')
+            ->assertSee('Admissions setups')
+            ->assertSee('Data governance')
+            ->assertSee(route('admin.setups.governance.index'), false)
+            ->assertSee(route('admissions.setups.index'), false);
+    }
+
     public function test_versions_are_effective_dated_resolved_and_historical_usage_blocks_archival(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);

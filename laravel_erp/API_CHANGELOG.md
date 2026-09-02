@@ -11,6 +11,13 @@
 
 This is additive. No prior `/api/v1` admission operation was removed or changed.
 
+## 2026-08-29 — Recycle Bin governance
+
+- Replaced entity-type/id restore routes with deletion-record identifiers.
+- Replaced immediate permanent purge with purge-request and independent approval operations.
+- Added retention, legal-hold and conflict checks plus mandatory reasons.
+- Disabled unsafe bulk purge and bulk restore operations; the legacy routes now return explicit denial responses.
+
 ## 2026-08-25 — Admin Setups foundation
 
 - Added 47 authoritative setup definitions with effective-dated immutable versions.

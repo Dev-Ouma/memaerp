@@ -48,12 +48,17 @@ test('staff can inspect analytics and branded report exports', async ({ page }) 
     await expect(page.getByRole('button', { name: 'PDF / Print' })).toBeVisible();
 });
 
-test('administrators can manage authoritative admission setups', async ({ page }) => {
+test('administrators can manage authoritative admission setups', async ({ page }, testInfo) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Sign in to MEMA' }).click();
     await page.waitForURL(/dashboard/);
-    await expect(page.getByRole('link', { name: 'Admin Setups', exact: true })).toBeVisible();
-    await page.goto('/admissions/setups?q=fee');
+    if (testInfo.project.name === 'mobile-chrome') {
+        await page.goto('/admissions/setups');
+    } else {
+        await page.getByRole('link', { name: 'Admin Setups', exact: true }).click();
+    }
+    await page.getByPlaceholder('Search setups').fill('fee');
+    await page.getByRole('button', { name: 'Filter' }).click();
     await expect(page.getByRole('heading', { name: 'Admin Setups', exact: true })).toBeVisible();
     await expect(page.getByText('Application-fee rules', { exact: true })).toBeVisible();
     await page.getByRole('link', { name: 'Configure' }).click();

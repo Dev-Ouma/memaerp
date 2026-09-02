@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Middleware\CheckModuleActive;
+use App\Http\Middleware\EnforceSystemMaintenanceLockdown;
+use App\Http\Middleware\LoadBalancerMiddleware;
 use App\Modules\Platform\Api\ApiExceptionRenderer;
 use App\Modules\Platform\Http\Middleware\ApplySecurityHeaders;
 use App\Modules\Platform\Http\Middleware\AssignCorrelationId;
@@ -27,11 +30,21 @@ return Application::configure(basePath: dirname(__DIR__))
             ApplySecurityHeaders::class,
         ]);
 
+        // A UI preference, not a credential: left unencrypted so the layout can be
+        // rendered in its persisted state on the first paint and read back by JS.
+        $middleware->encryptCookies(except: ['sidebar_collapsed']);
+
+        $middleware->web(append: [
+            EnforceSystemMaintenanceLockdown::class,
+            LoadBalancerMiddleware::class,
+        ]);
+
         $middleware->alias([
             'api.token' => AuthenticateApiToken::class,
             'permission' => RequirePermission::class,
             'idempotent' => EnforceIdempotency::class,
             'cache.public' => CachePublicly::class,
+            'module' => CheckModuleActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -41,7 +54,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Single rendering path for the API: RFC 7807 problem documents, never a stack trace.
         $exceptions->render(
-            fn (\Throwable $e, Request $request) => app(ApiExceptionRenderer::class)->render($e, $request),
+            fn (Throwable $e, Request $request) => app(ApiExceptionRenderer::class)->render($e, $request),
         );
 
         // Correlation ids make a logged error findable from the response the caller received.

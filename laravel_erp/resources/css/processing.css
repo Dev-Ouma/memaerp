@@ -1,0 +1,65 @@
+.processing-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background:
+        radial-gradient(circle at 50% 42%, rgb(19 91 103 / 34%), transparent 30%),
+        linear-gradient(135deg, rgb(3 38 53 / 96%), rgb(6 47 64 / 92%));
+    backdrop-filter: blur(14px) saturate(115%);
+    -webkit-backdrop-filter: blur(14px) saturate(115%);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .25s ease, visibility .25s ease;
+}
+
+.processing-overlay.is-visible { opacity: 1; visibility: visible; }
+.processing-dialog {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 20px;
+    width: min(100%, 292px);
+    padding: 34px 30px 30px;
+    border: 1px solid rgb(215 168 79 / 36%);
+    border-radius: 16px;
+    color: #fff;
+    background: linear-gradient(145deg, rgb(10 62 80 / 88%), rgb(3 38 53 / 94%));
+    box-shadow: 0 24px 70px rgb(0 17 27 / 38%), inset 0 1px rgb(255 255 255 / 10%);
+}
+
+.processing-dialog::before {
+    content: 'MEMA COLLEGE ERP';
+    color: #d7a84f;
+    font: 700 10px/1 var(--font-system, 'Quicksand', 'Nunito', 'Book Antiqua', sans-serif);
+    letter-spacing: .18em;
+}
+
+.processing-dialog strong {
+    font: 600 15px/1.3 var(--font-system, 'Quicksand', 'Nunito', 'Book Antiqua', sans-serif);
+    letter-spacing: .03em;
+    text-align: center;
+}
+
+.processing-loader { position: relative; width: 82px; height: 82px; }
+.processing-loader::after {
+    content: '';
+    position: absolute;
+    inset: 34px;
+    border-radius: 50%;
+    background: #ff7047;
+    box-shadow: 0 0 20px rgb(255 112 71 / 70%);
+    animation: processing-pulse 1.4s ease-in-out infinite;
+}
+.processing-loader span { position: absolute; inset: 0; border: 2px solid transparent; border-top-color: #ff7047; border-right-color: rgb(255 112 71 / 24%); border-radius: 50%; animation: processing-spin 1.15s linear infinite; }
+.processing-loader span:nth-child(2) { inset: 11px; border-top-color: #d2a24a; border-right-color: rgb(210 162 74 / 24%); animation-duration: .85s; animation-direction: reverse; }
+.processing-loader span:nth-child(3) { inset: 22px; border-top-color: #fff; border-right-color: rgb(255 255 255 / 24%); animation-duration: .65s; }
+
+@keyframes processing-spin { to { transform: rotate(360deg); } }
+@keyframes processing-pulse { 0%, 100% { transform: scale(.72); opacity: .68; } 50% { transform: scale(1); opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+    .processing-loader span, .processing-loader::after { animation-duration: 2.5s; }
+}

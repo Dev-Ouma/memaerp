@@ -18,14 +18,22 @@ document.querySelectorAll<HTMLElement>('[data-filter-grid]').forEach((grid) => {
 
 document.querySelectorAll<HTMLFormElement>('[data-autosave-form]').forEach((form) => {
     const status = form.querySelector<HTMLElement>('[data-save-status]');
+    let controller: AbortController | null = null;
     const save = debounce(async () => {
         if (!status) return;
+        controller?.abort();
+        controller = new AbortController();
         status.textContent = 'Saving…';
         try {
             const values = Object.fromEntries(new FormData(form).entries());
-            const result = await admissionsApi.saveDraft(form.dataset.applicationId ?? 'draft', values);
-            status.textContent = `Saved ${new Date(result.data.savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-        } catch { status.textContent = 'Could not autosave — your entries remain on this page.'; }
+            const result = await admissionsApi.saveDraft(form.dataset.applicationId ?? 'draft', values, controller.signal);
+            const lockVersion = form.querySelector<HTMLInputElement>('input[name="lock_version"]');
+            if (lockVersion) lockVersion.value = String(result.lockVersion);
+            status.textContent = `Saved ${new Date(result.savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        } catch (error) {
+            if (error instanceof DOMException && error.name === 'AbortError') return;
+            status.textContent = error instanceof Error ? error.message : 'Could not autosave — your entries remain on this page.';
+        }
     });
     form.addEventListener('input', save);
 });

@@ -1,46 +1,140 @@
+/*
+ * Sidebar — single owner of the shell layout.
+ *
+ * The sidebar rules used to be split across two inline <style> blocks in
+ * layouts/app.blade.php and this file, which produced four competing
+ * responsive treatments (icon rail, bottom tab bar, fixed 72px column and
+ * off-canvas drawer) all matching at the same breakpoints. Everything now
+ * lives here so the cascade has a single source of truth and no !important.
+ */
+
 :root {
-    --sidebar-expanded: 280px;
+    --sidebar-expanded: 268px;
     --sidebar-collapsed: 76px;
+    --sidebar-width: var(--sidebar-expanded);
+    --sidebar-bg: #0A3E50;
+    --sidebar-fg: #b9ccc3;
+    --sidebar-fg-strong: #ffffff;
+    --sidebar-fg-muted: #718b80;
+    --sidebar-line: #2b4339;
+    --sidebar-hover: rgb(255 255 255 / 8%);
+    --sidebar-active: #1E8449;
     --sidebar-ease: cubic-bezier(.22, 1, .36, 1);
+    --sidebar-speed: 240ms;
 }
 
+/* ---------------------------------------------------------------- shell */
+
 .shell {
-    grid-template-columns: var(--sidebar-expanded) minmax(0, 1fr) !important;
-    transition: grid-template-columns 280ms var(--sidebar-ease);
+    display: grid;
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    min-height: 100vh;
+    transition: grid-template-columns var(--sidebar-speed) var(--sidebar-ease);
 }
 
 .shell.sidebar-collapsed {
-    grid-template-columns: var(--sidebar-collapsed) minmax(0, 1fr) !important;
+    --sidebar-width: var(--sidebar-collapsed);
 }
 
+.main {
+    min-width: 0;
+}
+
+.skip-link {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 100;
+    padding: 10px 16px;
+    border-radius: 8px;
+    color: var(--sidebar-fg-strong);
+    background: var(--sidebar-bg);
+    font-weight: 650;
+    text-decoration: none;
+    transform: translateY(-160%);
+    transition: transform 140ms ease;
+}
+
+.skip-link:focus-visible {
+    transform: translateY(0);
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------- sidebar */
+
 .sidebar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
     width: 100%;
-    overflow-x: hidden !important;
-    transition: transform 280ms var(--sidebar-ease), box-shadow 280ms ease;
+    height: 100vh;
+    height: 100dvh;
+    padding: 20px 12px 12px;
+    color: var(--sidebar-fg);
+    background: var(--sidebar-bg);
+    overflow-x: hidden;
+    transition: transform var(--sidebar-speed) var(--sidebar-ease), box-shadow var(--sidebar-speed) ease;
+}
+
+.sidebar :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* Header ---------------------------------------------------------------- */
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+    min-height: 42px;
+    padding: 0 4px 18px;
 }
 
 .brand {
-    min-height: 42px;
-    padding: 0 8px 24px !important;
-    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
     white-space: nowrap;
 }
 
-.brand > div,
-.nav a span,
-.nav-group summary span,
-.nav-label,
-.sidebar-profile > div {
-    opacity: 1;
-    max-width: 190px;
-    transform: translateX(0);
-    transition: opacity 160ms ease, max-width 260ms var(--sidebar-ease), transform 260ms var(--sidebar-ease);
+.mark {
+    display: grid;
+    place-items: center;
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+}
+
+.mark img {
+    display: block;
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+}
+
+.brand strong {
+    display: block;
+    color: var(--sidebar-fg-strong);
+}
+
+.brand small {
+    display: block;
+    color: #94aaa0;
 }
 
 .sidebar-collapse-toggle,
+.sidebar-close,
 .mobile-sidebar-toggle {
     display: inline-grid;
     place-items: center;
+    flex: 0 0 auto;
     width: 36px;
     height: 36px;
     border: 0;
@@ -49,31 +143,97 @@
 }
 
 .sidebar-collapse-toggle {
-    position: absolute;
-    right: 4px;
+    margin-left: auto;
     color: #c6d8de;
     background: transparent;
 }
 
 .sidebar-collapse-toggle:hover,
-.sidebar-collapse-toggle:focus-visible {
-    color: var(--white);
-    background: rgb(255 255 255 / 10%);
-    outline: none;
+.sidebar-collapse-toggle:focus-visible,
+.sidebar-close:hover,
+.sidebar-close:focus-visible {
+    color: var(--sidebar-fg-strong);
+    background: var(--sidebar-hover);
+}
+
+/* Closes the drawer from inside it: the topbar toggle is inert while open. */
+.sidebar-close {
+    display: none;
+    margin-left: auto;
+    color: #c6d8de;
+    background: transparent;
 }
 
 .sidebar-collapse-toggle svg,
+.sidebar-close svg,
 .mobile-sidebar-toggle svg {
     width: 18px;
     height: 18px;
 }
 
+/* Navigation ------------------------------------------------------------ */
+
+.nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #2f5666 transparent;
+}
+
+.nav::-webkit-scrollbar {
+    width: 6px;
+}
+
+.nav::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #2f5666;
+}
+
+.nav ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.nav-label {
+    margin: 0;
+    padding: 14px 12px 7px;
+    color: var(--sidebar-fg-muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
 .nav a,
 .nav-group summary {
-    min-height: 40px;
-    white-space: nowrap;
     position: relative;
-    transition: color 160ms ease, background-color 160ms ease, padding 260ms var(--sidebar-ease);
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-height: 40px;
+    margin: 2px 0;
+    padding: 9px 12px;
+    border-radius: 8px;
+    color: var(--sidebar-fg);
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 140ms ease, background-color 140ms ease;
+}
+
+.nav a:hover,
+.nav-group summary:hover {
+    color: var(--sidebar-fg-strong);
+    background: var(--sidebar-hover);
+}
+
+.nav a.active,
+.nav-group[open] > summary {
+    color: var(--sidebar-fg-strong);
+    background: var(--sidebar-active);
 }
 
 .nav a.active::before {
@@ -88,23 +248,105 @@
 
 .nav a svg,
 .nav-group summary > svg:first-child {
-    width: 18px !important;
-    min-width: 18px;
+    flex: 0 0 18px;
+    width: 18px;
     height: 18px;
 }
 
+.nav a span,
+.nav-group summary span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nav-group summary {
+    list-style: none;
+}
+
+.nav-group summary::-webkit-details-marker {
+    display: none;
+}
+
+.nav-group summary .chevron {
+    flex: 0 0 14px;
+    width: 14px;
+    height: 14px;
+    margin-left: auto;
+    transition: transform 160ms var(--sidebar-ease);
+}
+
+.nav-group[open] summary .chevron {
+    transform: rotate(90deg);
+}
+
+.nav-children {
+    margin: 3px 0 8px 21px;
+    padding-left: 9px;
+    border-left: 1px solid #355247;
+}
+
+.nav-children a {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 12.5px;
+}
+
+.nav-children a svg {
+    flex-basis: 15px;
+    width: 15px;
+    height: 15px;
+}
+
+/* Footer ---------------------------------------------------------------- */
+
+.sidebar-footer {
+    flex: 0 0 auto;
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--sidebar-line);
+}
+
 .sidebar-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
     min-height: 54px;
-    padding: 10px 8px 0 !important;
+    padding: 8px;
+    border: 0;
     border-radius: 10px;
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    text-align: left;
     cursor: pointer;
-    transition: background-color 160ms ease, padding 260ms var(--sidebar-ease);
+    transition: background-color 140ms ease;
 }
 
 .sidebar-profile:hover,
 .sidebar-profile:focus-visible {
-    background: rgb(255 255 255 / 9%);
-    outline: none;
+    background: var(--sidebar-hover);
+}
+
+.sidebar-profile > div {
+    min-width: 0;
+}
+
+.sidebar-profile strong,
+.sidebar-profile small {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.sidebar-profile strong {
+    color: var(--sidebar-fg-strong);
+}
+
+.sidebar-profile small {
+    color: #86a096;
 }
 
 .sidebar-profile::after {
@@ -114,38 +356,30 @@
     letter-spacing: 2px;
 }
 
+/* ------------------------------------------------------ collapsed state */
+
 .sidebar-collapsed .brand > div,
 .sidebar-collapsed .nav a span,
 .sidebar-collapsed .nav-group summary span,
 .sidebar-collapsed .nav-label,
 .sidebar-collapsed .sidebar-profile > div,
-.sidebar-collapsed .sidebar-profile::after,
 .sidebar-collapsed .nav-group .chevron {
-    opacity: 0;
-    max-width: 0;
-    overflow: hidden;
-    pointer-events: none;
-    transform: translateX(-6px);
+    display: none;
 }
 
-.sidebar-collapsed .brand {
-    padding-inline: 5px !important;
+.sidebar-collapsed .sidebar-header {
+    flex-direction: column;
+    gap: 10px;
+    padding-inline: 0;
 }
 
 .sidebar-collapsed .sidebar-collapse-toggle {
-    right: -7px;
-    top: 34px;
-    z-index: 2;
-    width: 26px;
-    height: 26px;
-    color: var(--primary);
-    background: var(--white);
-    border: 1px solid var(--line);
-    box-shadow: 0 2px 8px rgb(10 62 80 / 18%);
+    margin-left: 0;
 }
 
 .sidebar-collapsed .nav a,
-.sidebar-collapsed .nav-group summary {
+.sidebar-collapsed .nav-group summary,
+.sidebar-collapsed .sidebar-profile {
     justify-content: center;
     padding-inline: 10px;
 }
@@ -154,44 +388,37 @@
     display: none;
 }
 
-.sidebar-collapsed .sidebar-profile {
-    justify-content: center;
-    left: 10px;
-    right: 10px;
-    padding-inline: 0 !important;
-}
-
-.sidebar-collapsed .nav a[data-sidebar-label]::after,
-.sidebar-collapsed .nav-group summary[data-sidebar-label]::after,
-.sidebar-collapsed .sidebar-profile[data-sidebar-label]::before {
+/* Collapsed labels become tooltips. `top` is set by sidebar.js from the
+   hovered item's own position, because a fixed-position pseudo element
+   would otherwise be laid out against the scrolled nav, not the viewport. */
+.sidebar-collapsed [data-sidebar-label]::after {
     content: attr(data-sidebar-label);
     position: fixed;
-    left: 84px;
+    left: calc(var(--sidebar-collapsed) + 8px);
+    top: var(--sidebar-tooltip-top, auto);
     z-index: 60;
     padding: 7px 10px;
-    color: var(--white);
-    background: #082f3d;
     border: 1px solid rgb(255 255 255 / 12%);
     border-radius: 6px;
+    color: var(--sidebar-fg-strong);
+    background: #082f3d;
+    box-shadow: 0 8px 24px rgb(4 31 41 / 24%);
     font-size: 12px;
     font-weight: 650;
     white-space: nowrap;
     opacity: 0;
     transform: translateX(-4px);
     pointer-events: none;
-    box-shadow: 0 8px 24px rgb(4 31 41 / 24%);
     transition: opacity 120ms ease, transform 120ms ease;
 }
 
-.sidebar-collapsed .nav a[data-sidebar-label]:hover::after,
-.sidebar-collapsed .nav a[data-sidebar-label]:focus-visible::after,
-.sidebar-collapsed .nav-group summary[data-sidebar-label]:hover::after,
-.sidebar-collapsed .nav-group summary[data-sidebar-label]:focus-visible::after,
-.sidebar-collapsed .sidebar-profile[data-sidebar-label]:hover::before,
-.sidebar-collapsed .sidebar-profile[data-sidebar-label]:focus-visible::before {
+.sidebar-collapsed [data-sidebar-label]:hover::after,
+.sidebar-collapsed [data-sidebar-label]:focus-visible::after {
     opacity: 1;
     transform: translateX(0);
 }
+
+/* -------------------------------------------------------- mobile drawer */
 
 .mobile-sidebar-toggle {
     display: none;
@@ -199,44 +426,33 @@
     background: #edf3f5;
 }
 
+.mobile-sidebar-toggle:hover,
+.mobile-sidebar-toggle:focus-visible {
+    background: #dde9ed;
+}
+
 .sidebar-backdrop {
     position: fixed;
     inset: 0;
     z-index: 39;
-    border: 0;
     background: rgb(5 24 31 / 48%);
     opacity: 0;
     pointer-events: none;
     transition: opacity 200ms ease;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .shell,
-    .sidebar,
-    .brand > div,
-    .nav a span,
-    .nav-group summary span,
-    .nav-label,
-    .sidebar-profile > div {
-        transition-duration: 1ms !important;
-    }
-}
-
 @media (max-width: 900px) {
     .shell,
     .shell.sidebar-collapsed {
-        display: block !important;
+        display: block;
     }
 
     .sidebar {
-        position: fixed !important;
-        inset: 0 auto 0 0 !important;
-        z-index: 40 !important;
-        width: min(300px, 88vw) !important;
-        height: 100dvh !important;
-        padding: 22px 16px 92px !important;
+        position: fixed;
+        inset: 0 auto 0 0;
+        z-index: 40;
+        width: min(300px, 86vw);
         transform: translateX(-102%);
-        box-shadow: none;
     }
 
     .shell.mobile-sidebar-open .sidebar {
@@ -257,31 +473,34 @@
         display: none;
     }
 
-    .brand > div,
-    .nav a span,
-    .nav-group summary span,
-    .nav-label,
-    .sidebar-profile > div {
-        display: block !important;
-        opacity: 1 !important;
-        max-width: 190px !important;
-        transform: none !important;
-    }
-
-    .nav-group summary .chevron {
-        display: block !important;
-    }
-
-    .nav-children {
-        display: block;
+    .sidebar-close {
+        display: inline-grid;
     }
 
     .topbar {
-        justify-content: flex-start !important;
+        justify-content: flex-start;
         gap: 12px;
     }
 
     .top-actions {
         margin-left: auto;
+    }
+}
+
+/* The drawer slides; nothing else should. */
+body.sidebar-locked {
+    overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .shell,
+    .sidebar,
+    .skip-link,
+    .nav a,
+    .nav-group summary,
+    .nav-group summary .chevron,
+    .sidebar-backdrop,
+    [data-sidebar-label]::after {
+        transition-duration: 1ms;
     }
 }

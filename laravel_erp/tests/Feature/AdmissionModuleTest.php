@@ -62,6 +62,40 @@ final class AdmissionModuleTest extends TestCase
         app(AdmissionWorkflow::class)->submit($application);
     }
 
+    public function test_applicant_can_autosave_a_draft_with_json_and_receive_the_new_lock_version(): void
+    {
+        [$applicant, $application] = $this->application();
+        $initialLockVersion = $application->refresh()->lock_version;
+
+        $response = $this->actingAs($applicant)->putJson(route('admissions.application.update', $application), [
+            'date_of_birth' => '2004-02-10',
+            'nationality' => 'Kenyan',
+            'county' => 'Nairobi',
+            'identity_type' => 'national_id',
+            'identity_number' => '39482010',
+            'gender' => 'F',
+            'source_channel' => 'Website',
+            'education' => 'KCSE 2025, mean grade B+',
+            'has_support_need' => false,
+            'declarations_accepted' => true,
+            'lock_version' => $initialLockVersion,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('lockVersion', $initialLockVersion + 1)
+            ->assertJsonPath('completionPercent', 80)
+            ->assertJsonStructure(['savedAt']);
+        $this->assertDatabaseHas('admission_applications', [
+            'id' => $application->id,
+            'completion_percent' => 80,
+            'lock_version' => $initialLockVersion + 1,
+        ]);
+        $this->assertDatabaseHas('applicant_profiles', [
+            'id' => $application->applicant_profile_id,
+            'identity_number' => '39482010',
+        ]);
+    }
+
     public function test_paid_application_can_reach_a_verifiable_offer_and_be_accepted(): void
     {
         [$applicant, $application] = $this->application();
@@ -102,7 +136,8 @@ final class AdmissionModuleTest extends TestCase
         $offer = $application->offer()->firstOrFail();
         $this->get(route('admissions.verify', $offer->verification_token))->assertOk()->assertSee($offer->offer_number);
         $this->actingAs($applicant)->post(route('admissions.application.respond', $application), ['response' => 'ACCEPTED'])->assertRedirect();
-        $this->assertDatabaseHas('admission_applications', ['id' => $application->id, 'status' => 'ACCEPTED']);
+        // Acceptance auto-advances through the staging state; enrolment is the applicant's next action.
+        $this->assertDatabaseHas('admission_applications', ['id' => $application->id, 'status' => 'READY_TO_ENROL']);
         $this->assertDatabaseHas('admission_offers', ['id' => $offer->id, 'status' => 'ACCEPTED']);
         $this->assertDatabaseHas('audit_logs', ['action' => 'admission.status_changed', 'subject_id' => $application->id]);
     }
@@ -117,12 +152,59 @@ final class AdmissionModuleTest extends TestCase
     public function test_admission_sidebar_destinations_are_available_to_staff(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
-        $this->application();
+        [, $application] = $this->application();
 
         $this->actingAs($admin)->get(route('admissions.index'))->assertOk()->assertSee('Admissions command centre');
+        $this->get(route('admissions.workspace.dashboard'))
+            ->assertOk()
+            ->assertSee('Admissions Command Centre & Pipeline Dashboard')
+            ->assertSee($application->application_number);
+        $this->get(route('admissions.workspace.work-queues'))->assertOk()->assertSee('Admissions Processing Work Queues & SLA Management');
+        $this->get(route('admissions.workspace.document-verification'))->assertOk()->assertSee('Academic Document Verification & Authenticity Auditing');
+        $this->get(route('admissions.workspace.reviews'))->assertOk()->assertSee('Reviewer Workload Allocation & Academic Scoring Rubrics');
+        $this->get(route('admissions.workspace.shortlists'))->assertOk()->assertSee('Candidate Shortlisting & Quota Selection Matrix');
+        $this->get(route('admissions.workspace.approvals'))->assertOk()->assertSee('Admissions Board & Senate Final Approval Workspace');
+        $this->get(route('admissions.workspace.offers'))->assertOk()->assertSee('Admission Offer Letters & Acceptance Registry');
+        $this->get(route('admissions.workspace.waitlists'))->assertOk()->assertSee('Waitlist Queue & Automatic Promotion Management');
+        $this->get(route('admissions.workspace.admission-rolls'))->assertOk()->assertSee('Official University Admission Rolls & Matriculation Register');
+        $this->get(route('admissions.workspace.payments'))->assertOk()->assertSee('Application Fee Payments & M-Pesa Daraja 2.0 Ledger');
+        $this->get(route('admissions.workspace.payment-reconciliation'))->assertOk()->assertSee('Payment Reconciliation & Settlement Batches');
+        $this->get(route('admissions.workspace.audit'))->assertOk()->assertSee('Admissions Audit Trail & Governance Ledger');
+        $this->get(route('admissions.conversions'))->assertOk()->assertSee('Student conversion ledger');
         $this->get(route('admissions.analytics'))->assertOk()->assertSee('Admissions performance');
         $this->get(route('admissions.reports'))->assertOk()->assertSee('Admissions report centre');
         $this->get(route('admissions.reports.applications'))->assertOk()->assertHeader('content-type', 'text/csv; charset=UTF-8');
+    }
+
+    public function test_document_verification_and_admission_letter_and_conversion(): void
+    {
+        [$applicant, $application] = $this->application();
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+        $doc = ApplicationDocument::create([
+            'admission_application_id' => $application->id,
+            'document_type' => 'certificate',
+            'original_name' => 'kcse.pdf',
+            'storage_path' => 'admissions/test/kcse.pdf',
+            'mime_type' => 'application/pdf',
+            'size_bytes' => 128,
+            'sha256' => hash('sha256', 'certificate'),
+        ]);
+
+        // Staff can verify document
+        $this->actingAs($admin)->post(route('admissions.document.verify', $doc), ['status' => 'VERIFIED'])->assertRedirect();
+        $this->assertSame('VERIFIED', $doc->refresh()->verification_status);
+
+        // Applicant can download their own document
+        $this->actingAs($applicant)->get(route('admissions.document.download', $doc))->assertOk();
+
+        // Staff can view official admission letter
+        $this->actingAs($admin)->get(route('admissions.application.letter', $application))->assertOk()->assertSee('Letter of Provisional Admission');
+
+        // Staff can convert admitted applicant to student
+        $application->update(['status' => 'ADMITTED']);
+        $this->actingAs($admin)->post(route('admissions.application.convert', $application))->assertRedirect();
+        $this->assertDatabaseHas('student_conversions', ['admission_application_id' => $application->id, 'status' => 'COMPLETED']);
     }
 
     /** @return array{User, AdmissionApplication} */

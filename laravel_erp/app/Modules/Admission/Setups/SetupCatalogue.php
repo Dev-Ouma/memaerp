@@ -59,6 +59,26 @@ final class SetupCatalogue
             'conversion.enrolment_gates' => ['category' => 'Student conversion', 'name' => 'Enrolment gates', 'consumer' => 'Student conversion', 'missing' => $fail],
             'conversion.student_numbering' => ['category' => 'Student conversion', 'name' => 'Student-numbering formats', 'consumer' => 'Student conversion', 'missing' => $fail],
             'conversion.rules' => ['category' => 'Student conversion', 'name' => 'Student-conversion rules', 'consumer' => 'Student conversion', 'missing' => $fail],
+
+            // Profile, Security, Files, Reports, and Calendar configurations
+            'user.titles' => ['category' => 'User account', 'name' => 'User titles config', 'consumer' => 'Profile titles dropdown', 'missing' => 'Fallback to Mr, Mrs, Ms, Miss, Dr, Prof, Eng'],
+            'user.profile_fields' => ['category' => 'User account', 'name' => 'Editable profile fields', 'consumer' => 'Profile edit validation', 'missing' => 'Allow all fields'],
+            'security.password_policies' => ['category' => 'Security and governance', 'name' => 'Password security policies', 'consumer' => 'Password change validation', 'missing' => 'Use default min 8 characters'],
+            'security.session_policies' => ['category' => 'Security and governance', 'name' => 'Session lifetime and limit policies', 'consumer' => 'Session guards', 'missing' => 'Use php.ini defaults'],
+            'security.mfa_methods' => ['category' => 'Security and governance', 'name' => 'Allowed MFA methods', 'consumer' => 'MFA flow', 'missing' => 'Allow TOTP'],
+            'user.avatar_defaults' => ['category' => 'User account', 'name' => 'Avatar defaults and colors', 'consumer' => 'Initials avatar generator', 'missing' => 'Fallback to system primary colors'],
+            'files.types_sizes' => ['category' => 'Documents', 'name' => 'Private file type and size limits', 'consumer' => 'Files manager upload validation', 'missing' => 'Allow standard types up to 100MB'],
+            'files.storage_quotas' => ['category' => 'Documents', 'name' => 'User storage quotas', 'consumer' => 'Files manager upload validation', 'missing' => 'Limit to 100MB'],
+            'calendar.categories' => ['category' => 'Operations', 'name' => 'Calendar event categories and colors', 'consumer' => 'Calendar manager views', 'missing' => 'Allow Work, Personal, Meeting, Class'],
+            'calendar.google_integration' => ['category' => 'Integrations', 'name' => 'Google Calendar integration credentials', 'consumer' => 'Google OAuth settings', 'missing' => 'Disable Google integration'],
+            'security.activity_retention' => ['category' => 'Security and governance', 'name' => 'Activity log retention rules', 'consumer' => 'Retention execution jobs', 'missing' => 'Retain indefinitely'],
+            'reports.sources' => ['category' => 'Analytics and reports', 'name' => 'Available report sources', 'consumer' => 'Report creator access', 'missing' => 'Allow basic sources'],
+            'reports.permissions' => ['category' => 'Analytics and reports', 'name' => 'Report source access permissions', 'consumer' => 'Report creator guard', 'missing' => 'Allow owner and admins'],
+            'reports.standard_tags' => ['category' => 'Analytics and reports', 'name' => 'Standard reporting tags', 'consumer' => 'Reports tag selector', 'missing' => 'Allow custom tags'],
+            'notification.channels' => ['category' => 'Communications', 'name' => 'Active notification channels', 'consumer' => 'Notification dispatchers', 'missing' => 'Enable Email'],
+            'preferences.defaults' => ['category' => 'User account', 'name' => 'Default user preferences', 'consumer' => 'User preferences load', 'missing' => 'Use system defaults'],
+            'security.account_lockout' => ['category' => 'Security and governance', 'name' => 'Account lockout policies', 'consumer' => 'Login attempt tracker', 'missing' => 'Lock after 5 failed attempts'],
+            'security.privacy_retention' => ['category' => 'Security and governance', 'name' => 'Privacy and data retention rules', 'consumer' => 'Data cleanup jobs', 'missing' => 'Use default retention values'],
         ];
     }
 }
