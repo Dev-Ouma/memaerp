@@ -24,18 +24,18 @@
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col font-quicksand selection:bg-[#E67E22] selection:text-white">
 
     {{-- Top Announcement Bar --}}
-    <div class="bg-gradient-to-r from-[#072B38] via-[#0A3E50] to-[#1E8449] text-white text-[11.5px] py-2 px-4 border-b border-white/10">
+    <div class="bg-[#072B38] text-white text-xs py-2.5 px-4 border-b border-white/10">
         <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
-            <div class="flex items-center gap-2 flex-wrap text-center sm:text-left">
-                <span class="px-2 py-0.5 rounded-full bg-[#E67E22] text-white font-extrabold text-[10px] tracking-wide uppercase">Sep 2026 Intake</span>
-                <span class="text-slate-200">Applications open for <strong>Certificates (KCSE D+)</strong>, <strong>Diplomas (KCSE C-)</strong>, <strong>Higher Diplomas</strong> & <strong>Degrees</strong>.</span>
+            <div class="flex items-center gap-2.5 flex-wrap text-center sm:text-left">
+                <span class="px-2.5 py-0.5 rounded-full bg-[#E67E22] text-white font-extrabold text-[10.5px] tracking-wide uppercase shadow-2xs">Sep 2026 Intake</span>
+                <span class="text-slate-100 font-medium">Admissions ongoing for <strong>Certificates (KCSE D+)</strong>, <strong>Diplomas (KCSE C-)</strong>, <strong>Higher Diplomas</strong> &amp; <strong>Degrees</strong>.</span>
             </div>
-            <div class="flex items-center gap-4 text-xs">
-                <a href="tel:0113636154" class="hover:text-amber-300 transition-colors flex items-center gap-1 font-semibold">
+            <div class="flex items-center gap-4 text-xs font-semibold">
+                <a href="tel:0113636154" class="text-amber-300 hover:text-white transition-colors flex items-center gap-1.5">
                     <i data-lucide="phone-call" class="w-3.5 h-3.5 text-[#E67E22]"></i> 0113636154
                 </a>
                 <span class="text-white/30">•</span>
-                <a href="mailto:admissions@mema.ac.ke" class="hover:text-amber-300 transition-colors flex items-center gap-1 font-semibold">
+                <a href="mailto:admissions@mema.ac.ke" class="text-slate-200 hover:text-white transition-colors flex items-center gap-1.5">
                     <i data-lucide="mail" class="w-3.5 h-3.5 text-[#E67E22]"></i> admissions@mema.ac.ke
                 </a>
             </div>
@@ -43,17 +43,15 @@
     </div>
 
     {{-- Public Navigation Bar --}}
-    <header class="glass-header text-white sticky top-0 z-50 shadow-md border-b border-white/10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
+    <header class="bg-[#0A3E50] text-white sticky top-0 z-50 shadow-md border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
             <a class="flex items-center gap-3.5 no-underline group" href="{{ route('admissions.catalogue') }}">
-                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#E67E22] via-[#d35400] to-[#b94a00] text-white flex items-center justify-center font-extrabold text-xl shadow-md border border-white/20 group-hover:scale-105 transition-transform">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#E67E22] via-[#d35400] to-[#b94a00] text-white flex items-center justify-center font-extrabold text-xl shadow-md border border-white/20 group-hover:scale-105 transition-transform flex-shrink-0">
                     M
                 </div>
                 <div>
-                    <div class="flex items-center gap-2">
-                        <span class="font-extrabold text-base sm:text-lg tracking-tight text-white uppercase leading-tight">MEMA COLLEGE & UNIVERSITY</span>
-                    </div>
-                    <span class="block text-[11px] text-teal-200 font-semibold tracking-wide">TVET Excellence • Higher Learning • Career Pathways</span>
+                    <span class="block font-extrabold text-base sm:text-lg tracking-tight text-white uppercase leading-tight">MEMA COLLEGE &amp; UNIVERSITY</span>
+                    <span class="block text-[11px] text-teal-200 font-semibold tracking-wide">TVET Centre of Excellence • Higher Learning • Career Pathways</span>
                 </div>
             </a>
 
@@ -70,11 +68,11 @@
                         <i data-lucide="layout-dashboard" class="w-4 h-4 text-[#E67E22]"></i> Staff ERP
                     </a>
                 @else
-                    <a href="{{ route('login') }}" class="px-3 py-2 text-xs font-bold text-teal-100 hover:text-white transition-colors flex items-center gap-1">
+                    <a href="{{ route('login') }}" class="px-3.5 py-2 text-xs font-bold text-teal-100 hover:text-white transition-colors flex items-center gap-1">
                         <i data-lucide="user" class="w-3.5 h-3.5"></i> Sign In
                     </a>
                 @endauth
-                <a class="px-4.5 py-2 rounded-xl bg-[#E67E22] hover:bg-[#d35400] text-white font-extrabold text-xs transition-all shadow-sm hover:shadow flex items-center gap-1.5" href="#programmes">
+                <a class="px-4.5 py-2.5 rounded-xl bg-[#E67E22] hover:bg-[#d35400] text-white font-extrabold text-xs transition-all shadow-sm hover:shadow flex items-center gap-1.5" href="#programmes">
                     <i data-lucide="compass" class="w-4 h-4"></i> Explore Catalog
                 </a>
             </div>
@@ -85,12 +83,13 @@
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
         
         {{-- Hero Presentation Banner --}}
-        <section class="rounded-3xl gradient-teal text-white p-6 sm:p-12 shadow-xl relative overflow-hidden border border-white/10">
-            <div class="absolute right-0 top-0 w-[500px] h-[500px] bg-gradient-to-br from-white/10 to-emerald-400/10 rounded-full blur-3xl pointer-events-none"></div>
+        <section class="rounded-3xl gradient-teal text-white p-6 sm:p-10 lg:p-12 shadow-xl relative overflow-hidden border border-white/10">
+            <div class="absolute right-0 top-0 w-96 h-96 bg-gradient-to-br from-white/10 to-emerald-400/10 rounded-full blur-3xl pointer-events-none"></div>
             <div class="absolute -left-20 -bottom-20 w-80 h-80 bg-[#E67E22]/10 rounded-full blur-2xl pointer-events-none"></div>
             
-            <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                <div class="lg:col-span-8 space-y-4">
+            <div class="relative z-10 flex flex-col lg:flex-row items-stretch justify-between gap-8 lg:gap-12">
+                {{-- Left Hero Text Column --}}
+                <div class="flex-1 space-y-4">
                     <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 text-teal-100 font-bold text-xs uppercase tracking-wider backdrop-blur-md border border-white/20">
                         <span class="w-2.5 h-2.5 rounded-full bg-[#E67E22] animate-ping"></span> 
                         <span>Academic Year 2026/2027 Admissions Open</span>
@@ -102,7 +101,7 @@
                     </h1>
 
                     <p class="text-xs sm:text-sm text-teal-100 max-w-2xl leading-relaxed font-medium">
-                        MEMA College & University offers high-impact <strong>Certificates</strong>, <strong>Diplomas</strong>, <strong>Higher Diplomas</strong>, and selected <strong>Bachelor Degrees</strong> with flexible full-time, evening, weekend, and virtual e-learning delivery.
+                        MEMA College &amp; University offers market-driven <strong>Certificates</strong>, <strong>Diplomas</strong>, <strong>Higher Diplomas</strong>, and selected <strong>Bachelor Degrees</strong> with full-time, evening, weekend, and virtual e-learning study modes.
                     </p>
 
                     <div class="pt-2 flex items-center gap-3.5 flex-wrap">
@@ -111,58 +110,60 @@
                             <i data-lucide="arrow-down" class="w-4 h-4 group-hover:translate-y-0.5 transition-transform"></i>
                         </a>
                         <a href="{{ route('dashboard.export', ['dataset' => 'programmes', 'format' => 'pdf']) }}" target="_blank" class="px-5 py-3 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs sm:text-sm backdrop-blur-md transition-all flex items-center gap-2 border border-white/20">
-                            <i data-lucide="file-down" class="w-4 h-4 text-amber-300"></i> Download Official Prospectus (PDF)
+                            <i data-lucide="file-down" class="w-4 h-4 text-amber-300"></i> Download Prospectus (PDF)
                         </a>
                     </div>
 
-                    {{-- Live Trust Badges --}}
-                    <div class="pt-4 grid grid-cols-2 sm:grid-cols-4 gap-2.5 border-t border-white/15 text-[11px]">
-                        <div class="flex items-center gap-2 text-teal-100">
+                    {{-- Live Trust Badges (Horizontal Row) --}}
+                    <div class="pt-4 flex flex-wrap items-center gap-4 sm:gap-6 border-t border-white/15 text-xs text-teal-100 font-semibold">
+                        <div class="flex items-center gap-2">
                             <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
                             <span>TVET CDACC Certified</span>
                         </div>
-                        <div class="flex items-center gap-2 text-teal-100">
+                        <div class="flex items-center gap-2">
                             <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
-                            <span>KNQA Level 5, 6 & 7</span>
+                            <span>KNQA Level 5, 6 &amp; 7</span>
                         </div>
-                        <div class="flex items-center gap-2 text-teal-100">
+                        <div class="flex items-center gap-2">
                             <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
                             <span>CUE Degree Approval</span>
                         </div>
-                        <div class="flex items-center gap-2 text-teal-100">
+                        <div class="flex items-center gap-2">
                             <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
                             <span>Instant Offer Letter</span>
                         </div>
                     </div>
                 </div>
 
-                {{-- Key Intake Summary Card --}}
-                <div class="lg:col-span-4 bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/25 space-y-4 shadow-lg text-white">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-extrabold text-amber-300 uppercase tracking-wider">Upcoming Cohort</span>
-                        <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/80 text-[10px] font-bold">Fast-Track</span>
-                    </div>
-                    <div>
-                        <div class="text-2xl sm:text-3xl font-extrabold text-white">September 2026</div>
-                        <p class="text-xs text-teal-200 mt-0.5">Application Deadline: <strong>25 September 2026</strong></p>
+                {{-- Right Intake Summary Card (Fixed Width Box) --}}
+                <div class="w-full lg:w-96 flex-shrink-0 bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-7 border border-white/25 space-y-4 shadow-xl text-white flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-extrabold text-amber-300 uppercase tracking-wider">Upcoming Cohort</span>
+                            <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/90 text-white text-[10.5px] font-bold">Fast-Track</span>
+                        </div>
+                        <div>
+                            <div class="text-2xl sm:text-3xl font-extrabold text-white">September 2026</div>
+                            <p class="text-xs text-teal-200 mt-1">Application Deadline: <strong>25 September 2026</strong></p>
+                        </div>
+
+                        <div class="space-y-2 py-3 border-y border-white/15 text-xs text-teal-100">
+                            <div class="flex justify-between items-center">
+                                <span>Certificates Fee:</span>
+                                <strong class="text-white font-extrabold">KES 500</strong>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span>Diplomas Fee:</span>
+                                <strong class="text-white font-extrabold">KES 750</strong>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span>Higher Dip &amp; Degrees:</span>
+                                <strong class="text-white font-extrabold">KES 1,000 – 1,500</strong>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="space-y-2 py-2 border-y border-white/15 text-xs text-teal-100">
-                        <div class="flex justify-between">
-                            <span>Certificates Application Fee:</span>
-                            <strong class="text-white">KES 500</strong>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>Diplomas Application Fee:</span>
-                            <strong class="text-white">KES 750</strong>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>Higher Dip & Degrees:</span>
-                            <strong class="text-white">KES 1,000 – 1,500</strong>
-                        </div>
-                    </div>
-
-                    <div class="text-[11px] text-teal-200 flex items-center gap-2">
+                    <div class="text-xs text-teal-200 flex items-center gap-2 pt-2">
                         <i data-lucide="smartphone" class="w-4 h-4 text-[#E67E22] flex-shrink-0"></i>
                         <span>Pay via M-Pesa STK Push or Till <strong>0113636154</strong></span>
                     </div>
