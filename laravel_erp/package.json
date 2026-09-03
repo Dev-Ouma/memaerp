@@ -5,6 +5,7 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
+        "push": "cd .. && bash scripts/git-autopush.sh",
         "test:e2e": "playwright test"
     },
     "devDependencies": {
