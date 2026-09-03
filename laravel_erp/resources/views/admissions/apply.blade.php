@@ -42,15 +42,24 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             
             {{-- Left Sticky Summary Panel --}}
-            <aside class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs lg:sticky lg:top-24 space-y-5">
+            <aside class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs lg:sticky lg:top-24 space-y-5">
+                {{-- Course Image Banner --}}
+                <div class="relative h-40 w-full overflow-hidden bg-slate-100">
+                    <img src="{{ $offering->course->image_url ?? asset('images/courses/course_bcs.jpg') }}" alt="{{ $offering->course->name ?? 'Course' }}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+                    <div class="absolute bottom-3 left-4 right-4">
+                        <span class="font-mono text-[10px] font-bold text-white bg-[#0A3E50]/90 backdrop-blur-xs px-2 py-0.5 rounded border border-white/20">
+                            {{ $offering->course->code ?? 'COURSE' }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="px-6 pb-6 space-y-5">
                 <div>
                     <div class="text-[11px] font-bold text-[#E67E22] uppercase tracking-wider">Selected Offering</div>
                     <h1 class="text-lg font-extrabold text-slate-900 mt-1 leading-snug">
                         {{ $offering->course->name ?? 'Academic Programme' }}
                     </h1>
-                    <div class="font-mono text-xs text-blue-900 bg-blue-50 inline-block px-2 py-0.5 rounded border border-blue-200 mt-2 font-bold">
-                        {{ $offering->course->code ?? 'COURSE' }}
-                    </div>
                 </div>
 
                 <div class="space-y-2 pt-3 border-t border-slate-100 text-xs">
@@ -82,6 +91,7 @@
                         3. Pay application fee securely via M-Pesa.<br>
                         4. Track real-time review on your portal.
                     </p>
+                </div>
                 </div>
             </aside>
 

@@ -20,4 +20,23 @@ final class Course extends Model
     {
         return $this->hasMany(Subject::class);
     }
+
+    public function getImageUrlAttribute(): string
+    {
+        $code = strtolower(str_replace(['-', ' '], ['_', '_'], (string)$this->code));
+        $file = "course_{$code}.jpg";
+        if (file_exists(public_path("images/courses/{$file}"))) {
+            return asset("images/courses/{$file}");
+        }
+        if (str_starts_with($code, 'phd')) {
+            return asset('images/courses/course_phd_cs.jpg');
+        }
+        if (str_starts_with($code, 'msc') || str_starts_with($code, 'mph') || str_starts_with($code, 'mba')) {
+            return asset('images/courses/course_msc_ds.jpg');
+        }
+        if (str_starts_with($code, 'dip')) {
+            return asset('images/courses/course_dip_it.jpg');
+        }
+        return asset('images/courses/course_bcs.jpg');
+    }
 }
