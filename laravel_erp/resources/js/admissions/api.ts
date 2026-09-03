@@ -10,7 +10,10 @@ type ValidationErrorPayload = {
 };
 
 const csrfToken = (): string => {
-    const token = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+    const token = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content
+        || document.querySelector<HTMLInputElement>('input[name="_token"]')?.value
+        || (window as any).csrfToken
+        || (window as any).Laravel?.csrfToken;
 
     if (!token) {
         throw new Error('The security token is missing. Refresh the page and try again.');
