@@ -60,5 +60,6 @@ final class DatabaseSeeder extends Seeder
         $this->call(InstitutionalIdentitySeeder::class);
         $this->call(AdmissionModuleSeeder::class);
         $this->call(AdminSetupsCatalogueSeeder::class);
+        $this->call(ComprehensiveInstitutionalDataSeeder::class);
     }
 }
