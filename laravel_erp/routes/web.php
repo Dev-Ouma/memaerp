@@ -17,6 +17,7 @@ use App\Http\Controllers\GovernanceAdminController;
 use App\Http\Controllers\GraduationController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\ImprestController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\LmsController;
 use App\Http\Controllers\LoadBalancerController;
 use App\Http\Controllers\PgResearchActionController;
@@ -50,7 +51,14 @@ Route::get('/programmes', [PublicAdmissionController::class, 'catalogue']);
 Route::get('/programmes/{offering}', [PublicAdmissionController::class, 'apply']);
 Route::get('/apply', [PublicAdmissionController::class, 'catalogue']);
 Route::get('/register', [PublicAdmissionController::class, 'catalogue']);
-foreach (['verify-email' => 'Verify your email', 'privacy' => 'Privacy notice', 'terms' => 'Terms of use', 'cookies' => 'Cookie information', 'accessibility' => 'Accessibility statement', 'support' => 'Admissions support'] as $path => $title) {
+Route::get('/terms', [LegalController::class, 'terms'])->name('legal.terms');
+Route::get('/terms/export/pdf', [LegalController::class, 'terms'])->name('legal.terms.pdf');
+Route::get('/privacy', [LegalController::class, 'privacy'])->name('legal.privacy');
+Route::get('/privacy/export/pdf', [LegalController::class, 'privacy'])->name('legal.privacy.pdf');
+Route::get('/cookies', [LegalController::class, 'cookies'])->name('legal.cookies');
+Route::get('/cookies/export/pdf', [LegalController::class, 'cookies'])->name('legal.cookies.pdf');
+
+foreach (['verify-email' => 'Verify your email', 'accessibility' => 'Accessibility statement', 'support' => 'Admissions support'] as $path => $title) {
     Route::view('/'.$path, 'admissions.info', compact('title'));
 }
 Route::get('/forgot-password', fn () => view('auth.forgot-password'))->name('password.request');

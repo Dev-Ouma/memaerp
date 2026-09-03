@@ -307,6 +307,16 @@
             <input type="number" step="0.01" min="0" max="100" name="threshold" value="{{ old('threshold', 15) }}"
                    class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
         </x-pg.field>
+
+        <x-pg.field label="AI content index (%)" name="ai_index" hint="Leave blank if the report does not carry an AI figure.">
+            <input type="number" step="0.01" min="0" max="100" name="ai_index" value="{{ old('ai_index') }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
+
+        <x-pg.field label="AI threshold (%)" name="ai_threshold" hint="An AI index above this flags the manuscript too.">
+            <input type="number" step="0.01" min="0" max="100" name="ai_threshold" value="{{ old('ai_threshold', 20) }}"
+                   class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+        </x-pg.field>
     </div>
 </x-pg.modal-form>
 

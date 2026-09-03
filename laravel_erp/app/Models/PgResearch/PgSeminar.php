@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['candidate_id', 'seminar_type', 'scheduled_for', 'venue', 'panel_chair', 'status', 'outcome_notes', 'held_at'])]
+#[Fillable(['candidate_id', 'seminar_type', 'scheduled_for', 'venue', 'panel_chair', 'status', 'outcome_notes', 'attendance_count', 'held_at'])]
 final class PgSeminar extends Model
 {
     protected function casts(): array

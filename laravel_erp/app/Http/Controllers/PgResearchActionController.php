@@ -252,10 +252,16 @@ final class PgResearchActionController extends Controller
         $data = $request->validate([
             'status' => ['required', 'in:HELD,PASSED,FAILED,DEFERRED,CANCELLED'],
             'outcome_notes' => ['nullable', 'string'],
+            'attendance_count' => ['nullable', 'integer', 'min:0', 'max:2000'],
         ]);
 
         return $this->run(function () use ($data, $seminar): string {
-            $this->workflow->recordSeminarOutcome($seminar, $data['status'], $data['outcome_notes'] ?? null);
+            $this->workflow->recordSeminarOutcome(
+                $seminar,
+                $data['status'],
+                $data['outcome_notes'] ?? null,
+                isset($data['attendance_count']) ? (int) $data['attendance_count'] : null,
+            );
 
             return "Seminar outcome recorded as {$data['status']}.";
         });
@@ -305,6 +311,8 @@ final class PgResearchActionController extends Controller
             'document_type' => ['required', 'in:PROPOSAL,THESIS,ARTICLE'],
             'similarity_index' => ['required', 'numeric', 'min:0', 'max:100'],
             'threshold' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'ai_index' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'ai_threshold' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'report_reference' => ['nullable', 'string', 'max:190'],
         ]);
 
@@ -316,6 +324,8 @@ final class PgResearchActionController extends Controller
                 (float) $data['similarity_index'],
                 (float) ($data['threshold'] ?? 15),
                 $data['report_reference'] ?? null,
+                isset($data['ai_index']) ? (float) $data['ai_index'] : null,
+                (float) ($data['ai_threshold'] ?? 20),
             );
 
             return "Similarity scan recorded: {$scan->status} at {$scan->similarity_index}%.";

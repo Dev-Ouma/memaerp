@@ -274,7 +274,7 @@ final class PgResearchWorkflow
         return $seminar;
     }
 
-    public function recordSeminarOutcome(PgSeminar $seminar, string $status, ?string $notes = null): PgSeminar
+    public function recordSeminarOutcome(PgSeminar $seminar, string $status, ?string $notes = null, ?int $attendance = null): PgSeminar
     {
         $allowed = ['HELD', 'PASSED', 'FAILED', 'DEFERRED', 'CANCELLED'];
         $this->guard(in_array($status, $allowed, true), 'Unknown seminar outcome.');
@@ -283,6 +283,7 @@ final class PgResearchWorkflow
         $seminar->update([
             'status' => $status,
             'outcome_notes' => $notes,
+            'attendance_count' => $attendance,
             'held_at' => in_array($status, ['HELD', 'PASSED', 'FAILED'], true) ? now() : null,
         ]);
 
@@ -339,17 +340,26 @@ final class PgResearchWorkflow
         float $similarity,
         float $threshold = 15.0,
         ?string $reference = null,
+        ?float $aiIndex = null,
+        float $aiThreshold = 20.0,
     ): PgPlagiarismScan {
+        $flagged = $similarity > $threshold || ($aiIndex !== null && $aiIndex > $aiThreshold);
+
         $scan = $candidate->scans()->create([
             'document_type' => $documentType,
             'similarity_index' => $similarity,
             'threshold' => $threshold,
-            'status' => $similarity <= $threshold ? 'PASSED' : 'FLAGGED',
+            'ai_index' => $aiIndex,
+            'ai_threshold' => $aiThreshold,
+            'status' => $flagged ? 'FLAGGED' : 'PASSED',
             'report_reference' => $reference,
             'scanned_at' => now(),
         ]);
 
-        $this->record($candidate, $scan, 'plagiarism.scanned', null, $scan->status, ['similarity' => $similarity]);
+        $this->record($candidate, $scan, 'plagiarism.scanned', null, $scan->status, [
+            'similarity' => $similarity,
+            'ai_index' => $aiIndex,
+        ]);
 
         return $scan;
     }

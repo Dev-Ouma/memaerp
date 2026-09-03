@@ -307,6 +307,11 @@
                     <textarea name="outcome_notes" rows="4" class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs"></textarea>
                 </x-pg.field>
 
+                <x-pg.field label="Faculty in attendance" name="attendance_count" hint="Headcount recorded on the attendance register.">
+                    <input type="number" name="attendance_count" min="0" max="2000"
+                           class="w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs">
+                </x-pg.field>
+
                 <div class="flex justify-between items-center pt-3 border-t border-slate-100">
                     <button type="button" class="btn btn-secondary text-xs" data-modal-close>Cancel</button>
                     <button type="submit" class="px-3.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">Record outcome</button>

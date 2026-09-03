@@ -189,6 +189,7 @@
                                 <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold text-blue-900 bg-blue-50 border border-blue-200">
                                     {{ $m['source_module'] }}
                                 </span>
+                                <div class="text-[10.5px] text-slate-500 font-mono mt-1">Batch {{ $m['batch'] }}</div>
                             </td>
                             <td class="py-3.5 px-4 max-w-xs text-[11px] text-slate-700">
                                 {{ $m['migrated_artifacts'] }}
@@ -197,10 +198,12 @@
                                 {{ $m['target_stage'] }}
                             </td>
                             <td class="py-3.5 px-4">
-                                @if(str_contains($m['validation_status'], '100%'))
-                                    <span class="inline-block px-2 py-0.5 rounded text-[10.5px] font-bold bg-emerald-100 text-emerald-800">Verified (100%)</span>
+                                @if($m['is_verified'])
+                                    <span class="inline-block px-2 py-0.5 rounded text-[10.5px] font-bold bg-emerald-100 text-emerald-800">Verified</span>
+                                @elseif($m['is_failed'])
+                                    <span class="inline-block px-2 py-0.5 rounded text-[10.5px] font-bold bg-red-100 text-red-800">Import failed</span>
                                 @else
-                                    <span class="inline-block px-2 py-0.5 rounded text-[10.5px] font-bold bg-amber-100 text-amber-800">Pending Re-Confirm</span>
+                                    <span class="inline-block px-2 py-0.5 rounded text-[10.5px] font-bold bg-amber-100 text-amber-800">{{ $m['validation_status'] }}</span>
                                 @endif
                             </td>
                             <td class="py-3.5 px-4 text-center">

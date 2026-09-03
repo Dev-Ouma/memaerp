@@ -2800,6 +2800,7 @@
             }
         });
     </script>
+    @include('components.cookie-consent')
 </body>
 
 </html>

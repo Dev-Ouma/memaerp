@@ -21,6 +21,7 @@ use App\Models\PgResearch\PgThesisMark;
 use App\Models\PgResearch\PgThesisResubmission;
 use App\Models\PgResearch\PgVivaExamination;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
@@ -113,14 +114,14 @@ final class PgResearchController extends Controller
             });
 
         $stats = [
-            'totalAllocated' => PgResearchCandidate::whereHas(
+            'allocatedScholars' => PgResearchCandidate::whereHas(
                 'allocations', fn ($q) => $q->where('role', 'LEAD')->where('status', 'ACTIVE'),
             )->count(),
-            'unassigned' => PgResearchCandidate::whereDoesntHave(
+            'unassignedScholars' => PgResearchCandidate::whereDoesntHave(
                 'allocations', fn ($q) => $q->where('role', 'LEAD')->where('status', 'ACTIVE'),
             )->count(),
-            'phdCandidates' => PgResearchCandidate::where('degree_level', 'PHD')->count(),
-            'mscCandidates' => PgResearchCandidate::where('degree_level', 'MASTERS')->count(),
+            'phdTwoSupervisorRatio' => $this->policyRatio('PHD', 2),
+            'mscOneSupervisorRatio' => $this->policyRatio('MASTERS', 1),
         ];
 
         return view('pg-research.supervisor-allocation', [
@@ -159,9 +160,9 @@ final class PgResearchController extends Controller
 
         $stats = [
             'totalRoles' => PgSupervisor::count(),
-            'activeRoles' => PgSupervisor::where('is_active', true)->count(),
-            'maxQuota' => (int) PgSupervisor::where('is_active', true)->sum('max_load'),
-            'assignedLoad' => \App\Models\PgResearch\PgSupervisorAllocation::where('status', 'ACTIVE')->count(),
+            'activeSupervisors' => PgSupervisor::where('is_active', true)->count(),
+            'activeScholars' => PgResearchCandidate::whereNotIn('stage', ['COMPLETE', 'WITHDRAWN'])->count(),
+            'maxRatio' => '1 : '.(int) (PgSupervisor::where('is_active', true)->max('max_load') ?? 0),
         ];
 
         return view('pg-research.supervisor-roles', [
@@ -201,10 +202,10 @@ final class PgResearchController extends Controller
             });
 
         $stats = [
-            'totalProposals' => PgProposal::count(),
-            'underReaderReview' => PgProposal::where('status', 'UNDER_REVIEW')->count(),
-            'approved' => PgProposal::where('status', 'APPROVED')->count(),
-            'revisionRequired' => PgProposal::where('status', 'REVISION_REQUIRED')->count(),
+            'proposalsUnderReview' => PgProposal::where('status', 'UNDER_REVIEW')->count(),
+            'readerApproved' => PgProposal::where('status', 'APPROVED')->count(),
+            'readerRevisions' => PgProposal::where('status', 'REVISION_REQUIRED')->count(),
+            'readerTurnaround' => $this->readerTurnaround(),
         ];
 
         return view('pg-research.proposal-reader-review', [
@@ -240,10 +241,12 @@ final class PgResearchController extends Controller
             ]);
 
         $stats = [
-            'totalSeminars' => PgSeminar::count(),
-            'departmental' => PgSeminar::where('seminar_type', 'PROPOSAL')->count(),
-            'preDefence' => PgSeminar::where('seminar_type', 'PRE_DEFENCE')->count(),
-            'scheduled' => PgSeminar::where('status', 'SCHEDULED')->count(),
+            'seminarsCompleted' => PgSeminar::whereIn('status', ['HELD', 'PASSED', 'FAILED'])->count(),
+            'departmentalSeminars' => PgSeminar::whereIn('seminar_type', ['PROPOSAL', 'PROGRESS'])->count(),
+            'preDefenseSeminars' => PgSeminar::where('seminar_type', 'PRE_DEFENCE')->count(),
+            'attendanceRate' => ($mean = PgSeminar::whereNotNull('attendance_count')->avg('attendance_count')) === null
+                ? 'Not recorded'
+                : number_format((float) $mean, 1),
         ];
 
         return view('pg-research.seminar-presentations', [
@@ -278,10 +281,13 @@ final class PgResearchController extends Controller
             ]);
 
         $stats = [
-            'totalReports' => PgProgressReport::count(),
-            'formSubmitted' => PgProgressReport::where('status', 'SUBMITTED')->count(),
-            'approved' => PgProgressReport::where('status', 'APPROVED')->count(),
-            'returned' => PgProgressReport::where('status', 'RETURNED')->count(),
+            'totalReportsSubmitted' => PgProgressReport::count(),
+            'formACount' => PgProgressReport::where('report_stage', 'ilike', '%INCEPTION%')
+                ->orWhere('report_stage', 'ilike', '%PROPOSAL%')->count(),
+            'formBCount' => PgProgressReport::where('report_stage', 'ilike', '%FIELDWORK%')
+                ->orWhere('report_stage', 'ilike', '%ANALYSIS%')->count(),
+            'formCCount' => PgProgressReport::where('report_stage', 'ilike', '%WRITING%')
+                ->orWhere('report_stage', 'ilike', '%DRAFT%')->count(),
         ];
 
         return view('pg-research.progress-reports', [
@@ -318,10 +324,11 @@ final class PgResearchController extends Controller
             ]);
 
         $stats = [
-            'totalScans' => PgPlagiarismScan::count(),
-            'fullyCleared' => PgPlagiarismScan::whereIn('status', ['PASSED', 'CLEARED_BY_OVERRIDE'])->count(),
-            'flagged' => PgPlagiarismScan::where('status', 'FLAGGED')->count(),
-            'averageSimilarity' => round((float) (PgPlagiarismScan::avg('similarity_index') ?? 0), 2),
+            'totalScansConducted' => PgPlagiarismScan::count(),
+            'fullyClearedDocs' => PgPlagiarismScan::whereIn('status', ['PASSED', 'CLEARED_BY_OVERRIDE'])->count(),
+            'flaggedSimilarity' => PgPlagiarismScan::whereColumn('similarity_index', '>', 'threshold')->count(),
+            'flaggedAiUsage' => PgPlagiarismScan::whereNotNull('ai_index')
+                ->whereColumn('ai_index', '>', 'ai_threshold')->count(),
         ];
 
         return view('pg-research.plagiarism-checker', [
@@ -361,9 +368,9 @@ final class PgResearchController extends Controller
             ]);
 
         $stats = [
-            'total' => PgDefenceRequest::count(),
-            'pending' => PgDefenceRequest::where('status', 'PENDING')->count(),
-            'cleared' => PgDefenceRequest::where('status', 'APPROVED')->count(),
+            'totalRequests' => PgDefenceRequest::count(),
+            'pendingApproval' => PgDefenceRequest::where('status', 'PENDING')->count(),
+            'clearedForViva' => PgDefenceRequest::where('status', 'APPROVED')->count(),
             'avgTurnitin' => round((float) (PgPlagiarismScan::where('document_type', 'THESIS')->avg('similarity_index') ?? 0), 2),
         ];
 
@@ -399,11 +406,10 @@ final class PgResearchController extends Controller
             ]);
 
         $stats = [
-            'assigned' => PgExaminer::whereIn('status', ['APPOINTED', 'NOMINATED'])->count(),
-            'evaluationsReceived' => \App\Models\PgResearch\PgExaminerReport::count(),
-            'avgScore' => round((float) (\App\Models\PgResearch\PgExaminerReport::avg('score') ?? 0), 2),
-            'overdue' => PgExaminer::where('status', 'APPOINTED')
-                ->whereDate('appointed_on', '<', now()->subDays(42))->count(),
+            'assignedManuscripts' => PgExaminer::count(),
+            'evaluationsCompleted' => PgExaminer::where('status', 'REPORT_SUBMITTED')->count(),
+            'evaluationsPending' => PgExaminer::whereIn('status', ['NOMINATED', 'APPOINTED'])->count(),
+            'avgTurnaroundDays' => $this->examinerTurnaround(),
         ];
 
         return view('pg-research.examiner-dashboard', [
@@ -443,11 +449,13 @@ final class PgResearchController extends Controller
             });
 
         $stats = [
-            'scheduled' => PgVivaExamination::where('status', 'SCHEDULED')->count(),
-            'completed' => PgVivaExamination::where('status', 'HELD')->count(),
+            'scheduledVivas' => PgVivaExamination::where('status', 'SCHEDULED')->count(),
+            'completedThisMonth' => PgVivaExamination::where('status', 'HELD')
+                ->whereBetween('verdict_recorded_at', [now()->startOfMonth(), now()->endOfMonth()])->count(),
             'passRate' => $this->passRate(),
-            'pendingVerdict' => PgVivaExamination::where('status', 'SCHEDULED')
-                ->whereDate('scheduled_for', '<', now())->count(),
+            'pendingPanels' => PgResearchCandidate::whereHas(
+                'defenceRequests', fn ($q) => $q->where('status', 'APPROVED'),
+            )->whereDoesntHave('viva')->count(),
         ];
 
         return view('pg-research.viva-examination', [
@@ -490,15 +498,15 @@ final class PgResearchController extends Controller
             });
 
         $stats = [
-            'totalMarks' => PgThesisMark::count(),
-            'approved' => PgThesisMark::where('status', 'RATIFIED')->count(),
-            'distinctions' => PgThesisMark::where('final_grade', 'Distinction')->count(),
-            'avgScore' => round((float) (PgThesisMark::avg('composite_score') ?? 0), 2),
+            'marksPendingRatification' => PgThesisMark::where('status', 'SUBMITTED')->count(),
+            'approvedBySenate' => PgThesisMark::where('status', 'RATIFIED')->count(),
+            'distinctionsAwarded' => PgThesisMark::where('final_grade', 'Distinction')->count(),
+            'avgCompositeScore' => number_format((float) (PgThesisMark::avg('composite_score') ?? 0), 2),
         ];
 
         return view('pg-research.thesis-marks-approval', [
             'stats' => $stats,
-            'marks' => $marks,
+            'marksList' => $marks,
             'status' => $status,
         ]);
     }
@@ -533,13 +541,13 @@ final class PgResearchController extends Controller
         $stats = [
             'totalResubmissions' => PgThesisResubmission::count(),
             'underReview' => PgThesisResubmission::whereIn('status', ['SUBMITTED', 'UNDER_REVIEW'])->count(),
-            'approved' => PgThesisResubmission::where('status', 'ACCEPTED')->count(),
-            'minorRevisions' => PgThesisResubmission::where('status', 'AWAITING')->count(),
+            'approvedForBinding' => PgThesisResubmission::where('status', 'ACCEPTED')->count(),
+            'revisionsPending' => PgThesisResubmission::whereIn('status', ['AWAITING', 'REJECTED'])->count(),
         ];
 
         return view('pg-research.thesis-resubmission', [
             'stats' => $stats,
-            'submissions' => $submissions,
+            'resubmissions' => $submissions,
             'status' => $status,
         ]);
     }
@@ -569,10 +577,10 @@ final class PgResearchController extends Controller
             ]);
 
         $stats = [
-            'totalPublications' => PgPublication::count(),
-            'verified' => PgPublication::where('status', 'ACCEPTED')->count(),
-            'pending' => PgPublication::whereIn('status', ['SUBMITTED', 'UNDER_REVIEW'])->count(),
-            'rejected' => PgPublication::where('status', 'REJECTED')->count(),
+            'totalArticlesLogged' => PgPublication::count(),
+            'verifiedPeerReviewed' => PgPublication::where('status', 'ACCEPTED')->count(),
+            'pendingIndexingCheck' => PgPublication::whereIn('status', ['SUBMITTED', 'UNDER_REVIEW'])->count(),
+            'rejectedNonCUE' => PgPublication::where('status', 'REJECTED')->count(),
         ];
 
         return view('pg-research.publications-review', [
@@ -605,13 +613,16 @@ final class PgResearchController extends Controller
                 'batch' => $m->batch_reference,
                 'is_pending' => in_array($m->status, ['PENDING', 'FAILED'], true),
                 'is_imported' => $m->status === 'IMPORTED',
+                'is_verified' => $m->status === 'VERIFIED',
+                'is_failed' => $m->status === 'FAILED',
             ]);
 
         $stats = [
-            'totalRecords' => PgLegacyMigration::count(),
-            'migrated' => PgLegacyMigration::whereIn('status', ['IMPORTED', 'VERIFIED'])->count(),
-            'interim' => PgLegacyMigration::where('status', 'IMPORTED')->count(),
-            'pending' => PgLegacyMigration::whereIn('status', ['PENDING', 'FAILED'])->count(),
+            'totalLegacyDossiers' => PgLegacyMigration::count(),
+            'migratedFromDSC800' => PgLegacyMigration::where('source_module', 'ilike', '%DSC800%')
+                ->whereIn('status', ['IMPORTED', 'VERIFIED'])->count(),
+            'interimFormsMigrated' => PgLegacyMigration::whereIn('status', ['IMPORTED', 'VERIFIED'])->count(),
+            'pendingDataValidation' => PgLegacyMigration::whereIn('status', ['PENDING', 'FAILED'])->count(),
         ];
 
         return view('pg-research.legacy-migration', [
@@ -723,6 +734,42 @@ final class PgResearchController extends Controller
     }
 
     // --------------------------------------------------------------- Helpers
+
+    /** How many candidates of a degree level meet the supervision policy, as "met/total". */
+    private function policyRatio(string $level, int $required): string
+    {
+        $total = PgResearchCandidate::where('degree_level', $level)->count();
+
+        $met = PgResearchCandidate::where('degree_level', $level)
+            ->whereHas('allocations', fn ($q) => $q->where('status', 'ACTIVE'), '>=', $required)
+            ->count();
+
+        return sprintf('%d / %d', $met, $total);
+    }
+
+    /** Mean days between a proposal reaching a reader and that reader's verdict. */
+    private function readerTurnaround(): string
+    {
+        $days = \App\Models\PgResearch\PgProposalReview::query()
+            ->join('pg_proposals', 'pg_proposals.id', '=', 'pg_proposal_reviews.proposal_id')
+            ->whereNotNull('pg_proposals.submitted_at')
+            ->whereNotNull('pg_proposal_reviews.reviewed_at')
+            ->avg(DB::raw('EXTRACT(EPOCH FROM (pg_proposal_reviews.reviewed_at - pg_proposals.submitted_at)) / 86400'));
+
+        return $days === null ? 'No verdicts yet' : number_format((float) $days, 1).' days';
+    }
+
+    /** Mean days between an examiner's appointment and their filed report. */
+    private function examinerTurnaround(): string
+    {
+        $days = \App\Models\PgResearch\PgExaminerReport::query()
+            ->join('pg_examiners', 'pg_examiners.id', '=', 'pg_examiner_reports.examiner_id')
+            ->whereNotNull('pg_examiners.appointed_on')
+            ->whereNotNull('pg_examiner_reports.submitted_at')
+            ->avg(DB::raw('EXTRACT(EPOCH FROM (pg_examiner_reports.submitted_at - pg_examiners.appointed_on)) / 86400'));
+
+        return $days === null ? 'No reports yet' : number_format((float) $days, 1).' days';
+    }
 
     private function searchCandidate($query, string $term)
     {

@@ -192,7 +192,7 @@
                         <label class="flex items-start gap-2 cursor-pointer">
                             <input type="checkbox" name="terms" value="1" required class="mt-0.5 rounded text-[#0A3E50] focus:ring-[#0A3E50]">
                             <span class="text-slate-600 leading-snug">
-                                I accept the <a href="/terms" class="text-[#0A3E50] font-bold underline">Terms & Conditions</a> and <a href="/privacy" class="text-[#0A3E50] font-bold underline">Privacy Policy</a>.
+                                I accept the <a href="{{ route('legal.terms') }}" target="_blank" class="text-[#0A3E50] font-bold underline hover:text-[#E67E22]">Terms &amp; Conditions</a> and <a href="{{ route('legal.privacy') }}" target="_blank" class="text-[#0A3E50] font-bold underline hover:text-[#E67E22]">Privacy Policy</a>.
                             </span>
                         </label>
                     </div>
@@ -211,11 +211,17 @@
     <footer class="bg-white border-t border-slate-200 py-6 text-xs text-slate-500 mt-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-3">
             <div>© {{ date('Y') }} MEMA University College • Admissions Processing Engine</div>
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-4 flex-wrap justify-center">
+                <a href="{{ route('legal.terms') }}" target="_blank" class="font-bold text-slate-600 hover:text-[#0A3E50]">Terms &amp; Conditions</a>
+                <a href="{{ route('legal.privacy') }}" target="_blank" class="font-bold text-slate-600 hover:text-[#0A3E50]">Privacy Policy</a>
+                <a href="{{ route('legal.cookies') }}" target="_blank" class="font-bold text-slate-600 hover:text-[#0A3E50]">Cookies</a>
                 <a href="{{ route('admissions.catalogue') }}" class="font-bold text-[#0A3E50]">Back to Catalog</a>
                 <a href="{{ route('login') }}" class="font-bold text-slate-700">Existing Applicant Sign In</a>
             </div>
         </div>
     </footer>
+
+    {{-- World-Class Cookie Consent Hub --}}
+    @include('components.cookie-consent')
 </body>
 </html>
