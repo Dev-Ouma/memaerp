@@ -13,6 +13,9 @@ use App\Models\AdmissionApplication;
 use App\Models\AdmissionIntake;
 use App\Models\AdmissionOffer;
 use App\Models\ApplicantProfile;
+use App\Models\ApplicationDocument;
+use App\Models\ApplicationPaymentAttempt;
+use App\Models\ApplicationReview;
 use App\Models\Course;
 use App\Models\DeletionRecord;
 use App\Models\Department;
@@ -223,136 +226,212 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
             $createdOfferings[] = $offering;
         }
 
+        // Also seed academic_programmes table
+        foreach ($coursesData as $c) {
+            AcademicProgramme::updateOrCreate(
+                ['code' => $c['code']],
+                [
+                    'title' => $c['name'],
+                    'school' => $c['faculty'],
+                    'department' => $c['department'],
+                    'award' => str_starts_with($c['code'], 'PHD') ? 'Doctorate' : (str_starts_with($c['code'], 'M') ? 'Masters' : (str_starts_with($c['code'], 'DIP') ? 'Diploma' : 'Bachelors')),
+                    'cue_code' => 'CUE/'.strtolower($c['code']).'/2026',
+                    'level' => str_starts_with($c['code'], 'PHD') ? 'Doctorate' : (str_starts_with($c['code'], 'M') ? 'Postgraduate' : (str_starts_with($c['code'], 'DIP') ? 'Diploma' : 'Undergraduate')),
+                    'duration_semesters' => str_starts_with($c['code'], 'PHD') ? 6 : (str_starts_with($c['code'], 'M') ? 4 : (str_starts_with($c['code'], 'DIP') ? 4 : 8)),
+                    'total_credits' => 120,
+                    'description' => "Accredited institutional programme in {$c['name']}.",
+                    'status' => 'ACTIVE',
+                ]
+            );
+        }
+
         // ---------------------------------------------------------------------
-        // 6. Realistic Applicants & Applications (10 Diverse Lifecycle Records)
+        // 6. Comprehensive Applicants & Applications (100+ Applications: 10 per Programme)
         // ---------------------------------------------------------------------
-        $applicantsData = [
-            ['name' => 'Wanjiku Mwangi', 'email' => 'wanjiku.m@gmail.com', 'phone' => '0711223344', 'status' => 'DRAFT', 'offering' => 0, 'grade' => 'B+'],
-            ['name' => 'Brian Kipkoech', 'email' => 'brian.k@gmail.com', 'phone' => '0722334455', 'status' => 'SUBMITTED', 'offering' => 1, 'grade' => 'A-'],
-            ['name' => 'Amina Hassan', 'email' => 'amina.h@gmail.com', 'phone' => '0733445566', 'status' => 'UNDER_REVIEW', 'offering' => 2, 'grade' => 'B'],
-            ['name' => 'Emmanuel Ochieng', 'email' => 'emmanuel.o@gmail.com', 'phone' => '0744556677', 'status' => 'VERIFIED', 'offering' => 3, 'grade' => 'A'],
-            ['name' => 'Mercy Chepkemoi', 'email' => 'mercy.c@gmail.com', 'phone' => '0755667788', 'status' => 'SHORTLISTED', 'offering' => 4, 'grade' => 'B+'],
-            ['name' => 'Dennis Maina', 'email' => 'dennis.m@gmail.com', 'phone' => '0766778899', 'status' => 'APPROVAL_PENDING', 'offering' => 5, 'grade' => 'B'],
-            ['name' => 'Valerie Wairimu', 'email' => 'valerie.w@gmail.com', 'phone' => '0777889900', 'status' => 'ADMITTED', 'offering' => 6, 'grade' => 'Upper 2nd'],
-            ['name' => 'Collins Kiprotich', 'email' => 'collins.k@gmail.com', 'phone' => '0788990011', 'status' => 'ENROLLED', 'offering' => 7, 'grade' => 'Upper 2nd'],
-            ['name' => 'Sharon Akinyi', 'email' => 'sharon.a@gmail.com', 'phone' => '0799001122', 'status' => 'INFO_REQUESTED', 'offering' => 8, 'grade' => 'B-'],
-            ['name' => 'Victor Mutua', 'email' => 'victor.m@gmail.com', 'phone' => '0700112233', 'status' => 'REVOKED', 'offering' => 9, 'grade' => 'C+'],
+        $firstNames = ['Wanjiku', 'Brian', 'Amina', 'Emmanuel', 'Mercy', 'Dennis', 'Valerie', 'Collins', 'Sharon', 'Victor', 'Grace', 'Kevin', 'Faith', 'Samuel', 'Jane', 'David', 'Alice', 'Peter', 'Mary', 'John'];
+        $lastNames = ['Mwangi', 'Kipkoech', 'Hassan', 'Ochieng', 'Chepkemoi', 'Maina', 'Wairimu', 'Kiprotich', 'Akinyi', 'Mutua', 'Nduta', 'Ombati', 'Chebet', 'Otieno', 'Muthoni', 'Kiprop', 'Wangui', 'Wabwire', 'Achieng', 'Kamau'];
+        $counties = ['Nairobi', 'Kiambu', 'Mombasa', 'Kisumu', 'Nakuru', 'Uasin Gishu', 'Machakos', 'Kilifi', 'Kakamega', 'Nyeri'];
+        $statuses = [
+            'DRAFT',
+            'SUBMITTED',
+            'UNDER_REVIEW',
+            'INFO_REQUESTED',
+            'VERIFIED',
+            'SHORTLISTED',
+            'APPROVAL_PENDING',
+            'ADMITTED',
+            'ACCEPTED',
+            'ENROLLED',
         ];
 
         $session = AcademicSession::firstOrCreate(
             ['start_date' => '2026-09-01', 'end_date' => '2027-08-31']
         );
 
-        foreach ($applicantsData as $idx => $appData) {
-            $nameParts = explode(' ', $appData['name'], 2);
-            $username = 'app_'.strtolower($nameParts[0]).'_'.($idx + 1);
-            $appUser = User::where('email', $appData['email'])->orWhere('username', $username)->first() ?? new User();
-            $appUser->fill([
-                'name' => $appData['name'],
-                'first_name' => $nameParts[0],
-                'last_name' => $nameParts[1] ?? 'Applicant',
-                'email' => $appData['email'],
-                'username' => $username,
-                'password' => Hash::make('password'),
-                'role' => 'applicant',
-                'gender' => ($idx % 2 === 0) ? 'F' : 'M',
-                'is_active' => true,
-            ]);
-            $appUser->save();
+        $appGlobalIdx = 1;
 
-            $piNumber = 'PI-2026-'.str_pad((string)($idx + 101), 4, '0', STR_PAD_LEFT);
-            $profile = ApplicantProfile::updateOrCreate(
-                ['user_id' => $appUser->id],
-                [
-                    'applicant_number' => $piNumber,
-                    'phone' => $appData['phone'],
-                    'date_of_birth' => Carbon::now()->subYears(19 + $idx)->format('Y-m-d'),
-                    'nationality' => 'Kenyan',
-                    'county' => ['Nairobi', 'Kiambu', 'Mombasa', 'Kisumu', 'Nakuru', 'Uasin Gishu'][$idx % 6],
-                    'identity_type' => 'national_id',
-                    'identity_number' => '38'.str_pad((string)($idx + 1420), 6, '0', STR_PAD_LEFT),
-                    'qr_token' => Str::random(48),
-                ]
-            );
+        foreach ($createdOfferings as $pIdx => $offering) {
+            $progCode = $coursesData[$pIdx % count($coursesData)]['code'];
+            
+            for ($itemIdx = 0; $itemIdx < 10; $itemIdx++) {
+                $status = $statuses[$itemIdx % count($statuses)];
+                $fName = $firstNames[($appGlobalIdx + $itemIdx) % count($firstNames)];
+                $lName = $lastNames[($appGlobalIdx * 3 + $itemIdx) % count($lastNames)];
+                $fullName = "{$fName} {$lName}";
+                $email = "applicant.{$appGlobalIdx}." . strtolower($fName) . "@example.ac.ke";
+                $phone = '07' . str_pad((string)($appGlobalIdx * 1234567 % 100000000), 8, '0', STR_PAD_LEFT);
+                $username = "app_" . strtolower($fName) . "_{$appGlobalIdx}";
 
-            $offering = $createdOfferings[$appData['offering'] % count($createdOfferings)];
-            $appNumber = 'APP-2026-'.str_pad((string)($idx + 101), 4, '0', STR_PAD_LEFT);
+                $appUser = User::where('email', $email)->orWhere('username', $username)->first() ?? new User();
+                $appUser->fill([
+                    'name' => $fullName,
+                    'first_name' => $fName,
+                    'last_name' => $lName,
+                    'email' => $email,
+                    'username' => $username,
+                    'password' => Hash::make('password'),
+                    'role' => 'applicant',
+                    'gender' => ($appGlobalIdx % 2 === 0) ? 'F' : 'M',
+                    'is_active' => true,
+                ]);
+                $appUser->save();
 
-            $application = AdmissionApplication::updateOrCreate(
-                ['applicant_profile_id' => $profile->id],
-                [
-                    'programme_offering_id' => $offering->id,
-                    'application_number' => $appNumber,
-                    'status' => $appData['status'],
-                    'form_data' => [
-                        'education' => "KCSE 2024, Mean Grade {$appData['grade']}.",
-                        'gender' => $appUser->gender,
-                        'county' => $profile->county,
-                        'source_channel' => 'Website',
-                    ],
-                ]
-            );
-
-            // Create Application History
-            $application->histories()->create([
-                'from_status' => 'DRAFT',
-                'to_status' => $appData['status'],
-                'actor_user_id' => $createdStaff['admissions.officer@mema.ac.ke']->id ?? $appUser->id,
-                'reason_code' => 'lifecycle_transition',
-                'note' => "Status transitioned to {$appData['status']} during admissions processing cycle.",
-                'created_at' => now()->subDays(10 - $idx),
-            ]);
-
-            // If ADMITTED or ENROLLED, create AdmissionOffer
-            if (in_array($appData['status'], ['ADMITTED', 'ENROLLED', 'REVOKED'])) {
-                $offerNumber = 'OFF-2026-'.str_pad((string)($idx + 1), 4, '0', STR_PAD_LEFT);
-                AdmissionOffer::updateOrCreate(
-                    ['admission_application_id' => $application->id],
+                $piNumber = 'PI-2026-' . str_pad((string)($appGlobalIdx), 4, '0', STR_PAD_LEFT);
+                $profile = ApplicantProfile::updateOrCreate(
+                    ['user_id' => $appUser->id],
                     [
+                        'applicant_number' => $piNumber,
+                        'phone' => $phone,
+                        'date_of_birth' => Carbon::now()->subYears(18 + ($appGlobalIdx % 10))->format('Y-m-d'),
+                        'nationality' => 'Kenyan',
+                        'county' => $counties[$appGlobalIdx % count($counties)],
+                        'identity_type' => 'national_id',
+                        'identity_number' => '38' . str_pad((string)($appGlobalIdx + 1000), 6, '0', STR_PAD_LEFT),
+                        'qr_token' => Str::random(48),
+                    ]
+                );
+
+                // Reference format: 001/2026 or APP-2026-0001
+                $refNumber = str_pad((string)$appGlobalIdx, 3, '0', STR_PAD_LEFT) . '/2026';
+                $appNumber = 'APP-2026-' . str_pad((string)$appGlobalIdx, 4, '0', STR_PAD_LEFT);
+
+                $application = AdmissionApplication::updateOrCreate(
+                    ['applicant_profile_id' => $profile->id],
+                    [
+                        'programme_offering_id' => $offering->id,
+                        'application_number' => $appNumber,
+                        'status' => $status,
+                        'form_data' => [
+                            'reference_number' => $refNumber,
+                            'education' => "KCSE 2024, Mean Grade " . (['A', 'A-', 'B+', 'B', 'B-'][$appGlobalIdx % 5]),
+                            'gender' => $appUser->gender,
+                            'county' => $profile->county,
+                            'source_channel' => 'Website',
+                            'study_mode' => $offering->study_mode,
+                            'campus' => $offering->campus,
+                        ],
+                    ]
+                );
+
+                // Create Application History
+                $application->histories()->create([
+                    'from_status' => 'DRAFT',
+                    'to_status' => $status,
+                    'actor_user_id' => $createdStaff['admissions.officer@mema.ac.ke']->id ?? $appUser->id,
+                    'reason_code' => 'lifecycle_transition',
+                    'note' => "Status transitioned to {$status} during automated institutional admissions cycle.",
+                    'created_at' => now()->subDays(15 - ($appGlobalIdx % 14)),
+                ]);
+
+                // Upload Documents (KCSE Result Slip, National ID, Passport Photo)
+                $docTypes = ['kcse_certificate', 'national_id', 'passport_photo'];
+                foreach ($docTypes as $dType) {
+                    ApplicationDocument::updateOrCreate(
+                        [
+                            'admission_application_id' => $application->id,
+                            'document_type' => $dType,
+                        ],
+                        [
+                            'original_name' => "{$dType}_{$appGlobalIdx}.pdf",
+                            'storage_path' => "documents/applications/{$application->id}/{$dType}.pdf",
+                            'mime_type' => 'application/pdf',
+                            'size_bytes' => 245000 + ($appGlobalIdx * 100),
+                            'sha256' => hash('sha256', "doc-{$application->id}-{$dType}"),
+                            'verification_status' => in_array($status, ['DRAFT', 'SUBMITTED', 'INFO_REQUESTED']) ? 'PENDING' : 'VERIFIED',
+                            'verified_by' => in_array($status, ['DRAFT', 'SUBMITTED', 'INFO_REQUESTED']) ? null : ($createdStaff['admissions.officer@mema.ac.ke']->id ?? null),
+                        ]
+                    );
+                }
+
+                // Add Reviewers & Reviews for UNDER_REVIEW, SHORTLISTED, APPROVAL_PENDING, ADMITTED, ENROLLED
+                if (in_array($status, ['UNDER_REVIEW', 'SHORTLISTED', 'APPROVAL_PENDING', 'ADMITTED', 'ACCEPTED', 'ENROLLED'])) {
+                    ApplicationReview::updateOrCreate(
+                        ['admission_application_id' => $application->id],
+                        [
+                            'reviewer_id' => $createdStaff['hod.software@mema.ac.ke']->id ?? 1,
+                            'stage' => 'DEPARTMENTAL',
+                            'score' => 80 + ($appGlobalIdx % 15),
+                            'recommendation' => in_array($status, ['SHORTLISTED', 'APPROVAL_PENDING', 'ADMITTED', 'ACCEPTED', 'ENROLLED']) ? 'RECOMMEND' : 'REVIEW_IN_PROGRESS',
+                            'notes' => "Candidate meets all cluster criteria and prerequisites for {$progCode}.",
+                            'created_at' => now()->subDays(10),
+                        ]
+                    );
+                }
+
+                // If ADMITTED, ACCEPTED, or ENROLLED, issue official AdmissionOffer
+                if (in_array($status, ['ADMITTED', 'ACCEPTED', 'ENROLLED', 'REVOKED'])) {
+                    $offerNumber = 'OFF-2026-' . str_pad((string)$appGlobalIdx, 4, '0', STR_PAD_LEFT);
+                    $offer = AdmissionOffer::where('offer_number', $offerNumber)->orWhere('admission_application_id', $application->id)->first() ?? new AdmissionOffer();
+                    $offer->fill([
+                        'admission_application_id' => $application->id,
                         'offer_number' => $offerNumber,
                         'checksum' => hash('sha256', $offerNumber),
-                        'status' => ($appData['status'] === 'ENROLLED') ? 'ACCEPTED' : (($appData['status'] === 'REVOKED') ? 'REVOKED' : 'ISSUED'),
+                        'status' => ($status === 'ENROLLED' || $status === 'ACCEPTED') ? 'ACCEPTED' : (($status === 'REVOKED') ? 'REVOKED' : 'ISSUED'),
                         'issued_at' => now()->subDays(5),
                         'expires_at' => now()->addDays(14),
                         'verification_token' => Str::random(40),
-                    ]
-                );
-            }
+                    ]);
+                    $offer->save();
+                }
 
-            // -----------------------------------------------------------------
-            // 7. Converted Enrolled Students (10+ Students with Student Profile)
-            // -----------------------------------------------------------------
-            $admNumber = 'MEMA/BCS/2026/'.str_pad((string)($idx + 1), 3, '0', STR_PAD_LEFT);
-            $student = Student::updateOrCreate(
-                ['user_id' => $appUser->id],
-                [
-                    'admission_number' => $admNumber,
-                    'course_id' => $offering->course_id,
-                    'academic_session_id' => $session->id,
-                ]
-            );
+                // If ENROLLED, create student record
+                if ($status === 'ENROLLED') {
+                    $admNumber = "MEMA/{$progCode}/2026/" . str_pad((string)$appGlobalIdx, 3, '0', STR_PAD_LEFT);
+                    Student::updateOrCreate(
+                        ['user_id' => $appUser->id],
+                        [
+                            'admission_number' => $admNumber,
+                            'course_id' => $offering->course_id,
+                            'academic_session_id' => $session->id,
+                        ]
+                    );
+                }
 
-            // -----------------------------------------------------------------
-            // 8. Fee Transactions & M-Pesa Receipts (10+ Financial Records)
-            // -----------------------------------------------------------------
-            $txnCodes = ['QJH7823901', 'RKP9012384', 'SHL5610293', 'TLM1928374', 'UKN8291047', 'VKP3910284', 'WLM9018273', 'XKN1928475', 'YLM8291048', 'ZKP9102948'];
-            $application->payments()->updateOrCreate(
-                ['reference' => $txnCodes[$idx % count($txnCodes)]],
-                [
+                // Financial Payments & Receipts
+                $txnCodes = ['QJH7823901', 'RKP9012384', 'SHL5610293', 'TLM1928374', 'UKN8291047', 'VKP3910284', 'WLM9018273', 'XKN1928475', 'YLM8291048', 'ZKP9102948'];
+                $receiptNumber = 'REC-2026-' . str_pad((string)$appGlobalIdx, 4, '0', STR_PAD_LEFT);
+                $reference = $txnCodes[$appGlobalIdx % count($txnCodes)] . '-' . $appGlobalIdx;
+                $payment = ApplicationPaymentAttempt::where('receipt_number', $receiptNumber)->orWhere('reference', $reference)->first() ?? new ApplicationPaymentAttempt();
+                $payment->fill([
+                    'admission_application_id' => $application->id,
+                    'receipt_number' => $receiptNumber,
+                    'reference' => $reference,
                     'amount' => $offering->application_fee,
                     'currency' => 'KES',
-                    'channel' => ['mpesa', 'paybill', 'pochi', 'till', 'card'][$idx % 5],
-                    'status' => 'COMPLETED',
+                    'channel' => ['mpesa', 'paybill', 'pochi', 'till', 'card'][$appGlobalIdx % 5],
+                    'status' => in_array($status, ['DRAFT']) ? 'INITIATED' : 'COMPLETED',
                     'idempotency_key' => (string) Str::uuid(),
-                    'paid_at' => now()->subDays(8 - $idx),
-                    'receipt_number' => 'REC-2026-'.str_pad((string)($idx + 1), 4, '0', STR_PAD_LEFT),
+                    'paid_at' => in_array($status, ['DRAFT']) ? null : now()->subDays(12 - ($appGlobalIdx % 10)),
                     'provider_payload' => [
                         'phone' => '0113636154',
                         'account' => '0113636154',
                         'paybill' => '522 522',
                     ],
-                ]
-            );
+                ]);
+                $payment->save();
+
+                $appGlobalIdx++;
+            }
         }
 
         // ---------------------------------------------------------------------

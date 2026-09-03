@@ -479,6 +479,24 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/', [ReportsController::class, 'advancedAnalytics'])->name('index');
         Route::get('/advanced-analytics', [ReportsController::class, 'advancedAnalytics'])->name('advanced-analytics');
 
+        // 13 Core Institutional Admission Reports + Module Reports
+        Route::get('/application-register', [ReportsController::class, 'showReport'])->defaults('report', 'application-register')->name('application-register');
+        Route::get('/applications-by-programme', [ReportsController::class, 'showReport'])->defaults('report', 'applications-by-programme')->name('applications-by-programme');
+        Route::get('/admission-status-summary', [ReportsController::class, 'showReport'])->defaults('report', 'admission-status-summary')->name('admission-status-summary');
+        Route::get('/review-workload', [ReportsController::class, 'showReport'])->defaults('report', 'review-workload')->name('review-workload');
+        Route::get('/outstanding-documents', [ReportsController::class, 'showReport'])->defaults('report', 'outstanding-documents')->name('outstanding-documents');
+        Route::get('/shortlisted-waitlisted', [ReportsController::class, 'showReport'])->defaults('report', 'shortlisted-waitlisted')->name('shortlisted-waitlisted');
+        Route::get('/admitted-letters', [ReportsController::class, 'showReport'])->defaults('report', 'admitted-letters')->name('admitted-letters');
+        Route::get('/rejected-withdrawn-deferred', [ReportsController::class, 'showReport'])->defaults('report', 'rejected-withdrawn-deferred')->name('rejected-withdrawn-deferred');
+        Route::get('/offer-acceptance-expiry', [ReportsController::class, 'showReport'])->defaults('report', 'offer-acceptance-expiry')->name('offer-acceptance-expiry');
+        Route::get('/payments-clearance', [ReportsController::class, 'showReport'])->defaults('report', 'payments-clearance')->name('payments-clearance');
+        Route::get('/enrolled-students', [ReportsController::class, 'showReport'])->defaults('report', 'enrolled-students')->name('enrolled-students');
+        Route::get('/programme-capacity-conversion', [ReportsController::class, 'showReport'])->defaults('report', 'programme-capacity-conversion')->name('programme-capacity-conversion');
+        Route::get('/audit-trail', [ReportsController::class, 'showReport'])->defaults('report', 'audit-trail')->name('audit-trail');
+
+        // Export Report (CSV / XLSX / PDF)
+        Route::get('/{report}/export', [ReportsController::class, 'exportReport'])->name('export');
+
         // 29 Specific Submodule Reports
         Route::get('/application-status', [ReportsController::class, 'showReport'])->defaults('report', 'application-status')->name('application-status');
         Route::get('/programme-applicants', [ReportsController::class, 'showReport'])->defaults('report', 'programme-applicants')->name('programme-applicants');

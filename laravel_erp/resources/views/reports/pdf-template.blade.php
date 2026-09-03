@@ -288,7 +288,11 @@
     {{-- Summary Cards --}}
     @if(!empty($summaryStats))
         <div class="report-summary-bar">
-            @foreach($summaryStats as $label => $val)
+            @foreach($summaryStats as $key => $item)
+                @php
+                    $label = is_array($item) ? ($item['label'] ?? $key) : $key;
+                    $val = is_array($item) ? ($item['val'] ?? '') : $item;
+                @endphp
                 <div class="summary-card {{ $loop->iteration == 2 ? 'accent' : ($loop->iteration == 3 ? 'success' : '') }}">
                     <div class="label">{{ $label }}</div>
                     <div class="value">{{ $val }}</div>

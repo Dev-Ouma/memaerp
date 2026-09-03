@@ -22,4 +22,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     {
         return $this->belongsTo(AdmissionIntake::class, 'admission_intake_id');
     }
+
+    public function applications(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(AdmissionApplication::class, 'programme_offering_id');
+    }
 }

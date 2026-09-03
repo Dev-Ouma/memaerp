@@ -47,7 +47,12 @@ final class DataExportService
                     if (is_array($val)) {
                         return implode(', ', $val);
                     }
-                    return (string) $val;
+                    $str = (string) $val;
+                    // Protect against CSV formula injection (DDE / Command Execution)
+                    if (strlen($str) > 0 && in_array($str[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+                        return "'".$str;
+                    }
+                    return $str;
                 }, $row);
 
                 fputcsv($handle, $sanitized);

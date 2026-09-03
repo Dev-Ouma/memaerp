@@ -4,17 +4,26 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Services\AdmissionReportService;
+use App\Services\DataExportService;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ReportsController extends Controller
 {
+    public function __construct(
+        private readonly AdmissionReportService $reportService,
+        private readonly DataExportService $exportService
+    ) {}
+
     /**
-     * Serves all 29 standard reports dynamically.
+     * Serves all 13 core institutional admission reports and submodule reports dynamically from PostgreSQL.
      */
-    public function showReport(string $report): View
+    public function showReport(Request $request, string $report): View
     {
-        $reportData = $this->getReportMetadata($report);
+        $reportData = $this->reportService->getReportData($report, $request);
 
         return view('reports.view', [
             'reportKey' => $report,
@@ -23,7 +32,48 @@ final class ReportsController extends Controller
             'stats' => $reportData['stats'],
             'headers' => $reportData['headers'],
             'rows' => $reportData['rows'],
+            'search' => $request->query('q', ''),
+            'status' => $request->query('status', ''),
+            'programme' => $request->query('programme', ''),
+            'fromDate' => $request->query('from_date', ''),
+            'toDate' => $request->query('to_date', ''),
         ]);
+    }
+
+    /**
+     * Direct download export endpoint for CSV, Excel (XLSX), and PDF formats.
+     */
+    public function exportReport(Request $request, string $report): StreamedResponse|Response|View
+    {
+        $format = strtolower($request->query('format', 'csv'));
+        $reportData = $this->reportService->getReportData($report, $request);
+
+        $filename = "mema_report_{$report}_" . now()->format('Ymd_His');
+
+        if ($format === 'xlsx' || $format === 'excel') {
+            return $this->exportService->exportXlsx(
+                "{$filename}.xlsx",
+                substr($reportData['title'], 0, 31),
+                $reportData['headers'],
+                $reportData['rows']
+            );
+        }
+
+        if ($format === 'pdf' || $format === 'print') {
+            return view('reports.pdf-template', [
+                'reportTitle' => $reportData['title'],
+                'headers' => $reportData['headers'],
+                'rows' => $reportData['rows'],
+                'summaryStats' => $reportData['stats'],
+            ]);
+        }
+
+        // Default to CSV
+        return $this->exportService->exportCsv(
+            "{$filename}.csv",
+            $reportData['headers'],
+            $reportData['rows']
+        );
     }
 
     /**
