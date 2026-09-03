@@ -27,6 +27,15 @@ final class PublicAdmissionController extends Controller
         return view('admissions.catalogue', compact('offerings'));
     }
 
+    public function brochure(Request $request): View
+    {
+        $offerings = ProgrammeOffering::with(['course', 'intake'])
+            ->where('is_published', true)
+            ->get();
+
+        return view('admissions.brochure', compact('offerings'));
+    }
+
     public function apply(ProgrammeOffering $offering): View
     {
         abort_unless($offering->is_published && $offering->intake->is_published, 404);

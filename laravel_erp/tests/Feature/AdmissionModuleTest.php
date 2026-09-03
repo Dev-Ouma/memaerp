@@ -43,6 +43,22 @@ final class AdmissionModuleTest extends TestCase
         $this->assertDatabaseHas('admission_applications', ['programme_offering_id' => $offering->id, 'status' => 'DRAFT']);
     }
 
+    public function test_visitor_can_view_programmes_brochure_and_flier_pdf_template(): void
+    {
+        $this->offering();
+
+        $this->get(route('admissions.brochure'))
+            ->assertOk()
+            ->assertSee('Programmes Brochure')
+            ->assertSee('CERTIFICATE COURSES')
+            ->assertSee('DIPLOMA COURSES')
+            ->assertSee('BACHELOR DEGREE PROGRAMMES');
+
+        $this->get(route('admissions.flier'))
+            ->assertOk()
+            ->assertSee('Programmes Brochure');
+    }
+
     public function test_submission_is_payment_gated_and_creates_one_immutable_snapshot(): void
     {
         [$user, $application] = $this->application();

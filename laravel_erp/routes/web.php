@@ -47,6 +47,8 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 });
 Route::get('/programmes/apply', [PublicAdmissionController::class, 'catalogue'])->name('admissions.catalogue');
+Route::get('/programmes/brochure', [PublicAdmissionController::class, 'brochure'])->name('admissions.brochure');
+Route::get('/programmes/flier', [PublicAdmissionController::class, 'brochure'])->name('admissions.flier');
 Route::get('/programmes', [PublicAdmissionController::class, 'catalogue']);
 Route::get('/programmes/{offering}', [PublicAdmissionController::class, 'apply']);
 Route::get('/apply', [PublicAdmissionController::class, 'catalogue']);

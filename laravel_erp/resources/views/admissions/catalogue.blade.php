@@ -109,8 +109,8 @@
                             <span>Browse All 15 Programmes</span>
                             <i data-lucide="arrow-down" class="w-4 h-4 group-hover:translate-y-0.5 transition-transform"></i>
                         </a>
-                        <a href="{{ route('dashboard.export', ['dataset' => 'programmes', 'format' => 'pdf']) }}" target="_blank" class="px-5 py-3 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs sm:text-sm backdrop-blur-md transition-all flex items-center gap-2 border border-white/20">
-                            <i data-lucide="file-down" class="w-4 h-4 text-amber-300"></i> Download Prospectus (PDF)
+                        <a href="{{ route('admissions.brochure') }}" target="_blank" class="px-5 py-3 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs sm:text-sm backdrop-blur-md transition-all flex items-center gap-2 border border-white/20 shadow-xs">
+                            <i data-lucide="file-text" class="w-4 h-4 text-amber-300"></i> Download Programmes Brochure / Flier (PDF)
                         </a>
                     </div>
 
@@ -600,7 +600,7 @@
                 <h4 class="font-bold text-sm text-white uppercase tracking-wider mb-3">Admissions & Fees</h4>
                 <ul class="space-y-2 text-slate-400 text-xs">
                     <li><a href="#eligibility" class="hover:text-amber-300 transition-colors">Eligibility Calculator</a></li>
-                    <li><a href="{{ route('dashboard.export', ['dataset' => 'programmes', 'format' => 'pdf']) }}" target="_blank" class="hover:text-amber-300 transition-colors">Download Prospectus</a></li>
+                    <li><a href="{{ route('admissions.brochure') }}" target="_blank" class="hover:text-amber-300 transition-colors font-bold text-teal-200">Download Programmes Brochure / Flier (PDF)</a></li>
                     <li><a href="{{ route('login') }}" class="hover:text-amber-300 transition-colors">Applicant Login Portal</a></li>
                     <li><a href="{{ route('dashboard') }}" class="hover:text-amber-300 transition-colors">Staff ERP Access</a></li>
                 </ul>
