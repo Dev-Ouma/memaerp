@@ -184,11 +184,43 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label for="password" class="block text-xs font-bold text-slate-700 mb-1">Portal Password (min 10 characters) *</label>
-                            <input type="password" id="password" name="password" minlength="10" required autocomplete="new-password" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0A3E50] shadow-2xs">
+                            <input type="password" id="password" name="password" minlength="10" required autocomplete="new-password" placeholder="••••••••••" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0A3E50] shadow-2xs">
+                            
+                            {{-- Real-time Strength Meter --}}
+                            <div class="mt-2">
+                                <div class="h-1 bg-slate-200 rounded flex gap-1 overflow-hidden">
+                                    <div class="flex-1 h-full bg-slate-200 transition-colors" id="apply-seg-1"></div>
+                                    <div class="flex-1 h-full bg-slate-200 transition-colors" id="apply-seg-2"></div>
+                                    <div class="flex-1 h-full bg-slate-200 transition-colors" id="apply-seg-3"></div>
+                                    <div class="flex-1 h-full bg-slate-200 transition-colors" id="apply-seg-4"></div>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-slate-500 font-semibold mt-1">
+                                    <span id="apply-rule-len">• 10+ Chars</span>
+                                    <span id="apply-rule-case">• Upper/Lower</span>
+                                    <span id="apply-rule-num">• Number</span>
+                                </div>
+                            </div>
                         </div>
                         <div>
-                            <label for="password_confirmation" class="block text-xs font-bold text-slate-700 mb-1">Confirm Password *</label>
-                            <input type="password" id="password_confirmation" name="password_confirmation" minlength="10" required autocomplete="new-password" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0A3E50] shadow-2xs">
+                            <label for="password_confirmation" class="block text-xs font-bold text-slate-700 mb-1">Confirm Password (Type Manually) *</label>
+                            <input type="password" 
+                                   id="password_confirmation" 
+                                   name="password_confirmation" 
+                                   minlength="10" 
+                                   required 
+                                   autocomplete="off" 
+                                   placeholder="Type confirmation manually" 
+                                   onpaste="handleApplyPasteBlocked(event)"
+                                   ondrop="handleApplyPasteBlocked(event)"
+                                   class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0A3E50] shadow-2xs">
+                            
+                            {{-- Paste Blocked Notice --}}
+                            <div id="apply-paste-notice" class="hidden mt-1 text-[11px] font-bold text-rose-600 bg-rose-50 p-1.5 rounded border border-rose-200">
+                                ⚠️ Pasting is disabled. For security, please type your confirmation password manually.
+                            </div>
+
+                            {{-- Live Match Feedback --}}
+                            <div id="apply-match-badge" class="hidden mt-1 text-[11.5px] font-bold"></div>
                         </div>
                     </div>
 
@@ -209,7 +241,8 @@
 
                     <div class="pt-4">
                         <button type="submit" class="w-full py-3 px-6 rounded-xl bg-[#0A3E50] hover:bg-[#072c39] text-white font-extrabold text-sm transition-all shadow-md flex items-center justify-center gap-2">
-                            Create Account & Continue Application <i data-lucide="arrow-right" class="w-4 h-4 text-[#E67E22]"></i>
+                            <span>Create Account &amp; Continue Application</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 text-[#E67E22]"></i>
                         </button>
                     </div>
                 </form>
@@ -230,6 +263,74 @@
             </div>
         </div>
     </footer>
+
+    {{-- Interactive Security Scripts for Apply Page --}}
+    <script>
+        function handleApplyPasteBlocked(e) {
+            e.preventDefault();
+            const notice = document.getElementById('apply-paste-notice');
+            if (notice) {
+                notice.classList.remove('hidden');
+                setTimeout(() => notice.classList.add('hidden'), 4000);
+            }
+            return false;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const pwd = document.getElementById('password');
+            const pwdConf = document.getElementById('password_confirmation');
+            const matchBadge = document.getElementById('apply-match-badge');
+
+            const seg1 = document.getElementById('apply-seg-1');
+            const seg2 = document.getElementById('apply-seg-2');
+            const seg3 = document.getElementById('apply-seg-3');
+            const seg4 = document.getElementById('apply-seg-4');
+
+            const ruleLen = document.getElementById('apply-rule-len');
+            const ruleCase = document.getElementById('apply-rule-case');
+            const ruleNum = document.getElementById('apply-rule-num');
+
+            function checkStrength() {
+                const val = pwd?.value || '';
+                const confVal = pwdConf?.value || '';
+
+                const hasLen = val.length >= 10;
+                const hasCase = /[a-z]/.test(val) && /[A-Z]/.test(val);
+                const hasNum = /[0-9]/.test(val);
+
+                if (ruleLen) ruleLen.style.color = hasLen ? '#16a34a' : '#64748b';
+                if (ruleCase) ruleCase.style.color = hasCase ? '#16a34a' : '#64748b';
+                if (ruleNum) ruleNum.style.color = hasNum ? '#16a34a' : '#64748b';
+
+                let score = 0;
+                if (val.length >= 8) score++;
+                if (hasLen) score++;
+                if (hasCase && hasNum) score++;
+                if (/[^A-Za-z0-9]/.test(val) && hasLen) score++;
+
+                seg1.style.backgroundColor = score >= 1 ? (score === 1 ? '#ef4444' : '#f59e0b') : '#e2e8f0';
+                seg2.style.backgroundColor = score >= 2 ? (score === 2 ? '#f59e0b' : '#10b981') : '#e2e8f0';
+                seg3.style.backgroundColor = score >= 3 ? '#10b981' : '#e2e8f0';
+                seg4.style.backgroundColor = score >= 4 ? '#059669' : '#e2e8f0';
+
+                if (confVal.length > 0) {
+                    matchBadge.classList.remove('hidden');
+                    if (val === confVal) {
+                        matchBadge.textContent = '✓ Passwords match';
+                        matchBadge.style.color = '#16a34a';
+                    } else {
+                        matchBadge.textContent = '✗ Passwords do not match';
+                        matchBadge.style.color = '#dc2626';
+                    }
+                } else {
+                    matchBadge.classList.add('hidden');
+                }
+            }
+
+            pwd?.addEventListener('input', checkStrength);
+            pwdConf?.addEventListener('input', checkStrength);
+        });
+    </script>
 
     {{-- World-Class Cookie Consent Hub --}}
     @include('components.cookie-consent')
