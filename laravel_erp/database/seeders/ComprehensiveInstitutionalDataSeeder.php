@@ -136,19 +136,31 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
         }
 
         // ---------------------------------------------------------------------
-        // 4. Courses & Academic Programmes (10+ Degree/Diploma Programmes)
+        // 4. Courses & Academic Programmes (Focus: Certificates, Diplomas, Higher Diplomas, & Selected Degrees)
         // ---------------------------------------------------------------------
         $coursesData = [
-            ['code' => 'BCS', 'name' => 'Bachelor of Science in Computer Science', 'faculty' => 'Computing', 'department' => 'DCSSE'],
-            ['code' => 'BSE', 'name' => 'Bachelor of Science in Software Engineering', 'faculty' => 'Computing', 'department' => 'DCSSE'],
-            ['code' => 'BAI', 'name' => 'Bachelor of Science in Artificial Intelligence', 'faculty' => 'Computing', 'department' => 'DAIML'],
-            ['code' => 'BBA', 'name' => 'Bachelor of Business Administration', 'faculty' => 'Business', 'department' => 'DABF'],
-            ['code' => 'BPL', 'name' => 'Bachelor of Science in Procurement & Logistics', 'faculty' => 'Business', 'department' => 'DPSCL'],
-            ['code' => 'MPH', 'name' => 'Master of Public Health & Epidemiology', 'faculty' => 'Health', 'department' => 'DNPHP'],
-            ['code' => 'MBA', 'name' => 'Master of Business Administration', 'faculty' => 'Business', 'department' => 'DABF'],
-            ['code' => 'MSC-DS', 'name' => 'Master of Science in Data Science & Analytics', 'faculty' => 'Computing', 'department' => 'DAIML'],
-            ['code' => 'PHD-CS', 'name' => 'Doctor of Philosophy in Computer Science', 'faculty' => 'Postgraduate', 'department' => 'DCSSE'],
-            ['code' => 'DIP-IT', 'name' => 'Diploma in Information Technology & Cloud', 'faculty' => 'TVET', 'department' => 'DCSSE'],
+            // 1. Certificate Programmes (KNQA Level 5)
+            ['code' => 'CERT-IT', 'name' => 'Certificate in Information Technology', 'faculty' => 'TVET', 'department' => 'DCSSE', 'award' => 'Certificate', 'level' => 'Certificate', 'semesters' => 2, 'credits' => 60, 'fee' => 500, 'req' => 'KCSE Mean Grade D+ (Plus)'],
+            ['code' => 'CERT-BM', 'name' => 'Certificate in Business Management', 'faculty' => 'Business', 'department' => 'DABF', 'award' => 'Certificate', 'level' => 'Certificate', 'semesters' => 2, 'credits' => 60, 'fee' => 500, 'req' => 'KCSE Mean Grade D+ (Plus)'],
+            ['code' => 'CERT-HRIT', 'name' => 'Certificate in Health Records & Information Technology', 'faculty' => 'Health', 'department' => 'DNPHP', 'award' => 'Certificate', 'level' => 'Certificate', 'semesters' => 2, 'credits' => 60, 'fee' => 500, 'req' => 'KCSE Mean Grade D+ (Plus)'],
+            ['code' => 'CERT-PS', 'name' => 'Certificate in Procurement & Storekeeping', 'faculty' => 'Business', 'department' => 'DPSCL', 'award' => 'Certificate', 'level' => 'Certificate', 'semesters' => 2, 'credits' => 60, 'fee' => 500, 'req' => 'KCSE Mean Grade D+ (Plus)'],
+
+            // 2. Diploma Programmes (KNQA Level 6)
+            ['code' => 'DIP-IT', 'name' => 'Diploma in Information Technology & Cloud', 'faculty' => 'TVET', 'department' => 'DCSSE', 'award' => 'Diploma', 'level' => 'Diploma', 'semesters' => 4, 'credits' => 120, 'fee' => 750, 'req' => 'KCSE Mean Grade C- (Minus) or Cert-IT'],
+            ['code' => 'DIP-CS', 'name' => 'Diploma in Computer Science & Software Dev', 'faculty' => 'Computing', 'department' => 'DCSSE', 'award' => 'Diploma', 'level' => 'Diploma', 'semesters' => 4, 'credits' => 120, 'fee' => 750, 'req' => 'KCSE Mean Grade C- (Minus) or Cert-IT'],
+            ['code' => 'DIP-BM', 'name' => 'Diploma in Business Management & Accounting', 'faculty' => 'Business', 'department' => 'DABF', 'award' => 'Diploma', 'level' => 'Diploma', 'semesters' => 4, 'credits' => 120, 'fee' => 750, 'req' => 'KCSE Mean Grade C- (Minus) or Cert-BM'],
+            ['code' => 'DIP-CHD', 'name' => 'Diploma in Community Health & Development', 'faculty' => 'Health', 'department' => 'DNPHP', 'award' => 'Diploma', 'level' => 'Diploma', 'semesters' => 4, 'credits' => 120, 'fee' => 750, 'req' => 'KCSE Mean Grade C- (Minus) or Cert-HRIT'],
+            ['code' => 'DIP-PSCM', 'name' => 'Diploma in Procurement & Supply Chain Management', 'faculty' => 'Business', 'department' => 'DPSCL', 'award' => 'Diploma', 'level' => 'Diploma', 'semesters' => 4, 'credits' => 120, 'fee' => 750, 'req' => 'KCSE Mean Grade C- (Minus) or Cert-PS'],
+
+            // 3. Higher Diploma Programmes (KNQA Level 7)
+            ['code' => 'HDIP-CS', 'name' => 'Higher Diploma in Computer Science & Cyber Security', 'faculty' => 'Computing', 'department' => 'DCSSE', 'award' => 'Higher Diploma', 'level' => 'Higher Diploma', 'semesters' => 3, 'credits' => 90, 'fee' => 1000, 'req' => 'Recognized Diploma in IT/CS or Equivalent'],
+            ['code' => 'HDIP-HRM', 'name' => 'Higher Diploma in Human Resource Management', 'faculty' => 'Business', 'department' => 'DABF', 'award' => 'Higher Diploma', 'level' => 'Higher Diploma', 'semesters' => 3, 'credits' => 90, 'fee' => 1000, 'req' => 'Recognized Diploma in Business/HRM'],
+            ['code' => 'HDIP-PH', 'name' => 'Higher Diploma in Public Health & Epidemiology', 'faculty' => 'Health', 'department' => 'DNPHP', 'award' => 'Higher Diploma', 'level' => 'Higher Diploma', 'semesters' => 3, 'credits' => 90, 'fee' => 1000, 'req' => 'Recognized Diploma in Clinical/Health Sciences'],
+
+            // 4. Selected Bachelor Degrees (Undergraduate)
+            ['code' => 'BCS', 'name' => 'Bachelor of Science in Computer Science', 'faculty' => 'Computing', 'department' => 'DCSSE', 'award' => 'B.Sc.', 'level' => 'Undergraduate', 'semesters' => 8, 'credits' => 140, 'fee' => 1500, 'req' => 'KCSE Mean Grade C+ with C+ in Maths/Physics or Dip-CS'],
+            ['code' => 'BBA', 'name' => 'Bachelor of Business Administration', 'faculty' => 'Business', 'department' => 'DABF', 'award' => 'B.B.A.', 'level' => 'Undergraduate', 'semesters' => 8, 'credits' => 140, 'fee' => 1500, 'req' => 'KCSE Mean Grade C+ with C in Maths/Eng or Dip-BM'],
+            ['code' => 'BSE', 'name' => 'Bachelor of Science in Software Engineering', 'faculty' => 'Computing', 'department' => 'DCSSE', 'award' => 'B.Sc.', 'level' => 'Undergraduate', 'semesters' => 8, 'credits' => 140, 'fee' => 1500, 'req' => 'KCSE Mean Grade C+ with C+ in Maths/Physics or Dip-CS'],
         ];
 
         $createdCourses = [];
@@ -161,19 +173,15 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
         }
 
         // ---------------------------------------------------------------------
-        // 5. Academic Intakes & Offerings (10+ Intakes / Offerings)
+        // 5. Academic Intakes & Offerings
         // ---------------------------------------------------------------------
         $intakesData = [
             ['code' => 'SEP-2026', 'name' => 'September 2026 Regular Intake', 'opens' => '2026-06-01', 'closes' => '2026-09-20', 'deadline' => '2026-09-30'],
             ['code' => 'VIRTUAL-SEP-2026', 'name' => 'September 2026 Virtual Campus Intake', 'opens' => '2026-06-01', 'closes' => '2026-10-15', 'deadline' => '2026-10-30'],
+            ['code' => 'TVET-SEP-2026', 'name' => 'TVET Skills & Technical Intake Sep 2026', 'opens' => '2026-07-01', 'closes' => '2026-09-25', 'deadline' => '2026-10-05'],
             ['code' => 'JAN-2027', 'name' => 'January 2027 Main Campus Intake', 'opens' => '2026-10-01', 'closes' => '2027-01-15', 'deadline' => '2027-01-25'],
             ['code' => 'VIRTUAL-JAN-2027', 'name' => 'January 2027 Online Trimester Intake', 'opens' => '2026-10-01', 'closes' => '2027-01-30', 'deadline' => '2027-02-10'],
-            ['code' => 'MAY-2027', 'name' => 'May 2027 Fast-Track Trimester', 'opens' => '2027-02-01', 'closes' => '2027-05-15', 'deadline' => '2027-05-25'],
             ['code' => 'PSSP-2026', 'name' => 'Self-Sponsored Weekend Professional 2026', 'opens' => '2026-07-01', 'closes' => '2026-09-25', 'deadline' => '2026-10-05'],
-            ['code' => 'EXECUTIVE-MBA-2026', 'name' => 'Executive MBA Cohort 2026', 'opens' => '2026-06-15', 'closes' => '2026-09-30', 'deadline' => '2026-10-15'],
-            ['code' => 'RESEARCH-2026', 'name' => 'Postgraduate Doctoral Research Stream 2026', 'opens' => '2026-01-01', 'closes' => '2026-12-31', 'deadline' => '2026-12-31'],
-            ['code' => 'TVET-SEP-2026', 'name' => 'TVET Skills & Technical Intake Sep 2026', 'opens' => '2026-07-01', 'closes' => '2026-09-25', 'deadline' => '2026-10-05'],
-            ['code' => 'GLOBAL-2026', 'name' => 'Global Open International Intake 2026', 'opens' => '2026-05-01', 'closes' => '2026-11-30', 'deadline' => '2026-12-15'],
         ];
 
         $createdIntakes = [];
@@ -191,35 +199,27 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
             $createdIntakes[$i['code']] = $intake;
         }
 
-        // Create 10+ Programme Offerings
+        // Create Programme Offerings across Certificates, Diplomas, Higher Diplomas, and Degrees
         $createdOfferings = [];
-        $offeringMatrix = [
-            ['course' => 'BCS', 'intake' => 'SEP-2026', 'mode' => 'Full-time', 'campus' => 'Main Campus', 'fee' => 1000, 'cap' => 120],
-            ['course' => 'BCS', 'intake' => 'VIRTUAL-SEP-2026', 'mode' => 'Online', 'campus' => 'Virtual Campus', 'fee' => 1000, 'cap' => 300],
-            ['course' => 'BSE', 'intake' => 'SEP-2026', 'mode' => 'Full-time', 'campus' => 'Main Campus', 'fee' => 1000, 'cap' => 90],
-            ['course' => 'BAI', 'intake' => 'VIRTUAL-SEP-2026', 'mode' => 'Online', 'campus' => 'Virtual Campus', 'fee' => 1500, 'cap' => 150],
-            ['course' => 'BBA', 'intake' => 'SEP-2026', 'mode' => 'Full-time', 'campus' => 'Main Campus', 'fee' => 1000, 'cap' => 100],
-            ['course' => 'BPL', 'intake' => 'PSSP-2026', 'mode' => 'Weekend', 'campus' => 'Nairobi CBD', 'fee' => 1000, 'cap' => 80],
-            ['course' => 'MPH', 'intake' => 'VIRTUAL-SEP-2026', 'mode' => 'Online', 'campus' => 'Virtual Campus', 'fee' => 2000, 'cap' => 50],
-            ['course' => 'MBA', 'intake' => 'EXECUTIVE-MBA-2026', 'mode' => 'Blended', 'campus' => 'Nairobi CBD', 'fee' => 2000, 'cap' => 60],
-            ['course' => 'MSC-DS', 'intake' => 'RESEARCH-2026', 'mode' => 'Blended', 'campus' => 'Main Campus', 'fee' => 2000, 'cap' => 45],
-            ['course' => 'DIP-IT', 'intake' => 'TVET-SEP-2026', 'mode' => 'Full-time', 'campus' => 'Main Campus', 'fee' => 500, 'cap' => 100],
-        ];
+        foreach ($coursesData as $c) {
+            $intakeCode = str_starts_with($c['code'], 'CERT') || str_starts_with($c['code'], 'DIP') ? 'TVET-SEP-2026' : 'SEP-2026';
+            $campus = str_starts_with($c['code'], 'HDIP') ? 'Nairobi CBD' : 'Main Campus';
+            $mode = str_starts_with($c['code'], 'HDIP') ? 'Weekend / Evening' : 'Full-time';
 
-        foreach ($offeringMatrix as $om) {
-            $courseId = $createdCourses[$om['course']]->id ?? 1;
-            $intakeId = $createdIntakes[$om['intake']]->id ?? 1;
+            $courseId = $createdCourses[$c['code']]->id ?? 1;
+            $intakeId = $createdIntakes[$intakeCode]->id ?? $createdIntakes['SEP-2026']->id;
 
             $offering = ProgrammeOffering::updateOrCreate(
                 [
                     'course_id' => $courseId,
                     'admission_intake_id' => $intakeId,
-                    'study_mode' => $om['mode'],
-                    'campus' => $om['campus'],
+                    'study_mode' => $mode,
+                    'campus' => $campus,
                 ],
                 [
-                    'capacity' => $om['cap'],
-                    'application_fee' => $om['fee'],
+                    'capacity' => str_starts_with($c['code'], 'CERT') ? 150 : (str_starts_with($c['code'], 'DIP') ? 120 : (str_starts_with($c['code'], 'HDIP') ? 60 : 100)),
+                    'application_fee' => $c['fee'],
+                    'requirements' => $c['req'],
                     'is_published' => true,
                 ]
             );
@@ -234,12 +234,12 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
                     'title' => $c['name'],
                     'school' => $c['faculty'],
                     'department' => $c['department'],
-                    'award' => str_starts_with($c['code'], 'PHD') ? 'Doctorate' : (str_starts_with($c['code'], 'M') ? 'Masters' : (str_starts_with($c['code'], 'DIP') ? 'Diploma' : 'Bachelors')),
-                    'cue_code' => 'CUE/'.strtolower($c['code']).'/2026',
-                    'level' => str_starts_with($c['code'], 'PHD') ? 'Doctorate' : (str_starts_with($c['code'], 'M') ? 'Postgraduate' : (str_starts_with($c['code'], 'DIP') ? 'Diploma' : 'Undergraduate')),
-                    'duration_semesters' => str_starts_with($c['code'], 'PHD') ? 6 : (str_starts_with($c['code'], 'M') ? 4 : (str_starts_with($c['code'], 'DIP') ? 4 : 8)),
-                    'total_credits' => 120,
-                    'description' => "Accredited institutional programme in {$c['name']}.",
+                    'award' => $c['award'],
+                    'cue_code' => 'TVET/CUE/'.strtolower(str_replace('-', '/', $c['code'])).'/2026',
+                    'level' => $c['level'],
+                    'duration_semesters' => $c['semesters'],
+                    'total_credits' => $c['credits'],
+                    'description' => "Accredited institutional programme in {$c['name']}. Entry requirement: {$c['req']}.",
                     'status' => 'ACTIVE',
                 ]
             );
@@ -298,9 +298,9 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
 
                 $piNumber = 'PI-2026-' . str_pad((string)($appGlobalIdx), 4, '0', STR_PAD_LEFT);
                 $profile = ApplicantProfile::updateOrCreate(
-                    ['user_id' => $appUser->id],
+                    ['applicant_number' => $piNumber],
                     [
-                        'applicant_number' => $piNumber,
+                        'user_id' => $appUser->id,
                         'phone' => $phone,
                         'date_of_birth' => Carbon::now()->subYears(18 + ($appGlobalIdx % 10))->format('Y-m-d'),
                         'nationality' => 'Kenyan',

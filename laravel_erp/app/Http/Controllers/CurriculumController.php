@@ -777,7 +777,18 @@ final class CurriculumController extends Controller
             'total_credits' => ['nullable', 'integer', 'min:1'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'string', 'in:Active,Inactive'],
+            'image_path' => ['nullable', 'string', 'max:255'],
+            'image_file' => ['nullable', 'image', 'max:5120'],
         ]);
+
+        $imagePath = $validated['image_path'] ?? null;
+        if ($request->hasFile('image_file')) {
+            $file = $request->file('image_file');
+            $cleanCode = strtolower(str_replace(['-', ' '], ['_', '_'], trim($validated['code'])));
+            $filename = 'prog_' . $cleanCode . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('images/courses'), $filename);
+            $imagePath = 'images/courses/' . $filename;
+        }
 
         $programme = AcademicProgramme::create([
             'code' => strtoupper(trim($validated['code'])),
@@ -791,6 +802,7 @@ final class CurriculumController extends Controller
             'total_credits' => (int) ($validated['total_credits'] ?? 140),
             'description' => $validated['description'] ? trim($validated['description']) : null,
             'status' => $validated['status'],
+            'image_path' => $imagePath,
         ]);
 
         if ($request->wantsJson()) {
@@ -818,7 +830,18 @@ final class CurriculumController extends Controller
             'total_credits' => ['nullable', 'integer', 'min:1'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'string', 'in:Active,Inactive'],
+            'image_path' => ['nullable', 'string', 'max:255'],
+            'image_file' => ['nullable', 'image', 'max:5120'],
         ]);
+
+        $imagePath = $validated['image_path'] ?? $programme->image_path;
+        if ($request->hasFile('image_file')) {
+            $file = $request->file('image_file');
+            $cleanCode = strtolower(str_replace(['-', ' '], ['_', '_'], trim($validated['code'])));
+            $filename = 'prog_' . $cleanCode . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('images/courses'), $filename);
+            $imagePath = 'images/courses/' . $filename;
+        }
 
         $programme->update([
             'code' => strtoupper(trim($validated['code'])),
@@ -832,6 +855,7 @@ final class CurriculumController extends Controller
             'total_credits' => (int) ($validated['total_credits'] ?? 140),
             'description' => $validated['description'] ? trim($validated['description']) : null,
             'status' => $validated['status'],
+            'image_path' => $imagePath,
         ]);
 
         if ($request->wantsJson()) {

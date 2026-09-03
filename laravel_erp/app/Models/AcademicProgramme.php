@@ -26,6 +26,7 @@ final class AcademicProgramme extends Model
         'total_credits',
         'description',
         'status',
+        'image_path',
     ];
 
     protected $casts = [
@@ -35,10 +36,29 @@ final class AcademicProgramme extends Model
 
     public function getImageUrlAttribute(): string
     {
+        if (!empty($this->image_path)) {
+            if (str_starts_with($this->image_path, 'http://') || str_starts_with($this->image_path, 'https://')) {
+                return $this->image_path;
+            }
+            if (file_exists(public_path($this->image_path))) {
+                return asset($this->image_path);
+            }
+            return asset('storage/' . ltrim($this->image_path, '/'));
+        }
+
         $code = strtolower(str_replace(['-', ' '], ['_', '_'], (string)$this->code));
         $file = "course_{$code}.jpg";
         if (file_exists(public_path("images/courses/{$file}"))) {
             return asset("images/courses/{$file}");
+        }
+        if (str_starts_with($code, 'cert')) {
+            return asset('images/courses/course_dip_it.jpg');
+        }
+        if (str_starts_with($code, 'hdip')) {
+            return asset('images/courses/course_bse.jpg');
+        }
+        if (str_starts_with($code, 'dip')) {
+            return asset('images/courses/course_dip_it.jpg');
         }
         if (str_starts_with($code, 'phd')) {
             return asset('images/courses/course_phd_cs.jpg');
@@ -46,8 +66,8 @@ final class AcademicProgramme extends Model
         if (str_starts_with($code, 'msc') || str_starts_with($code, 'mph') || str_starts_with($code, 'mba')) {
             return asset('images/courses/course_msc_ds.jpg');
         }
-        if (str_starts_with($code, 'dip')) {
-            return asset('images/courses/course_dip_it.jpg');
+        if (str_starts_with($code, 'bba')) {
+            return asset('images/courses/course_bba.jpg');
         }
         return asset('images/courses/course_bcs.jpg');
     }

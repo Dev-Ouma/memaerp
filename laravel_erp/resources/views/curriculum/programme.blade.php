@@ -82,6 +82,7 @@
             <table class="w-full text-left border-collapse text-xs" id="prog-table">
                 <thead>
                     <tr class="bg-[#0A3E50] text-white">
+                        <th class="py-3 px-4 font-bold tracking-wider text-white border-r border-white/15 uppercase text-[11px] w-20" style="color:#ffffff !important;">Image</th>
                         <th class="py-3 px-4 font-bold tracking-wider text-white border-r border-white/15 uppercase text-[11px]" style="color:#ffffff !important;">Programme Code & Title</th>
                         <th class="py-3 px-4 font-bold tracking-wider text-white border-r border-white/15 uppercase text-[11px]" style="color:#ffffff !important;">Host School & Department</th>
                         <th class="py-3 px-4 font-bold tracking-wider text-white border-r border-white/15 uppercase text-[11px]" style="color:#ffffff !important;">Degree Award & Level</th>
@@ -93,6 +94,11 @@
                 <tbody class="divide-y divide-slate-100 bg-white" id="prog-tbody">
                     @forelse($programmes as $p)
                         <tr class="hover:bg-slate-50/70 transition-colors prog-row" data-status="{{ strtolower($p->status) }}" data-search="{{ strtolower($p->code.' '.$p->title.' '.$p->school.' '.$p->department.' '.$p->award.' '.$p->cue_code.' '.$p->level) }}">
+                            <td class="py-3.5 px-4">
+                                <div class="w-14 h-10 rounded-lg overflow-hidden border border-slate-200 shadow-2xs bg-slate-100 flex-shrink-0">
+                                    <img src="{{ $p->image_url }}" alt="{{ $p->title }}" class="w-full h-full object-cover">
+                                </div>
+                            </td>
                             <td class="py-3.5 px-4">
                                 <div class="flex items-center gap-1.5 flex-wrap">
                                     <span class="font-mono text-[11px] font-bold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">{{ $p->code }}</span>
@@ -142,9 +148,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="py-8 text-center text-slate-400">
-                                No programmes in catalogue yet. Click "Add Programme" to create one.
-                            </td>
+                            <td colspan="7" class="py-8 text-center text-slate-400 text-xs">No academic programmes registered. Click "Add Programme" above to create one.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -163,12 +167,12 @@
             </div>
             <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
         </div>
-        <form class="panel-body p-5" method="POST" action="{{ route('curriculum.programme.store') }}" data-processing-message="Registering programme…">
+        <form class="panel-body p-5" method="POST" action="{{ route('curriculum.programme.store') }}" enctype="multipart/form-data" data-processing-message="Registering programme…">
             @csrf
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                 <div>
                     <label class="font-bold text-slate-700 block mb-1">Programme Code <span class="text-red-500">*</span></label>
-                    <input type="text" name="code" placeholder="e.g. MEMA-LLB" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 uppercase font-mono font-bold focus:outline-none focus:border-[#0A3E50]">
+                    <input type="text" name="code" placeholder="e.g. DIP-IT, CERT-BM, BCS" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 uppercase font-mono font-bold focus:outline-none focus:border-[#0A3E50]">
                 </div>
                 <div>
                     <label class="font-bold text-slate-700 block mb-1">Status <span class="text-red-500">*</span></label>
@@ -179,7 +183,7 @@
                 </div>
                 <div class="sm:col-span-2">
                     <label class="font-bold text-slate-700 block mb-1">Programme Title <span class="text-red-500">*</span></label>
-                    <input type="text" name="title" placeholder="e.g. Bachelor of Laws" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 font-bold focus:outline-none focus:border-[#0A3E50]">
+                    <input type="text" name="title" placeholder="e.g. Diploma in Information Technology & Cloud" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 font-bold focus:outline-none focus:border-[#0A3E50]">
                 </div>
                 <div>
                     <label class="font-bold text-slate-700 block mb-1">Parent School</label>
@@ -201,30 +205,48 @@
                 </div>
                 <div>
                     <label class="font-bold text-slate-700 block mb-1">Award Title</label>
-                    <input type="text" name="award" placeholder="e.g. LL.B." class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]">
+                    <input type="text" name="award" placeholder="e.g. Diploma, Higher Dip, Cert, B.Sc." class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]">
                 </div>
                 <div>
-                    <label class="font-bold text-slate-700 block mb-1">Academic Level <span class="text-red-500">*</span></label>
+                    <label class="font-bold text-slate-700 block mb-1">Academic Tier / Level <span class="text-red-500">*</span></label>
                     <select name="level" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 font-semibold focus:outline-none focus:border-[#0A3E50]">
-                        <option value="Undergraduate" selected>Undergraduate (Level 7)</option>
+                        <option value="Certificate">Certificate (KNQA Level 5)</option>
+                        <option value="Diploma" selected>Diploma (KNQA Level 6)</option>
+                        <option value="Higher Diploma">Higher Diploma (KNQA Level 7)</option>
+                        <option value="Undergraduate">Bachelor's Degree (Level 7)</option>
                         <option value="Postgraduate">Postgraduate / Masters (Level 8)</option>
                         <option value="Doctoral">Doctoral / PhD (Level 9)</option>
-                        <option value="Diploma">Diploma (Level 6)</option>
-                        <option value="Certificate">Certificate (Level 5)</option>
                     </select>
                 </div>
                 <div>
-                    <label class="font-bold text-slate-700 block mb-1">CUE Accreditation Code</label>
-                    <input type="text" name="cue_code" placeholder="e.g. CUE/PRG/056" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 font-mono focus:outline-none focus:border-[#0A3E50]">
+                    <label class="font-bold text-slate-700 block mb-1">CUE / TVET Accreditation Code</label>
+                    <input type="text" name="cue_code" placeholder="e.g. TVET/CDACC/019 or CUE/PRG/056" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 font-mono focus:outline-none focus:border-[#0A3E50]">
                 </div>
                 <div>
-                    <label class="font-bold text-slate-700 block mb-1">Duration (Semesters)</label>
-                    <input type="number" name="duration_semesters" value="8" min="1" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]">
+                    <label class="font-bold text-slate-700 block mb-1">Duration (Semesters / Terms)</label>
+                    <input type="number" name="duration_semesters" value="4" min="1" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]">
                 </div>
                 <div>
                     <label class="font-bold text-slate-700 block mb-1">Total Credit Hours</label>
-                    <input type="number" name="total_credits" value="140" min="1" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]">
+                    <input type="number" name="total_credits" value="120" min="1" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]">
                 </div>
+                
+                {{-- Programme Image Upload --}}
+                <div class="sm:col-span-2 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <label class="font-bold text-slate-800 block mb-1 flex items-center gap-1.5">
+                        <i data-lucide="image" class="w-4 h-4 text-[#0A3E50]"></i> Programme / Course Banner Image
+                    </label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                        <div>
+                            <input type="file" name="image_file" accept="image/*" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#0A3E50] file:text-white hover:file:bg-[#072c39]">
+                            <p class="text-[10px] text-slate-500 mt-1">Upload JPG, PNG or WEBP (Max 5MB).</p>
+                        </div>
+                        <div>
+                            <input type="text" name="image_path" placeholder="Or paste image URL / relative path" class="w-full border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]">
+                        </div>
+                    </div>
+                </div>
+
                 <div class="sm:col-span-2">
                     <label class="font-bold text-slate-700 block mb-1">Programme Description</label>
                     <textarea name="description" rows="2" placeholder="Overview of the curriculum, outcomes, and career pathways..." class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]"></textarea>
@@ -242,15 +264,15 @@
 
 {{-- MODAL 2: EDIT PROGRAMME --}}
 <div class="modal" id="edit-prog-modal" role="dialog" aria-modal="true">
-    <div class="modal-card" style="width:min(600px, 94vw);">
+    <div class="modal-card" style="width:min(620px, 94vw);">
         <div class="panel-head" style="background:#0A3E50;color:#fff;padding:14px 20px;border-radius:10px 10px 0 0;">
             <div>
                 <h2 class="text-sm font-bold text-white">Edit Academic Programme</h2>
-                <small style="color:rgba(255,255,255,0.85);" id="edit-prog-sub">Update programme curriculum specifications.</small>
+                <small style="color:rgba(255,255,255,0.85);" id="edit-prog-sub">Update programme curriculum specifications and imagery.</small>
             </div>
             <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
         </div>
-        <form class="panel-body p-5" id="edit-prog-form" method="POST" action="" data-processing-message="Updating programme…">
+        <form class="panel-body p-5" id="edit-prog-form" method="POST" action="" enctype="multipart/form-data" data-processing-message="Updating programme…">
             @csrf
             @method('PUT')
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
@@ -292,27 +314,45 @@
                     <input type="text" id="edit-prog-award" name="award" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]">
                 </div>
                 <div>
-                    <label class="font-bold text-slate-700 block mb-1">Academic Level <span class="text-red-500">*</span></label>
+                    <label class="font-bold text-slate-700 block mb-1">Academic Tier / Level <span class="text-red-500">*</span></label>
                     <select id="edit-prog-level" name="level" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 font-semibold focus:outline-none focus:border-[#0A3E50]">
-                        <option value="Undergraduate">Undergraduate (Level 7)</option>
+                        <option value="Certificate">Certificate (KNQA Level 5)</option>
+                        <option value="Diploma">Diploma (KNQA Level 6)</option>
+                        <option value="Higher Diploma">Higher Diploma (KNQA Level 7)</option>
+                        <option value="Undergraduate">Bachelor's Degree (Level 7)</option>
                         <option value="Postgraduate">Postgraduate / Masters (Level 8)</option>
                         <option value="Doctoral">Doctoral / PhD (Level 9)</option>
-                        <option value="Diploma">Diploma (Level 6)</option>
-                        <option value="Certificate">Certificate (Level 5)</option>
                     </select>
                 </div>
                 <div>
-                    <label class="font-bold text-slate-700 block mb-1">CUE Accreditation Code</label>
+                    <label class="font-bold text-slate-700 block mb-1">CUE / TVET Accreditation Code</label>
                     <input type="text" id="edit-prog-cue" name="cue_code" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 font-mono focus:outline-none focus:border-[#0A3E50]">
                 </div>
                 <div>
-                    <label class="font-bold text-slate-700 block mb-1">Duration (Semesters)</label>
+                    <label class="font-bold text-slate-700 block mb-1">Duration (Semesters / Terms)</label>
                     <input type="number" id="edit-prog-duration" name="duration_semesters" min="1" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]">
                 </div>
                 <div>
                     <label class="font-bold text-slate-700 block mb-1">Total Credit Hours</label>
                     <input type="number" id="edit-prog-credits" name="total_credits" min="1" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]">
                 </div>
+
+                {{-- Programme Image Upload & Current Preview --}}
+                <div class="sm:col-span-2 bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                    <label class="font-bold text-slate-800 block mb-1 flex items-center gap-1.5">
+                        <i data-lucide="image" class="w-4 h-4 text-[#0A3E50]"></i> Programme / Course Banner Image
+                    </label>
+                    <div class="flex items-center gap-3">
+                        <div class="w-20 h-14 rounded-lg overflow-hidden border border-slate-300 bg-slate-200 flex-shrink-0">
+                            <img id="edit-prog-preview" src="" alt="Preview" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-1 space-y-2">
+                            <input type="file" name="image_file" accept="image/*" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#0A3E50] file:text-white hover:file:bg-[#072c39]">
+                            <input type="text" id="edit-prog-image-path" name="image_path" placeholder="Or custom image URL / relative path" class="w-full border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]">
+                        </div>
+                    </div>
+                </div>
+
                 <div class="sm:col-span-2">
                     <label class="font-bold text-slate-700 block mb-1">Programme Description</label>
                     <textarea id="edit-prog-desc" name="description" rows="2" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]"></textarea>
@@ -377,6 +417,8 @@
         document.getElementById('edit-prog-credits').value = prog.total_credits || 140;
         document.getElementById('edit-prog-desc').value = prog.description || '';
         document.getElementById('edit-prog-status').value = prog.status || 'Active';
+        document.getElementById('edit-prog-image-path').value = prog.image_path || '';
+        document.getElementById('edit-prog-preview').src = prog.image_url || '/images/courses/course_bcs.jpg';
 
         document.getElementById('edit-prog-form').action = `/curriculum/programme/${prog.id}`;
         document.getElementById('edit-prog-modal').classList.add('open');

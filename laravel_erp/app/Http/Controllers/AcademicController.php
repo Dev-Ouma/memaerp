@@ -50,11 +50,29 @@ final class AcademicController extends Controller
 
     public function storeCourse(Request $request): RedirectResponse
     {
-        Course::create($request->validate([
+        $validated = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'code' => ['required', 'string', 'max:20', 'regex:/^[A-Za-z0-9]+$/', 'unique:courses'],
+            'code' => ['required', 'string', 'max:20', 'unique:courses,code'],
             'next_student_serial' => ['required', 'integer', 'min:1', 'max:999999'],
-        ]));
+            'image_path' => ['nullable', 'string', 'max:255'],
+            'image_file' => ['nullable', 'image', 'max:5120'],
+        ]);
+
+        $imagePath = $validated['image_path'] ?? null;
+        if ($request->hasFile('image_file')) {
+            $file = $request->file('image_file');
+            $cleanCode = strtolower(str_replace(['-', ' '], ['_', '_'], trim($validated['code'])));
+            $filename = 'course_' . $cleanCode . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('images/courses'), $filename);
+            $imagePath = 'images/courses/' . $filename;
+        }
+
+        Course::create([
+            'name' => $validated['name'],
+            'code' => strtoupper($validated['code']),
+            'next_student_serial' => (int) $validated['next_student_serial'],
+            'image_path' => $imagePath,
+        ]);
 
         return back()->with('success', 'Course created.');
     }
