@@ -241,7 +241,34 @@
 
                 <div class="chart-wrapper spline-chart-wrapper">
                     <?php
-                        $maxY = 2000;
+                        $rawMax = max(array_column($trends, 'value') ?: [0]);
+                        if ($rawMax <= 10) {
+                            $maxY = 10;
+                            $yTicks = [0, 2, 4, 6, 8, 10];
+                        } elseif ($rawMax <= 25) {
+                            $maxY = 25;
+                            $yTicks = [0, 5, 10, 15, 20, 25];
+                        } elseif ($rawMax <= 50) {
+                            $maxY = 50;
+                            $yTicks = [0, 10, 20, 30, 40, 50];
+                        } elseif ($rawMax <= 100) {
+                            $maxY = 100;
+                            $yTicks = [0, 20, 40, 60, 80, 100];
+                        } elseif ($rawMax <= 150) {
+                            $maxY = 150;
+                            $yTicks = [0, 30, 60, 90, 120, 150];
+                        } elseif ($rawMax <= 250) {
+                            $maxY = 250;
+                            $yTicks = [0, 50, 100, 150, 200, 250];
+                        } elseif ($rawMax <= 500) {
+                            $maxY = 500;
+                            $yTicks = [0, 100, 200, 300, 400, 500];
+                        } else {
+                            $step = (int) max(50, ceil(($rawMax / 5) / 50) * 50);
+                            $maxY = $step * 5;
+                            $yTicks = range(0, $maxY, $step);
+                        }
+
                         $w = 780;
                         $h = 240;
                         $padX = 40;
@@ -253,8 +280,8 @@
                         $countTrends = count($trends);
                         $points = [];
                         foreach ($trends as $idx => $t) {
-                            $x = $padX + ($idx * ($chartW / ($countTrends - 1)));
-                            $y = $bottomY - (($t['value'] / $maxY) * $chartH);
+                            $x = $padX + ($idx * ($chartW / max(1, $countTrends - 1)));
+                            $y = $bottomY - (($t['value'] / max(1, $maxY)) * $chartH);
                             $points[] = ['x' => $x, 'y' => $y, 'month' => $t['month'], 'val' => $t['value']];
                         }
                         
@@ -287,8 +314,8 @@
                         </defs>
 
                         {{-- Y-Axis Gridlines & Labels --}}
-                        <?php foreach([0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000] as $yVal): ?>
-                            <?php $yPos = $bottomY - (($yVal / $maxY) * $chartH); ?>
+                        <?php foreach($yTicks as $yVal): ?>
+                            <?php $yPos = $bottomY - (($yVal / max(1, $maxY)) * $chartH); ?>
                             <line x1="{{ $padX }}" y1="{{ $yPos }}" x2="{{ $w - 20 }}" y2="{{ $yPos }}" stroke="#E2E8F0" stroke-width="1" />
                             <text x="{{ $padX - 8 }}" y="{{ $yPos + 3 }}" text-anchor="end" font-size="10" fill="#64748B">{{ $yVal }}</text>
                         <?php endforeach; ?>
@@ -369,7 +396,25 @@
 
             {{-- Bar Chart SVG --}}
             <?php
-                $progMaxY = max(1, (int) ceil(max(array_column($programmes, 'count') ?: [0]) / 10) * 10);
+                $pRawMax = max(array_column($programmes, 'count') ?: [0]);
+                if ($pRawMax <= 10) {
+                    $progMaxY = 10;
+                    $pYTicks = [0, 2, 4, 6, 8, 10];
+                } elseif ($pRawMax <= 25) {
+                    $progMaxY = 25;
+                    $pYTicks = [0, 5, 10, 15, 20, 25];
+                } elseif ($pRawMax <= 50) {
+                    $progMaxY = 50;
+                    $pYTicks = [0, 10, 20, 30, 40, 50];
+                } elseif ($pRawMax <= 100) {
+                    $progMaxY = 100;
+                    $pYTicks = [0, 20, 40, 60, 80, 100];
+                } else {
+                    $step = (int) max(10, ceil(($pRawMax / 5) / 10) * 10);
+                    $progMaxY = $step * 5;
+                    $pYTicks = range(0, $progMaxY, $step);
+                }
+
                 $pW = 920;
                 $pH = 300;
                 $pPadX = 48;
@@ -384,8 +429,8 @@
             <div class="chart-wrapper">
                 <svg class="w-full h-auto" viewBox="0 0 {{ $pW }} {{ $pH }}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Top 10 Programme Popularity bar chart">
                     {{-- Grid lines & Y labels --}}
-                    <?php foreach([0, 2000, 4000, 6000, 8000, 10000, 12000] as $yVal): ?>
-                        <?php $yPos = $pBottomY - (($yVal / $progMaxY) * $pChartH); ?>
+                    <?php foreach($pYTicks as $yVal): ?>
+                        <?php $yPos = $pBottomY - (($yVal / max(1, $progMaxY)) * $pChartH); ?>
                         <line x1="{{ $pPadX }}" y1="{{ $yPos }}" x2="{{ $pW - 20 }}" y2="{{ $yPos }}" stroke="#E2E8F0" stroke-width="1" />
                         <text x="{{ $pPadX - 8 }}" y="{{ $yPos + 3 }}" text-anchor="end" font-size="9.5" fill="#64748B">{{ $yVal }}</text>
                     <?php endforeach; ?>
@@ -676,7 +721,25 @@
 
             {{-- County Bar Chart SVG --}}
             <?php
-                $geoMaxY = max(1, (int) ceil(max(array_column($counties, 'count') ?: [0]) / 10) * 10);
+                $gRawMax = max(array_column($counties, 'count') ?: [0]);
+                if ($gRawMax <= 10) {
+                    $geoMaxY = 10;
+                    $gYTicks = [0, 2, 4, 6, 8, 10];
+                } elseif ($gRawMax <= 25) {
+                    $geoMaxY = 25;
+                    $gYTicks = [0, 5, 10, 15, 20, 25];
+                } elseif ($gRawMax <= 50) {
+                    $geoMaxY = 50;
+                    $gYTicks = [0, 10, 20, 30, 40, 50];
+                } elseif ($gRawMax <= 100) {
+                    $geoMaxY = 100;
+                    $gYTicks = [0, 20, 40, 60, 80, 100];
+                } else {
+                    $step = (int) max(10, ceil(($gRawMax / 5) / 10) * 10);
+                    $geoMaxY = $step * 5;
+                    $gYTicks = range(0, $geoMaxY, $step);
+                }
+
                 $gW = 920;
                 $gH = 260;
                 $gPadX = 48;
@@ -691,8 +754,8 @@
             <div class="chart-wrapper">
                 <svg class="w-full h-auto" viewBox="0 0 {{ $gW }} {{ $gH }}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Top 10 Counties geographical distribution chart">
                     {{-- Grid lines & Y labels --}}
-                    <?php foreach([2000, 2500, 3000, 3500] as $yVal): ?>
-                        <?php $yPos = $gBottomY - (($yVal / $geoMaxY) * $gChartH); ?>
+                    <?php foreach($gYTicks as $yVal): ?>
+                        <?php $yPos = $gBottomY - (($yVal / max(1, $geoMaxY)) * $gChartH); ?>
                         <line x1="{{ $gPadX }}" y1="{{ $yPos }}" x2="{{ $gW - 20 }}" y2="{{ $yPos }}" stroke="#E2E8F0" stroke-width="1" />
                         <text x="{{ $gPadX - 8 }}" y="{{ $yPos + 3 }}" text-anchor="end" font-size="9" fill="#64748B">{{ $yVal }}</text>
                     <?php endforeach; ?>
@@ -1165,15 +1228,42 @@
                     $tPadR = 24;
                     $tPadT = 30;
                     $tPadB = 32;
-                    $tMaxY = max(1, (int) ceil(max(array_column($enrichedTrends, 'val')) / 10) * 10);
+                    $rawTMax = max(array_column($enrichedTrends, 'val') ?: [0]);
+                    if ($rawTMax <= 10) {
+                        $tMaxY = 10;
+                        $tYTicks = [0, 2, 4, 6, 8, 10];
+                    } elseif ($rawTMax <= 25) {
+                        $tMaxY = 25;
+                        $tYTicks = [0, 5, 10, 15, 20, 25];
+                    } elseif ($rawTMax <= 50) {
+                        $tMaxY = 50;
+                        $tYTicks = [0, 10, 20, 30, 40, 50];
+                    } elseif ($rawTMax <= 100) {
+                        $tMaxY = 100;
+                        $tYTicks = [0, 20, 40, 60, 80, 100];
+                    } elseif ($rawTMax <= 150) {
+                        $tMaxY = 150;
+                        $tYTicks = [0, 30, 60, 90, 120, 150];
+                    } elseif ($rawTMax <= 250) {
+                        $tMaxY = 250;
+                        $tYTicks = [0, 50, 100, 150, 200, 250];
+                    } elseif ($rawTMax <= 500) {
+                        $tMaxY = 500;
+                        $tYTicks = [0, 100, 200, 300, 400, 500];
+                    } else {
+                        $step = (int) max(50, ceil(($rawTMax / 5) / 50) * 50);
+                        $tMaxY = $step * 5;
+                        $tYTicks = range(0, $tMaxY, $step);
+                    }
+
                     $tPlotW = $tW - $tPadL - $tPadR;
                     $tPlotH = $tH - $tPadT - $tPadB;
                     $tCount = count($enrichedTrends);
 
                     $tPoints = [];
                     foreach ($enrichedTrends as $idx => $item) {
-                        $pX = $tPadL + ($idx * ($tPlotW / ($tCount - 1)));
-                        $pY = ($tH - $tPadB) - (($item['val'] / $tMaxY) * $tPlotH);
+                        $pX = $tPadL + ($idx * ($tPlotW / max(1, $tCount - 1)));
+                        $pY = ($tH - $tPadB) - (($item['val'] / max(1, $tMaxY)) * $tPlotH);
                         $tPoints[] = array_merge($item, ['x' => $pX, 'y' => $pY]);
                     }
 
@@ -1211,8 +1301,8 @@
                         </defs>
 
                         {{-- Dotted horizontal gridlines and Y labels --}}
-                        <?php foreach ([0, 500, 1000, 1500, 2000] as $gVal): ?>
-                            <?php $gY = ($tH - $tPadB) - (($gVal / $tMaxY) * $tPlotH); ?>
+                        <?php foreach ($tYTicks as $gVal): ?>
+                            <?php $gY = ($tH - $tPadB) - (($gVal / max(1, $tMaxY)) * $tPlotH); ?>
                             <line x1="{{ $tPadL }}" y1="{{ $gY }}" x2="{{ $tW - $tPadR }}" y2="{{ $gY }}" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="3 4" />
                             <text x="{{ $tPadL - 8 }}" y="{{ $gY + 3.5 }}" text-anchor="end" font-size="9.5" fill="#94A3B8" font-family="Quicksand, sans-serif" font-weight="600">
                                 {{ $gVal >= 1000 ? ($gVal / 1000) . 'k' : $gVal }}
