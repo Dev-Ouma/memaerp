@@ -104,6 +104,22 @@
                 </div>
 
                 <button class="login-button" type="submit" data-processing-message="Signing you in securely…">Login securely <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M14 7l5 5-5 5"/></svg></button>
+                
+                {{-- Applicant Sign Up & Admissions Hub --}}
+                <div style="margin-top:24px;padding:18px;background:rgba(230,126,34,0.08);border:1px solid rgba(230,126,34,0.3);border-radius:12px;text-align:center;">
+                    <div style="font-size:14px;font-weight:700;color:#062f40;margin-bottom:6px;">New Applicant? Start Here</div>
+                    <p style="font-size:12.5px;color:#68727f;margin:0 0 12px;line-height:1.4;">Create your applicant account to apply online and track your application in real-time.</p>
+                    <a href="{{ route('register') }}" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;height:46px;background:#0A3E50;color:#ffffff;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;box-shadow:0 4px 12px rgba(10,62,80,0.15);transition:background 0.15s;">
+                        <span>Create Applicant Account / Sign Up</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </a>
+                    <div style="margin-top:12px;display:flex;justify-content:center;align-items:center;gap:14px;font-size:12px;font-weight:700;">
+                        <a href="{{ route('admissions.catalogue') }}" style="color:#0A3E50;text-decoration:none;">Explore Programmes</a>
+                        <span style="color:#d6d7d4;">•</span>
+                        <a href="{{ route('admissions.brochure') }}" target="_blank" style="color:#ff6845;text-decoration:none;">Brochure (PDF)</a>
+                    </div>
+                </div>
+
                 <div class="trust"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 4.5 6v5.5c0 4.7 3.2 7.8 7.5 9.5 4.3-1.7 7.5-4.8 7.5-9.5V6L12 3Z"/><path d="m9 12 2 2 4-4"/></svg><span>Protected access&nbsp; • &nbsp;MEMA College ERP</span></div>
             </form>
         </section>

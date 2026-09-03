@@ -62,18 +62,27 @@
                 <a href="#faqs" class="hover:text-white transition-colors">FAQs</a>
             </nav>
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2.5">
                 @auth
-                    <a href="{{ route('dashboard') }}" class="px-4 py-2 rounded-xl bg-teal-800/90 hover:bg-teal-700 text-white text-xs font-bold transition-all border border-white/20 flex items-center gap-1.5 shadow-2xs">
-                        <i data-lucide="layout-dashboard" class="w-4 h-4 text-[#E67E22]"></i> Staff ERP
-                    </a>
+                    @if(auth()->user()->role === 'applicant')
+                        <a href="{{ route('admissions.portal') }}" class="px-4 py-2 rounded-xl bg-[#1E8449] hover:bg-[#196f3d] text-white text-xs font-bold transition-all border border-white/20 flex items-center gap-1.5 shadow-2xs">
+                            <i data-lucide="file-check" class="w-4 h-4 text-amber-300"></i> My Application
+                        </a>
+                    @else
+                        <a href="{{ route('dashboard') }}" class="px-4 py-2 rounded-xl bg-teal-800/90 hover:bg-teal-700 text-white text-xs font-bold transition-all border border-white/20 flex items-center gap-1.5 shadow-2xs">
+                            <i data-lucide="layout-dashboard" class="w-4 h-4 text-[#E67E22]"></i> Staff ERP
+                        </a>
+                    @endif
                 @else
-                    <a href="{{ route('login') }}" class="px-3.5 py-2 text-xs font-bold text-teal-100 hover:text-white transition-colors flex items-center gap-1">
-                        <i data-lucide="user" class="w-3.5 h-3.5"></i> Sign In
+                    <a href="{{ route('login') }}" class="px-3 py-2 text-xs font-bold text-teal-100 hover:text-white transition-colors flex items-center gap-1">
+                        <i data-lucide="log-in" class="w-3.5 h-3.5"></i> Sign In
+                    </a>
+                    <a href="{{ route('register') }}" class="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs transition-all border border-white/20 flex items-center gap-1.5 shadow-2xs">
+                        <i data-lucide="user-plus" class="w-3.5 h-3.5 text-amber-300"></i> Sign Up
                     </a>
                 @endauth
-                <a class="px-4.5 py-2.5 rounded-xl bg-[#E67E22] hover:bg-[#d35400] text-white font-extrabold text-xs transition-all shadow-sm hover:shadow flex items-center gap-1.5" href="#programmes">
-                    <i data-lucide="compass" class="w-4 h-4"></i> Explore Catalog
+                <a class="px-4 py-2 rounded-xl bg-[#E67E22] hover:bg-[#d35400] text-white font-extrabold text-xs transition-all shadow-sm hover:shadow flex items-center gap-1.5" href="#programmes">
+                    <i data-lucide="compass" class="w-4 h-4"></i> Catalog
                 </a>
             </div>
         </div>

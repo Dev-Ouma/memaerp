@@ -42,7 +42,10 @@ Route::get('/docs/api/admission-openapi.yaml', static fn () => response()->file(
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/', [AuthController::class, 'create'])->name('login');
+    Route::get('/login', [AuthController::class, 'create']);
     Route::post('/login', [AuthController::class, 'store'])->name('login.store');
+    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+    Route::post('/register', [AuthController::class, 'register'])->name('register.store');
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 });
@@ -52,7 +55,6 @@ Route::get('/programmes/flier', [PublicAdmissionController::class, 'brochure'])-
 Route::get('/programmes', [PublicAdmissionController::class, 'catalogue']);
 Route::get('/programmes/{offering}', [PublicAdmissionController::class, 'apply']);
 Route::get('/apply', [PublicAdmissionController::class, 'catalogue']);
-Route::get('/register', [PublicAdmissionController::class, 'catalogue']);
 Route::get('/terms', [LegalController::class, 'terms'])->name('legal.terms');
 Route::get('/terms/export/pdf', [LegalController::class, 'terms'])->name('legal.terms.pdf');
 Route::get('/privacy', [LegalController::class, 'privacy'])->name('legal.privacy');

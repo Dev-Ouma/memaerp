@@ -59,6 +59,55 @@ final class AdmissionModuleTest extends TestCase
             ->assertSee('Programmes Brochure');
     }
 
+    public function test_login_page_renders_signup_options(): void
+    {
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee('Create Applicant Account / Sign Up')
+            ->assertSee(route('register'));
+    }
+
+    public function test_visitor_can_sign_up_from_register_page_and_is_directed_to_my_application(): void
+    {
+        $offering = $this->offering();
+
+        $this->get(route('register'))
+            ->assertOk()
+            ->assertSee('Create Account')
+            ->assertSee('Programme of Interest');
+
+        $response = $this->post(route('register.store'), [
+            'first_name' => 'Wanjiku',
+            'last_name' => 'Mwangi',
+            'email' => 'wanjiku.mwangi@example.test',
+            'phone' => '+254711223344',
+            'county' => 'Nairobi',
+            'programme_offering_id' => $offering->id,
+            'password' => 'SecurePass2026!',
+            'password_confirmation' => 'SecurePass2026!',
+            'terms' => '1',
+        ]);
+
+        $response->assertRedirect(route('admissions.portal'));
+        $this->assertAuthenticated();
+
+        $user = \App\Models\User::where('email', 'wanjiku.mwangi@example.test')->first();
+        $this->assertNotNull($user);
+        $this->assertEquals('applicant', $user->role);
+        $this->assertNotNull($user->applicantProfile);
+        $this->assertDatabaseHas('admission_applications', [
+            'applicant_profile_id' => $user->applicantProfile->id,
+            'programme_offering_id' => $offering->id,
+            'status' => 'DRAFT',
+        ]);
+
+        // Access /admissions/my-application directly
+        $this->get(route('admissions.portal'))
+            ->assertOk()
+            ->assertSee('REF:')
+            ->assertSee('DRAFT');
+    }
+
     public function test_submission_is_payment_gated_and_creates_one_immutable_snapshot(): void
     {
         [$user, $application] = $this->application();

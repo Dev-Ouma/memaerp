@@ -6,15 +6,21 @@ namespace App\Http\Controllers;
 
 use App\Models\Admission\AdminSetupDefinition;
 use App\Models\Admission\AdminSetupVersion;
+use App\Models\AdmissionApplication;
+use App\Models\ApplicantProfile;
 use App\Models\LoginActivity;
+use App\Models\ProgrammeOffering;
 use App\Models\User;
 use App\Models\UserTrustedDevice;
+use App\Modules\Platform\Numbering\NumberGenerator;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 final class AuthController extends Controller
@@ -24,6 +30,78 @@ final class AuthController extends Controller
         return view('auth.login', [
             'demoEmail' => app()->environment('local') ? 'admin@mema.ac.ke' : null,
         ]);
+    }
+
+    public function showRegister(Request $request): View
+    {
+        $offerings = ProgrammeOffering::with(['course', 'intake'])
+            ->where('is_published', true)
+            ->get();
+
+        $selectedOfferingId = $request->query('offering');
+
+        return view('auth.register', compact('offerings', 'selectedOfferingId'));
+    }
+
+    public function register(Request $request, NumberGenerator $numbers): RedirectResponse
+    {
+        $data = $request->validate([
+            'first_name' => ['required', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['required', 'string', 'max:32'],
+            'county' => ['nullable', 'string', 'max:100'],
+            'programme_offering_id' => ['nullable', 'exists:programme_offerings,id'],
+            'password' => ['required', 'confirmed', Password::min(10)->mixedCase()->numbers()],
+            'terms' => ['accepted'],
+        ]);
+
+        [$user, $application] = DB::transaction(function () use ($data, $numbers) {
+            $user = User::create([
+                'name' => $data['first_name'] . ' ' . $data['last_name'],
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'email' => strtolower($data['email']),
+                'password' => $data['password'],
+                'role' => 'applicant',
+                'is_active' => true,
+            ]);
+
+            $profile = ApplicantProfile::create([
+                'user_id' => $user->id,
+                'applicant_number' => $numbers->applicantNumber(),
+                'phone' => $data['phone'],
+                'county' => $data['county'] ?? null,
+                'qr_token' => Str::random(48),
+            ]);
+
+            $application = null;
+            if (!empty($data['programme_offering_id'])) {
+                $offering = ProgrammeOffering::with('intake')->find($data['programme_offering_id']);
+                if ($offering) {
+                    $intakeToken = strtoupper(str_replace('-', '', $offering->intake->code ?? 'SEP2026'));
+                    $application = AdmissionApplication::create([
+                        'applicant_profile_id' => $profile->id,
+                        'programme_offering_id' => $offering->id,
+                        'application_number' => $numbers->applicationNumber($intakeToken),
+                        'form_data' => [],
+                    ]);
+                    $application->histories()->create([
+                        'to_status' => 'DRAFT',
+                        'actor_user_id' => $user->id,
+                        'reason_code' => 'account_created',
+                        'created_at' => now(),
+                    ]);
+                }
+            }
+
+            return [$user, $application];
+        });
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect()->route('admissions.portal')->with('success', "Welcome to MEMA College & University. Your applicant account ({$user->applicantProfile->applicant_number}) has been created successfully. Proceed to complete your application below.");
     }
 
     public function store(Request $request): RedirectResponse
