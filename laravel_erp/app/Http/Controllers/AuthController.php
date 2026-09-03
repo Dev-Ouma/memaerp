@@ -46,22 +46,40 @@ final class AuthController extends Controller
     public function register(Request $request, NumberGenerator $numbers): RedirectResponse
     {
         $data = $request->validate([
-            'first_name' => ['required', 'string', 'max:100'],
-            'last_name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['required', 'string', 'max:32'],
+            'first_name' => ['required', 'string', 'min:2', 'max:60', 'regex:/^[a-zA-Z\s\'-]+$/'],
+            'last_name' => ['required', 'string', 'min:2', 'max:60', 'regex:/^[a-zA-Z\s\'-]+$/'],
+            'email' => ['required', 'string', 'email:filter', 'max:255', 'unique:users,email'],
+            'phone' => ['required', 'string', 'regex:/^(\+?254|0)[17]\d{8}$/'],
             'county' => ['nullable', 'string', 'max:100'],
             'programme_offering_id' => ['nullable', 'exists:programme_offerings,id'],
-            'password' => ['required', 'confirmed', Password::min(10)->mixedCase()->numbers()],
+            'password' => ['required', 'string', 'confirmed', Password::min(10)->mixedCase()->letters()->numbers()],
             'terms' => ['accepted'],
+            'website_trap' => ['nullable', 'max:0'],
+        ], [
+            'first_name.regex' => 'First name may only contain letters, spaces, hyphens, and apostrophes.',
+            'last_name.regex' => 'Last name may only contain letters, spaces, hyphens, and apostrophes.',
+            'email.email' => 'Please provide a valid email address.',
+            'phone.regex' => 'Please enter a valid Kenyan phone number (e.g. +254712345678, 0712345678, or 0113636154).',
+            'password.min' => 'Password must contain at least 10 characters.',
+            'terms.accepted' => 'You must accept the Terms of Admission and Privacy Policy to proceed.',
+            'website_trap.max' => 'Spam bot submission detected.',
         ]);
 
-        [$user, $application] = DB::transaction(function () use ($data, $numbers) {
+        $rawPhone = preg_replace('/\s+/', '', (string) $data['phone']);
+        if (str_starts_with($rawPhone, '0')) {
+            $normalizedPhone = '+254'.substr($rawPhone, 1);
+        } elseif (str_starts_with($rawPhone, '254')) {
+            $normalizedPhone = '+'.$rawPhone;
+        } else {
+            $normalizedPhone = $rawPhone;
+        }
+
+        [$user, $application] = DB::transaction(function () use ($data, $normalizedPhone, $numbers) {
             $user = User::create([
-                'name' => $data['first_name'] . ' ' . $data['last_name'],
-                'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'email' => strtolower($data['email']),
+                'name' => trim($data['first_name'] . ' ' . $data['last_name']),
+                'first_name' => trim($data['first_name']),
+                'last_name' => trim($data['last_name']),
+                'email' => strtolower(trim($data['email'])),
                 'password' => $data['password'],
                 'role' => 'applicant',
                 'is_active' => true,
@@ -70,7 +88,7 @@ final class AuthController extends Controller
             $profile = ApplicantProfile::create([
                 'user_id' => $user->id,
                 'applicant_number' => $numbers->applicantNumber(),
-                'phone' => $data['phone'],
+                'phone' => $normalizedPhone,
                 'county' => $data['county'] ?? null,
                 'qr_token' => Str::random(48),
             ]);

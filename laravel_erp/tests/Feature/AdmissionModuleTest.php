@@ -108,6 +108,54 @@ final class AdmissionModuleTest extends TestCase
             ->assertSee('DRAFT');
     }
 
+    public function test_registration_high_level_validation_rules_reject_invalid_inputs_and_bots(): void
+    {
+        // 1. Invalid names with numbers/symbols
+        $this->post(route('register.store'), [
+            'first_name' => 'John123',
+            'last_name' => 'Doe<script>',
+            'email' => 'valid@example.test',
+            'phone' => '+254712345678',
+            'password' => 'SecurePass2026!',
+            'password_confirmation' => 'SecurePass2026!',
+            'terms' => '1',
+        ])->assertSessionHasErrors(['first_name', 'last_name']);
+
+        // 2. Invalid phone format
+        $this->post(route('register.store'), [
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'email' => 'valid2@example.test',
+            'phone' => '12345',
+            'password' => 'SecurePass2026!',
+            'password_confirmation' => 'SecurePass2026!',
+            'terms' => '1',
+        ])->assertSessionHasErrors(['phone']);
+
+        // 3. Weak / non-matching password
+        $this->post(route('register.store'), [
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'email' => 'valid3@example.test',
+            'phone' => '+254712345678',
+            'password' => 'weak',
+            'password_confirmation' => 'mismatch',
+            'terms' => '1',
+        ])->assertSessionHasErrors(['password']);
+
+        // 4. Bot trapped in honeypot
+        $this->post(route('register.store'), [
+            'first_name' => 'Bot',
+            'last_name' => 'User',
+            'email' => 'bot@example.test',
+            'phone' => '+254712345678',
+            'password' => 'SecurePass2026!',
+            'password_confirmation' => 'SecurePass2026!',
+            'terms' => '1',
+            'website_trap' => 'http://spam-link.com',
+        ])->assertSessionHasErrors(['website_trap']);
+    }
+
     public function test_submission_is_payment_gated_and_creates_one_immutable_snapshot(): void
     {
         [$user, $application] = $this->application();

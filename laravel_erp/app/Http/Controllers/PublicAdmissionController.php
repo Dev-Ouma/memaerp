@@ -45,20 +45,69 @@ final class PublicAdmissionController extends Controller
 
     public function register(Request $request, ProgrammeOffering $offering, NumberGenerator $numbers): RedirectResponse
     {
-        $data = $request->validate(['first_name' => ['required', 'string', 'max:100'], 'last_name' => ['required', 'string', 'max:100'], 'email' => ['required', 'email', 'max:255', 'unique:users,email'], 'phone' => ['required', 'string', 'max:32'], 'password' => ['required', 'confirmed', Password::min(10)->mixedCase()->numbers()], 'terms' => ['accepted']]);
-        [$user,$application] = DB::transaction(function () use ($data, $offering, $numbers) {
-            $user = User::create(['name' => $data['first_name'].' '.$data['last_name'], 'first_name' => $data['first_name'], 'last_name' => $data['last_name'], 'email' => strtolower($data['email']), 'password' => $data['password'], 'role' => 'applicant', 'is_active' => true]);
-            $intakeToken = strtoupper(str_replace('-', '', $offering->intake->code));
-            $profile = ApplicantProfile::create(['user_id' => $user->id, 'applicant_number' => $numbers->applicantNumber(), 'phone' => $data['phone'], 'qr_token' => Str::random(48)]);
-            $application = AdmissionApplication::create(['applicant_profile_id' => $profile->id, 'programme_offering_id' => $offering->id, 'application_number' => $numbers->applicationNumber($intakeToken), 'form_data' => []]);
-            $application->histories()->create(['to_status' => 'DRAFT', 'actor_user_id' => $user->id, 'reason_code' => 'account_created', 'created_at' => now()]);
+        $data = $request->validate([
+            'first_name' => ['required', 'string', 'min:2', 'max:60', 'regex:/^[a-zA-Z\s\'-]+$/'],
+            'last_name' => ['required', 'string', 'min:2', 'max:60', 'regex:/^[a-zA-Z\s\'-]+$/'],
+            'email' => ['required', 'string', 'email:filter', 'max:255', 'unique:users,email'],
+            'phone' => ['required', 'string', 'regex:/^(\+?254|0)[17]\d{8}$/'],
+            'county' => ['nullable', 'string', 'max:100'],
+            'password' => ['required', 'string', 'confirmed', Password::min(10)->mixedCase()->letters()->numbers()],
+            'terms' => ['accepted'],
+        ], [
+            'first_name.regex' => 'First name may only contain letters, spaces, hyphens, and apostrophes.',
+            'last_name.regex' => 'Last name may only contain letters, spaces, hyphens, and apostrophes.',
+            'email.email' => 'Please provide a valid email address.',
+            'phone.regex' => 'Please enter a valid Kenyan phone number (e.g. +254712345678, 0712345678, or 0113636154).',
+            'password.min' => 'Password must contain at least 10 characters.',
+            'terms.accepted' => 'You must accept the Terms of Admission and Privacy Policy.',
+        ]);
+
+        $rawPhone = preg_replace('/\s+/', '', (string) $data['phone']);
+        if (str_starts_with($rawPhone, '0')) {
+            $normalizedPhone = '+254'.substr($rawPhone, 1);
+        } elseif (str_starts_with($rawPhone, '254')) {
+            $normalizedPhone = '+'.$rawPhone;
+        } else {
+            $normalizedPhone = $rawPhone;
+        }
+
+        [$user, $application] = DB::transaction(function () use ($data, $normalizedPhone, $offering, $numbers) {
+            $user = User::create([
+                'name' => trim($data['first_name'].' '.$data['last_name']),
+                'first_name' => trim($data['first_name']),
+                'last_name' => trim($data['last_name']),
+                'email' => strtolower(trim($data['email'])),
+                'password' => $data['password'],
+                'role' => 'applicant',
+                'is_active' => true,
+            ]);
+            $intakeToken = strtoupper(str_replace('-', '', $offering->intake->code ?? 'SEP2026'));
+            $profile = ApplicantProfile::create([
+                'user_id' => $user->id,
+                'applicant_number' => $numbers->applicantNumber(),
+                'phone' => $normalizedPhone,
+                'county' => $data['county'] ?? null,
+                'qr_token' => Str::random(48),
+            ]);
+            $application = AdmissionApplication::create([
+                'applicant_profile_id' => $profile->id,
+                'programme_offering_id' => $offering->id,
+                'application_number' => $numbers->applicationNumber($intakeToken),
+                'form_data' => [],
+            ]);
+            $application->histories()->create([
+                'to_status' => 'DRAFT',
+                'actor_user_id' => $user->id,
+                'reason_code' => 'account_created',
+                'created_at' => now(),
+            ]);
 
             return [$user, $application];
         });
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('admissions.portal')->with('success', "Welcome. Your applicant number is {$user->applicantProfile->applicant_number}.");
+        return redirect()->route('admissions.portal')->with('success', "Welcome to MEMA College & University. Your applicant number is {$user->applicantProfile->applicant_number}.");
     }
 
     public function verify(string $token): View

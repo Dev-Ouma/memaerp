@@ -26,20 +26,37 @@
         .highlight-item { display:flex; align-items:center; gap:10px; }
         .highlight-icon { width:20px; height:20px; color:var(--gold); flex-shrink:0; }
         .auth-panel { display:grid; place-items:center; padding:48px clamp(24px,5vw,80px); background:radial-gradient(circle at 36% 18%,#fff 0,transparent 34%),linear-gradient(135deg,#fbfaf6,#f6f2e9); }
-        .auth-card { width:min(100%,680px); padding:44px 52px 38px; border:1px solid rgb(215 168 79 / 55%); border-radius:20px; background:rgb(255 255 255 / 75%); box-shadow:0 22px 58px rgb(37 47 53 / 10%); backdrop-filter:blur(10px); }
+        .auth-card { width:min(100%,680px); padding:44px 52px 38px; border:1px solid rgb(215 168 79 / 55%); border-radius:20px; background:rgb(255 255 255 / 80%); box-shadow:0 22px 58px rgb(37 47 53 / 10%); backdrop-filter:blur(10px); }
         .card-accent { width:45px; height:2px; margin-bottom:16px; background:var(--gold); }
         .auth-card h2 { margin:0; font:700 clamp(32px,3.5vw,44px)/1.1 var(--font-system,'Quicksand','Nunito','Book Antiqua',sans-serif); color:var(--ink); }
         .subtitle { margin:10px 0 28px; color:var(--muted); font-size:16px; }
         .form-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
-        .field { margin-bottom:20px; }
+        .field { margin-bottom:20px; position:relative; }
         .field label { display:block; margin-bottom:7px; font-size:13.5px; font-weight:700; color:var(--ink); }
         .input-shell { position:relative; }
         .input-shell input, .input-shell select { width:100%; height:54px; padding:0 18px 0 52px; border:1px solid var(--line); border-radius:10px; outline:none; color:var(--ink); background:rgb(255 255 255 / 70%); font-family:inherit; font-size:15px; font-weight:600; line-height:1; transition:border-color .18s,box-shadow .18s,background .18s; }
         .input-shell input:focus, .input-shell select:focus { border-color:#1a778b; background:#fff; box-shadow:0 0 0 3px rgb(26 119 139 / 12%); }
+        .input-shell input.is-invalid { border-color:#e53e3e; }
+        .input-shell input.is-valid { border-color:#38a169; }
         .field-icon { position:absolute; left:0; top:0; width:48px; height:54px; display:grid; place-items:center; border-right:1px solid #edf0ef; color:#7b838c; pointer-events:none; }
         .field-icon svg { width:20px; height:20px; }
         .error { margin:6px 2px 0; color:#a43d35; font-size:12px; font-weight:600; }
-        .terms-row { margin:8px 0 24px; font-size:13px; color:var(--muted); }
+        
+        /* Password Checklist & Strength */
+        .pwd-strength-container { margin-top:8px; }
+        .pwd-strength-bar { height:5px; border-radius:3px; background:#e2e8f0; overflow:hidden; display:flex; gap:3px; }
+        .pwd-strength-seg { flex:1; height:100%; transition:background-color .3s; }
+        .pwd-rules-list { margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11.5px; font-weight:600; color:#64748b; }
+        .pwd-rule-item { display:flex; align-items:center; gap:5px; }
+        .pwd-rule-item.valid { color:#16a34a; }
+        .pwd-rule-item.valid svg { color:#16a34a; }
+        .pwd-match-badge { display:none; margin-top:6px; font-size:12px; font-weight:700; align-items:center; gap:4px; }
+        
+        /* Paste Prevention Notice */
+        .no-paste-toast { display:none; margin-top:6px; padding:6px 10px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; font-size:11.5px; font-weight:700; color:#dc2626; animation:shake 0.3s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform:translateX(0); } 20%, 60% { transform:translateX(-4px); } 40%, 80% { transform:translateX(4px); } }
+
+        .terms-row { margin:12px 0 24px; font-size:13px; color:var(--muted); }
         .terms-row label { display:flex; align-items:flex-start; gap:10px; cursor:pointer; }
         .terms-row input { margin-top:2px; width:18px; height:18px; accent-color:#08758b; }
         .terms-row a { color:#08758b; font-weight:700; text-decoration:none; }
@@ -87,8 +104,12 @@
 
         {{-- Right Registration Form Panel --}}
         <section class="auth-panel">
-            <form class="auth-card" method="post" action="{{ route('register.store') }}">
+            <form class="auth-card" method="post" action="{{ route('register.store') }}" id="register-form" novalidate>
                 @csrf
+                
+                {{-- Anti-Bot Honeypot field (hidden from legitimate users) --}}
+                <input type="text" name="website_trap" style="display:none !important; position:absolute; left:-9999px;" tabindex="-1" autocomplete="off">
+
                 <div class="card-accent"></div>
                 <h2>Create Account</h2>
                 <p class="subtitle">Sign up to apply and access your Admissions Portal</p>
@@ -109,7 +130,7 @@
                         <label for="first_name">First Name *</label>
                         <div class="input-shell">
                             <span class="field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-                            <input id="first_name" type="text" name="first_name" value="{{ old('first_name') }}" required autofocus placeholder="e.g. Amina">
+                            <input id="first_name" type="text" name="first_name" value="{{ old('first_name') }}" required autofocus placeholder="e.g. Amina" pattern="[A-Za-z\s'\-]{2,60}">
                         </div>
                         @error('first_name')<div class="error">{{ $message }}</div>@enderror
                     </div>
@@ -118,7 +139,7 @@
                         <label for="last_name">Last Name / Surname *</label>
                         <div class="input-shell">
                             <span class="field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-                            <input id="last_name" type="text" name="last_name" value="{{ old('last_name') }}" required placeholder="e.g. Njeri">
+                            <input id="last_name" type="text" name="last_name" value="{{ old('last_name') }}" required placeholder="e.g. Njeri" pattern="[A-Za-z\s'\-]{2,60}">
                         </div>
                         @error('last_name')<div class="error">{{ $message }}</div>@enderror
                     </div>
@@ -144,36 +165,95 @@
                     </div>
                 </div>
 
-                <div class="field">
-                    <label for="programme_offering_id">Programme of Interest (Optional)</label>
-                    <div class="input-shell">
-                        <span class="field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
-                        <select id="programme_offering_id" name="programme_offering_id">
-                            <option value="">-- Choose Programme (or select later inside portal) --</option>
-                            @foreach($offerings as $off)
-                                <option value="{{ $off->id }}" {{ (string)old('programme_offering_id', $selectedOfferingId ?? '') === (string)$off->id ? 'selected' : '' }}>
-                                    {{ $off->course->code ?? '' }} - {{ $off->course->name ?? '' }} ({{ $off->campus ?? 'Main' }} • {{ $off->study_mode ?? 'Full-time' }})
-                                </option>
-                            @endforeach
-                        </select>
+                <div class="form-grid-2">
+                    <div class="field">
+                        <label for="county">County of Residence</label>
+                        <div class="input-shell">
+                            <span class="field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+                            <select id="county" name="county">
+                                <option value="">Select County</option>
+                                @foreach(['Baringo','Bomet','Bungoma','Busia','Elgeyo-Marakwet','Embu','Garissa','Homa Bay','Isiolo','Kajiado','Kakamega','Kericho','Kiambu','Kilifi','Kirinyaga','Kisii','Kisumu','Kitui','Kwale','Laikipia','Lamu','Machakos','Makueni','Mandera','Marsabit','Meru','Migori','Mombasa','Murang’a','Nairobi','Nakuru','Nandi','Narok','Nyamira','Nyandarua','Nyeri','Samburu','Siaya','Taita-Taveta','Tana River','Tharaka-Nithi','Trans Nzoia','Turkana','Uasin Gishu','Vihiga','Wajir','West Pokot','Other / International'] as $c)
+                                    <option value="{{ $c }}" {{ old('county') === $c ? 'selected' : '' }}>{{ $c }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="programme_offering_id">Programme of Interest (Optional)</label>
+                        <div class="input-shell">
+                            <span class="field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+                            <select id="programme_offering_id" name="programme_offering_id">
+                                <option value="">-- Choose Programme (or select later) --</option>
+                                @foreach($offerings as $off)
+                                    <option value="{{ $off->id }}" {{ (string)old('programme_offering_id', $selectedOfferingId ?? '') === (string)$off->id ? 'selected' : '' }}>
+                                        {{ $off->course->code ?? '' }} - {{ $off->course->name ?? '' }} ({{ $off->campus ?? 'Main' }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
                 </div>
 
+                {{-- Password & Manual-Type Confirm Password Section --}}
                 <div class="form-grid-2">
                     <div class="field">
-                        <label for="password">Password (min 10 characters) *</label>
+                        <label for="password">Password (min 10 chars) *</label>
                         <div class="input-shell">
                             <span class="field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
                             <input id="password" type="password" name="password" required placeholder="••••••••••" autocomplete="new-password">
                         </div>
                         @error('password')<div class="error">{{ $message }}</div>@enderror
+
+                        {{-- Real-time Strength Meter --}}
+                        <div class="pwd-strength-container">
+                            <div class="pwd-strength-bar">
+                                <div class="pwd-strength-seg" id="p-seg-1"></div>
+                                <div class="pwd-strength-seg" id="p-seg-2"></div>
+                                <div class="pwd-strength-seg" id="p-seg-3"></div>
+                                <div class="pwd-strength-seg" id="p-seg-4"></div>
+                            </div>
+                            <div class="pwd-rules-list">
+                                <span class="pwd-rule-item" id="rule-len">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/></svg>
+                                    10+ Characters
+                                </span>
+                                <span class="pwd-rule-item" id="rule-case">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/></svg>
+                                    Upper &amp; Lowercase
+                                </span>
+                                <span class="pwd-rule-item" id="rule-num">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/></svg>
+                                    At least 1 Number
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="field">
-                        <label for="password_confirmation">Confirm Password *</label>
+                        <label for="password_confirmation">Confirm Password (Type Manually) *</label>
                         <div class="input-shell">
                             <span class="field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
-                            <input id="password_confirmation" type="password" name="password_confirmation" required placeholder="••••••••••" autocomplete="new-password">
+                            <input id="password_confirmation" 
+                                   type="password" 
+                                   name="password_confirmation" 
+                                   required 
+                                   placeholder="Type confirmation manually" 
+                                   autocomplete="off"
+                                   onpaste="handlePasteBlocked(event)"
+                                   ondrop="handlePasteBlocked(event)"
+                                   oncontextmenu="handlePasteBlocked(event)">
+                        </div>
+
+                        {{-- Paste Blocked Notice --}}
+                        <div id="paste-notice" class="no-paste-toast" role="alert">
+                            ⚠️ Pasting is disabled. For security, please type your confirmation password manually.
+                        </div>
+
+                        {{-- Match Indicator --}}
+                        <div id="pwd-match-badge" class="pwd-match-badge">
+                            <span id="pwd-match-icon"></span>
+                            <span id="pwd-match-text"></span>
                         </div>
                     </div>
                 </div>
@@ -185,7 +265,7 @@
                     </label>
                 </div>
 
-                <button class="submit-button" type="submit">
+                <button class="submit-button" type="submit" id="submit-btn">
                     <span>Create Account &amp; Proceed to Application</span>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                 </button>
@@ -201,5 +281,104 @@
             </form>
         </section>
     </main>
+
+    {{-- Interactive Security & Paste-Blocking Scripts --}}
+    <script>
+        const pwdInput = document.getElementById('password');
+        const pwdConfInput = document.getElementById('password_confirmation');
+        const pasteNotice = document.getElementById('paste-notice');
+        const matchBadge = document.getElementById('pwd-match-badge');
+        const matchText = document.getElementById('pwd-match-text');
+        const matchIcon = document.getElementById('pwd-match-icon');
+
+        const seg1 = document.getElementById('p-seg-1');
+        const seg2 = document.getElementById('p-seg-2');
+        const seg3 = document.getElementById('p-seg-3');
+        const seg4 = document.getElementById('p-seg-4');
+
+        const ruleLen = document.getElementById('rule-len');
+        const ruleCase = document.getElementById('rule-case');
+        const ruleNum = document.getElementById('rule-num');
+
+        // Paste prevention handler
+        function handlePasteBlocked(e) {
+            if (e.type === 'contextmenu') return; // let context menu show if desired, but block paste
+            e.preventDefault();
+            if (pasteNotice) {
+                pasteNotice.style.display = 'block';
+                setTimeout(() => {
+                    pasteNotice.style.display = 'none';
+                }, 4000);
+            }
+            return false;
+        }
+
+        // Additional explicit event listener binding
+        pwdConfInput?.addEventListener('paste', handlePasteBlocked);
+        pwdConfInput?.addEventListener('drop', handlePasteBlocked);
+
+        // Real-time password criteria & strength checking
+        function validatePassword() {
+            const val = pwdInput.value || '';
+            const confVal = pwdConfInput.value || '';
+
+            const hasLen = val.length >= 10;
+            const hasCase = /[a-z]/.test(val) && /[A-Z]/.test(val);
+            const hasNum = /[0-9]/.test(val);
+            const hasSpecial = /[^A-Za-z0-9]/.test(val);
+
+            // Update rule items
+            updateRule(ruleLen, hasLen);
+            updateRule(ruleCase, hasCase);
+            updateRule(ruleNum, hasNum);
+
+            // Calculate score (0-4)
+            let score = 0;
+            if (val.length >= 8) score++;
+            if (hasLen) score++;
+            if (hasCase && hasNum) score++;
+            if (hasSpecial && hasLen) score++;
+
+            // Update strength bar segments
+            const colors = ['#e2e8f0', '#ef4444', '#f59e0b', '#10b981', '#059669'];
+            seg1.style.backgroundColor = score >= 1 ? (score === 1 ? '#ef4444' : (score === 2 ? '#f59e0b' : '#10b981')) : '#e2e8f0';
+            seg2.style.backgroundColor = score >= 2 ? (score === 2 ? '#f59e0b' : '#10b981') : '#e2e8f0';
+            seg3.style.backgroundColor = score >= 3 ? '#10b981' : '#e2e8f0';
+            seg4.style.backgroundColor = score >= 4 ? '#059669' : '#e2e8f0';
+
+            // Match confirmation checking
+            if (confVal.length > 0) {
+                matchBadge.style.display = 'flex';
+                if (val === confVal) {
+                    matchBadge.style.color = '#16a34a';
+                    matchText.textContent = '✓ Passwords match';
+                    pwdConfInput.classList.remove('is-invalid');
+                    pwdConfInput.classList.add('is-valid');
+                } else {
+                    matchBadge.style.color = '#dc2626';
+                    matchText.textContent = '✗ Passwords do not match';
+                    pwdConfInput.classList.remove('is-valid');
+                    pwdConfInput.classList.add('is-invalid');
+                }
+            } else {
+                matchBadge.style.display = 'none';
+                pwdConfInput.classList.remove('is-valid', 'is-invalid');
+            }
+        }
+
+        function updateRule(element, isValid) {
+            if (!element) return;
+            if (isValid) {
+                element.classList.add('valid');
+                element.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> ' + element.textContent.trim();
+            } else {
+                element.classList.remove('valid');
+                element.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/></svg> ' + element.textContent.trim();
+            }
+        }
+
+        pwdInput?.addEventListener('input', validatePassword);
+        pwdConfInput?.addEventListener('input', validatePassword);
+    </script>
 </body>
 </html>
