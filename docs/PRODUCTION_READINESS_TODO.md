@@ -547,4 +547,4 @@ php artisan up
 ---
 
 *Document Version: 1.1.0 (Production Release & Architecture Spec)*  
-*Maintained by: MEMA University College ICT & Systems Engineering Team*
+*Maintained by: STACKed Technologies*
