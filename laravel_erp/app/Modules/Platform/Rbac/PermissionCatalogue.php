@@ -284,6 +284,12 @@ final class PermissionCatalogue
                 'default_scope_type' => 'institution',
                 'permissions' => ['graduation.manage'],
             ],
+            'student_affairs_officer' => [
+                'name' => 'Student Affairs Officer',
+                'description' => 'Manages work-study periods, positions, allocations and claims.',
+                'default_scope_type' => 'institution',
+                'permissions' => ['student_affairs.manage'],
+            ],
             'auditor' => [
                 'name' => 'Auditor',
                 'description' => 'Read-only oversight across the module.',

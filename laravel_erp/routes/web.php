@@ -371,11 +371,17 @@ Route::middleware('auth')->group(function (): void {
     Route::prefix('work-study')->middleware('module:student-affairs')->name('work-study.')->group(function (): void {
         Route::get('/', [WorkStudyController::class, 'periodSetup'])->name('index');
         Route::get('/period-setup', [WorkStudyController::class, 'periodSetup'])->name('period-setup');
+        Route::post('/period-setup', [WorkStudyController::class, 'storePeriodSetup'])->name('period-setup.store');
         Route::get('/positions', [WorkStudyController::class, 'positions'])->name('positions');
+        Route::post('/positions', [WorkStudyController::class, 'storePositions'])->name('positions.store');
         Route::get('/applications', [WorkStudyController::class, 'applications'])->name('applications');
+        Route::post('/applications', [WorkStudyController::class, 'storeApplications'])->name('applications.store');
         Route::get('/allocations', [WorkStudyController::class, 'allocations'])->name('allocations');
+        Route::post('/allocations', [WorkStudyController::class, 'storeAllocations'])->name('allocations.store');
         Route::get('/timesheets', [WorkStudyController::class, 'timesheets'])->name('timesheets');
+        Route::post('/timesheets', [WorkStudyController::class, 'storeTimesheets'])->name('timesheets.store');
         Route::get('/claims', [WorkStudyController::class, 'claims'])->name('claims');
+        Route::post('/claims', [WorkStudyController::class, 'storeClaims'])->name('claims.store');
     });
 
     // Imprest Management Module Routes (Start-to-End Lifecycle)
@@ -614,17 +620,28 @@ Route::middleware('auth')->group(function (): void {
     // Service Providers Module Routes (Start-to-End Operational Lifecycle)
     Route::prefix('service-providers')->middleware('module:service-providers')->name('service-providers.')->group(function (): void {
         Route::get('/taxes', [ServiceProvidersController::class, 'taxes'])->name('taxes');
+        Route::post('/taxes', [ServiceProvidersController::class, 'storeTaxes'])->name('taxes.store');
         Route::get('/items', [ServiceProvidersController::class, 'items'])->name('items');
+        Route::post('/items', [ServiceProvidersController::class, 'storeItems'])->name('items.store');
         Route::get('/provider-groups', [ServiceProvidersController::class, 'providerGroups'])->name('provider-groups');
+        Route::post('/provider-groups', [ServiceProvidersController::class, 'storeProviderGroups'])->name('provider-groups.store');
         Route::get('/', [ServiceProvidersController::class, 'providers'])->name('index');
         Route::get('/providers', [ServiceProvidersController::class, 'providers'])->name('providers');
+        Route::post('/providers', [ServiceProvidersController::class, 'storeProviders'])->name('providers.store');
         Route::get('/vendor-approval', [ServiceProvidersController::class, 'vendorApproval'])->name('vendor-approval');
+        Route::post('/vendor-approval', [ServiceProvidersController::class, 'storeVendorApproval'])->name('vendor-approval.store');
         Route::get('/invoice-permissions', [ServiceProvidersController::class, 'invoicePermissions'])->name('invoice-permissions');
+        Route::post('/invoice-permissions', [ServiceProvidersController::class, 'storeInvoicePermissions'])->name('invoice-permissions.store');
         Route::get('/bills', [ServiceProvidersController::class, 'bills'])->name('bills');
+        Route::post('/bills', [ServiceProvidersController::class, 'storeBills'])->name('bills.store');
         Route::get('/payment-permissions', [ServiceProvidersController::class, 'paymentPermissions'])->name('payment-permissions');
+        Route::post('/payment-permissions', [ServiceProvidersController::class, 'storePaymentPermissions'])->name('payment-permissions.store');
         Route::get('/payments', [ServiceProvidersController::class, 'payments'])->name('payments');
+        Route::post('/payments', [ServiceProvidersController::class, 'storePayments'])->name('payments.store');
         Route::get('/debit-notes', [ServiceProvidersController::class, 'debitNotes'])->name('debit-notes');
+        Route::post('/debit-notes', [ServiceProvidersController::class, 'storeDebitNotes'])->name('debit-notes.store');
         Route::get('/credit-notes', [ServiceProvidersController::class, 'creditNotes'])->name('credit-notes');
+        Route::post('/credit-notes', [ServiceProvidersController::class, 'storeCreditNotes'])->name('credit-notes.store');
     });
 
     // Budgeting and Planning Module Routes (Start-to-End Operational Lifecycle)

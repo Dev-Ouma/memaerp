@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\AdmissionApplication;
-use App\Models\ModuleRecord;
+use App\Models\GraduationCriterion;
 use App\Models\Staff;
 use App\Models\Student;
 use App\Services\AdmissionReportService;
@@ -93,7 +93,7 @@ final class ReportsController extends Controller
             'totalEnrollment' => $students,
             'clearedRatio' => $applications > 0 ? round(($cleared / $applications) * 100, 1).'%' : '0%',
             'retentionRate' => $staff > 0 ? round(($staff / max(1, $staff)) * 100, 1).'%' : '0%',
-            'graduationAccuracy' => ModuleRecord::query()->where('module', 'graduation')->count().' DB records',
+            'graduationAccuracy' => GraduationCriterion::query()->count().' criteria rules',
         ];
 
         return view('reports.advanced-analytics', compact('stats'));

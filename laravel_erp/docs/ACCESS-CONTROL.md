@@ -128,3 +128,30 @@ Imprest desk domain (not `module_records`; requires `imprest.manage`, e.g. `fina
 | Requisition | `POST imprest/requisitions` |
 | Surrender | `POST imprest/surrenders` |
 | Audit ledger | `POST imprest/audit-ledger` |
+
+Work-study desk domain (not `module_records`; requires `student_affairs.manage`):
+
+| Action | Route |
+|---|---|
+| Period | `POST work-study/period-setup` |
+| Position | `POST work-study/positions` |
+| Application | `POST work-study/applications` |
+| Allocation | `POST work-study/allocations` |
+| Timesheet | `POST work-study/timesheets` |
+| Claim | `POST work-study/claims` |
+
+Service providers desk domain (not `module_records`; requires `service_providers.manage`):
+
+| Action | Route |
+|---|---|
+| Tax | `POST service-providers/taxes` |
+| Item | `POST service-providers/items` |
+| Provider group | `POST service-providers/provider-groups` |
+| Provider | `POST service-providers/providers` |
+| Vendor approval | `POST service-providers/vendor-approval` |
+| Invoice permission | `POST service-providers/invoice-permissions` |
+| Bill | `POST service-providers/bills` |
+| Payment permission | `POST service-providers/payment-permissions` |
+| Payment | `POST service-providers/payments` |
+| Debit note | `POST service-providers/debit-notes` |
+| Credit note | `POST service-providers/credit-notes` |
