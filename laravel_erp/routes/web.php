@@ -229,12 +229,17 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/leave-management/{id}/approve', [SmhrController::class, 'approveLeave'])->name('leave-management.approve');
         Route::post('/leave-management/{id}/reject', [SmhrController::class, 'rejectLeave'])->name('leave-management.reject');
         Route::get('/workload-allocation', [SmhrController::class, 'workloadAllocation'])->name('workload-allocation');
+        Route::post('/workload-allocation', [SmhrController::class, 'storeWorkload'])->name('workload-allocation.store');
         Route::get('/performance-appraisals', [SmhrController::class, 'performanceAppraisals'])->name('performance-appraisals');
+        Route::post('/performance-appraisals', [SmhrController::class, 'storeAppraisal'])->name('performance-appraisals.store');
         Route::get('/payroll-register', [SmhrController::class, 'payrollRegister'])->name('payroll-register');
+        Route::post('/payroll-register', [SmhrController::class, 'storePayroll'])->name('payroll-register.store');
         Route::get('/payslip/{id?}', [SmhrController::class, 'payslip'])->name('payslip');
         Route::get('/p9-form/{staffId?}', [SmhrController::class, 'p9Form'])->name('p9-form');
         Route::get('/reports', [SmhrController::class, 'reports'])->name('reports');
+        Route::post('/reports', [SmhrController::class, 'storeReport'])->name('reports.store');
         Route::get('/disciplinary-records', [SmhrController::class, 'disciplinaryRecords'])->name('disciplinary-records');
+        Route::post('/disciplinary-records', [SmhrController::class, 'storeDisciplinary'])->name('disciplinary-records.store');
     });
 
     // Student Transfers Module Routes (Start-to-End Lifecycle)
