@@ -43,6 +43,7 @@ Named desk accounts (created by `StakeholderSeeder` / institutional data seeders
 | `transfers.officer@mema.ac.ke` | `transfers_officer` |
 | `lms.manager@mema.ac.ke` | `lms_manager` |
 | `graduation.officer@mema.ac.ke` | `graduation_officer` |
+| `student.affairs@mema.ac.ke` | `student_affairs_officer` |
 
 Desk grants are skipped when the user already holds `system_administrator` (segregation of duties). System administrators may manage curriculum, SMHR and operational module records, but not admission decisions.
 

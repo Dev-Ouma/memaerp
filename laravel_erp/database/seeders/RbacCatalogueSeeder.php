@@ -29,6 +29,7 @@ final class RbacCatalogueSeeder extends Seeder
         'transfers.officer@mema.ac.ke' => 'transfers_officer',
         'lms.manager@mema.ac.ke' => 'lms_manager',
         'graduation.officer@mema.ac.ke' => 'graduation_officer',
+        'student.affairs@mema.ac.ke' => 'student_affairs_officer',
     ];
 
     public function run(): void

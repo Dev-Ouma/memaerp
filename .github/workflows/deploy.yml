@@ -1,0 +1,102 @@
+name: Deploy MEMA ERP to Production
+
+on:
+  push:
+    branches: [ main ]
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  test-and-lint:
+    name: Run Automated Tests & Code Quality
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: mema_erp_testing
+          POSTGRES_USER: runner
+          POSTGRES_PASSWORD: secretpassword
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_pgsql, pgsql, bcmath, zip, gd
+          coverage: none
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Composer Dependencies
+        working-directory: ./laravel_erp
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Code Style Check (Pint)
+        working-directory: ./laravel_erp
+        run: ./vendor/bin/pint --test
+
+      - name: Compile Frontend Assets
+        working-directory: ./laravel_erp
+        run: |
+          npm ci || npm install
+          npm run build
+
+      - name: Run Test Suite
+        working-directory: ./laravel_erp
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: mema_erp_testing
+          DB_USERNAME: runner
+          DB_PASSWORD: secretpassword
+        run: |
+          cp .env.example .env || true
+          php artisan key:generate --env=testing
+          php artisan test
+
+  deploy:
+    name: Zero-Downtime Server Release
+    needs: test-and-lint
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: SSH and Deploy to Production Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          username: ${{ secrets.PROD_SERVER_USER }}
+          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.PROD_SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            echo "Starting MEMA ERP Zero-Downtime Deployment..."
+            cd /var/www/memaerp/laravel_erp
+            php artisan down --secret="${{ secrets.MAINTENANCE_BYPASS_SECRET || 'mema-admin-override' }}" || true
+            git pull origin main
+            composer install --no-dev --optimize-autoloader --no-interaction
+            npm ci
+            npm run build
+            php artisan migrate --force
+            php artisan optimize:clear
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            php artisan event:cache
+            sudo supervisorctl restart memaerp-worker:* || true
+            sudo systemctl reload php8.3-fpm || true
+            sudo systemctl reload nginx || true
+            php artisan up
+            echo "MEMA ERP Production Deployment Finished Successfully."

@@ -40,6 +40,7 @@ final class StakeholderSeeder extends Seeder
         $this->account('transfers.officer@mema.ac.ke', 'Lucy', 'Wambui', 'staff', 'Transfers Officer');
         $this->account('lms.manager@mema.ac.ke', 'Brian', 'Otieno', 'staff', 'LMS Manager');
         $this->account('graduation.officer@mema.ac.ke', 'Helen', 'Njeri', 'staff', 'Graduation Officer');
+        $this->account('student.affairs@mema.ac.ke', 'Ian', 'Otieno', 'staff', 'Student Affairs Officer');
 
         $staff = Staff::updateOrCreate(['user_id' => $teacher->id], ['course_id' => $course->id]);
         $student = Student::updateOrCreate(

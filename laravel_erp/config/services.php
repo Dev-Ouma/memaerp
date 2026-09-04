@@ -35,4 +35,18 @@ return [
         ],
     ],
 
+    'sms' => [
+        'driver' => env('SMS_DRIVER', 'log'), // 'log', 'africastalking', 'advanta'
+        'sender_id' => env('SMS_SENDER_ID', 'MEMA'),
+        'africastalking' => [
+            'username' => env('AT_USERNAME', 'sandbox'),
+            'api_key' => env('AT_API_KEY'),
+        ],
+        'advanta' => [
+            'api_key' => env('ADVANTA_API_KEY'),
+            'partner_id' => env('ADVANTA_PARTNER_ID'),
+            'shortcode' => env('ADVANTA_SHORTCODE', 'MEMA'),
+        ],
+    ],
+
 ];
