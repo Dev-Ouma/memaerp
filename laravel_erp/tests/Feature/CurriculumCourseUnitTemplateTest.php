@@ -12,11 +12,18 @@ final class CurriculumCourseUnitTemplateTest extends TestCase
 {
     use RefreshDatabase;
 
+    private User $admin;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $this->seedRbac();
+    }
+
     public function test_authenticated_user_can_download_the_bulk_upload_template(): void
     {
-        $user = User::factory()->create(['role' => 'admin']);
-
-        $response = $this->actingAs($user)->get(route('curriculum.course-unit.template'));
+        $response = $this->actingAs($this->admin)->get(route('curriculum.course-unit.template'));
 
         $response->assertOk();
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
@@ -30,9 +37,9 @@ final class CurriculumCourseUnitTemplateTest extends TestCase
 
     public function test_template_ships_the_expected_header_row_and_worked_examples(): void
     {
-        $user = User::factory()->create(['role' => 'admin']);
+        $user = $this->admin;
 
-        $rows = $this->downloadTemplateRows($user);
+        $rows = $this->downloadTemplateRows($this->admin);
 
         $this->assertSame([
             'unit_code',
@@ -56,14 +63,14 @@ final class CurriculumCourseUnitTemplateTest extends TestCase
 
     public function test_a_template_row_satisfies_the_course_unit_create_contract(): void
     {
-        $user = User::factory()->create(['role' => 'admin']);
-        $rows = $this->downloadTemplateRows($user);
+        $user = $this->admin;
+        $rows = $this->downloadTemplateRows($this->admin);
         $columns = array_shift($rows);
 
         foreach ($rows as $sample) {
             $payload = array_combine($columns, $sample);
 
-            $response = $this->actingAs($user)->post(route('curriculum.course-unit.store'), $payload);
+            $response = $this->actingAs($this->admin)->post(route('curriculum.course-unit.store'), $payload);
 
             $response->assertSessionHasNoErrors();
             $response->assertRedirect(route('curriculum.course-unit'));
@@ -78,9 +85,9 @@ final class CurriculumCourseUnitTemplateTest extends TestCase
 
     public function test_course_unit_page_links_to_the_template(): void
     {
-        $user = User::factory()->create(['role' => 'admin']);
+        $user = $this->admin;
 
-        $response = $this->actingAs($user)->get(route('curriculum.course-unit'));
+        $response = $this->actingAs($this->admin)->get(route('curriculum.course-unit'));
 
         $response->assertOk();
         $response->assertSee(route('curriculum.course-unit.template'), false);
@@ -92,7 +99,7 @@ final class CurriculumCourseUnitTemplateTest extends TestCase
      */
     private function downloadTemplateRows(User $user): array
     {
-        $csv = $this->actingAs($user)->get(route('curriculum.course-unit.template'))->getContent();
+        $csv = $this->actingAs($this->admin)->get(route('curriculum.course-unit.template'))->getContent();
 
         $stream = fopen('php://temp', 'r+');
         fwrite($stream, $csv);

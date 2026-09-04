@@ -23,17 +23,18 @@ final class Course extends Model
 
     public function getImageUrlAttribute(): string
     {
-        if (!empty($this->image_path)) {
+        if (! empty($this->image_path)) {
             if (str_starts_with($this->image_path, 'http://') || str_starts_with($this->image_path, 'https://')) {
                 return $this->image_path;
             }
             if (file_exists(public_path($this->image_path))) {
                 return asset($this->image_path);
             }
-            return asset('storage/' . ltrim($this->image_path, '/'));
+
+            return asset('storage/'.ltrim($this->image_path, '/'));
         }
 
-        $code = strtolower(str_replace(['-', ' '], ['_', '_'], (string)$this->code));
+        $code = strtolower(str_replace(['-', ' '], ['_', '_'], (string) $this->code));
         $file = "course_{$code}.jpg";
         if (file_exists(public_path("images/courses/{$file}"))) {
             return asset("images/courses/{$file}");
@@ -56,6 +57,7 @@ final class Course extends Model
         if (str_starts_with($code, 'bba')) {
             return asset('images/courses/course_bba.jpg');
         }
+
         return asset('images/courses/course_bcs.jpg');
     }
 }

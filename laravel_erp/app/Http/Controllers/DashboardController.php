@@ -5,25 +5,31 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\AdmissionApplication;
+use App\Models\AdmissionIntake;
 use App\Models\ApplicantProfile;
 use App\Models\ApplicationDocument;
 use App\Models\ApplicationPaymentAttempt;
+use App\Models\Attendance;
 use App\Models\AttendanceRecord;
 use App\Models\AuditLog;
 use App\Models\BudgetProposal;
+use App\Models\CalendarEvent;
+use App\Models\CohortYear;
 use App\Models\Course;
+use App\Models\ExamSchedule;
 use App\Models\Staff;
 use App\Models\Student;
 use App\Models\StudentResult;
 use App\Models\Subject;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 final class DashboardController extends Controller
 {
-    public function __invoke(): View
+    public function __invoke(Request $request): View
     {
         $user = auth()->user();
 
@@ -32,27 +38,193 @@ final class DashboardController extends Controller
             'staff' => $this->teacherDashboard($user),
             'parent' => $this->parentDashboard($user),
             'applicant' => $this->applicantDashboard($user),
-            default => $this->adminDashboard(),
+            default => $this->adminDashboard($request),
         });
     }
 
     private function applicantDashboard(User $user): array
     {
+        $application = $user->applicantProfile?->applications()
+            ->with(['offering.course', 'offering.intake', 'offer', 'documents', 'payments', 'histories'])
+            ->latest()->first();
+
+        $status = $application?->status ?? 'NOT_STARTED';
+
+        $steps = [
+            [
+                'step' => 1,
+                'title' => 'Profile & Programme',
+                'description' => 'Personal details and selected programme offering',
+                'status' => $application ? 'completed' : 'current',
+                'icon' => 'user-check',
+            ],
+            [
+                'step' => 2,
+                'title' => 'Document Upload',
+                'description' => 'Certificates, identification and academic transcripts',
+                'status' => $application && $application->documents->isNotEmpty() ? 'completed' : ($application ? 'current' : 'pending'),
+                'icon' => 'file-text',
+            ],
+            [
+                'step' => 3,
+                'title' => 'Application Fee',
+                'description' => 'Payment processing and automated M-Pesa verification',
+                'status' => $application && $application->payments->where('status', 'PAID')->isNotEmpty() ? 'completed' : ($application && $application->status !== 'DRAFT' ? 'current' : 'pending'),
+                'icon' => 'credit-card',
+            ],
+            [
+                'step' => 4,
+                'title' => 'Admissions Review',
+                'description' => 'Document verification, faculty shortlisting and sign-off',
+                'status' => in_array($status, ['ADMITTED', 'ACCEPTED', 'READY_TO_ENROL', 'ENROLLED'], true) ? 'completed' : (in_array($status, ['SUBMITTED', 'UNDER_REVIEW', 'VERIFIED', 'SHORTLISTED', 'APPROVAL_PENDING'], true) ? 'current' : 'pending'),
+                'icon' => 'clipboard-check',
+            ],
+            [
+                'step' => 5,
+                'title' => 'Offer & Enrollment',
+                'description' => 'Admission letter issuance, acceptance and student registration',
+                'status' => $status === 'ENROLLED' ? 'completed' : (in_array($status, ['ADMITTED', 'ACCEPTED', 'READY_TO_ENROL'], true) ? 'current' : 'pending'),
+                'icon' => 'award',
+            ],
+        ];
+
+        $requiredDocTypes = ['NATIONAL_ID' => 'National ID / Birth Certificate', 'ACADEMIC_TRANSCRIPT' => 'KCSE Certificate / Transcript', 'PASSPORT_PHOTO' => 'Passport Size Photo'];
+        $uploadedDocs = $application ? $application->documents->keyBy('document_type') : collect();
+
+        $checklist = collect($requiredDocTypes)->map(function (string $label, string $type) use ($uploadedDocs): array {
+            $doc = $uploadedDocs->get($type);
+
+            return [
+                'type' => $type,
+                'label' => $label,
+                'is_uploaded' => $doc !== null,
+                'status' => $doc?->verification_status ?? 'NOT_UPLOADED',
+                'document' => $doc,
+            ];
+        })->values()->all();
+
+        $totalFee = (float) ($application?->offering?->application_fee ?? 1500.00);
+        $totalPaid = (float) ($application?->payments->where('status', 'PAID')->sum('amount') ?? 0.00);
+        $latestPayment = $application?->payments->sortByDesc('created_at')->first();
+
         return [
             'dashboardType' => 'applicant',
-            'application' => $user->applicantProfile?->applications()
-                ->with(['offering.course', 'offering.intake', 'offer', 'documents', 'payments', 'histories'])
-                ->latest()->first(),
+            'application' => $application,
+            'steps' => $steps,
+            'checklist' => $checklist,
+            'totalFee' => $totalFee,
+            'totalPaid' => $totalPaid,
+            'isFeePaid' => $totalPaid >= $totalFee && $totalPaid > 0,
+            'latestPayment' => $latestPayment,
+            'offer' => $application?->offer,
         ];
     }
 
-    private function adminDashboard(): array
+    private function adminDashboard(Request $request): array
     {
-        $applications = AdmissionApplication::query()
-            ->with(['applicant.user', 'offering.course', 'offering.intake'])
+        $selectedAcademicYear = trim((string) $request->query('academic_year', ''));
+        $selectedSemester = trim((string) $request->query('semester', ''));
+        $selectedCohort = trim((string) $request->query('cohort', ''));
+        $selectedProgramme = trim((string) $request->query('programme', ''));
+        $selectedLevel = trim((string) $request->query('level', ''));
+
+        // Query builders
+        $applicationsQuery = AdmissionApplication::query()
+            ->with(['applicant.user', 'offering.course', 'offering.intake']);
+        $studentsQuery = Student::query()
+            ->with(['user', 'course', 'academicSession']);
+        $paymentsQuery = ApplicationPaymentAttempt::query();
+
+        // 1. Academic Year Filter
+        if ($selectedAcademicYear !== '') {
+            $yearDigits = preg_replace('/[^0-9]/', '', substr($selectedAcademicYear, 0, 4));
+            if ($yearDigits !== '') {
+                $yearInt = (int) $yearDigits;
+                $applicationsQuery->where(function ($q) use ($selectedAcademicYear, $yearInt) {
+                    $q->whereHas('offering.intake', function ($iq) use ($selectedAcademicYear, $yearInt) {
+                        $iq->where('name', 'ilike', "%{$selectedAcademicYear}%")
+                            ->orWhere('name', 'ilike', "%{$yearInt}%")
+                            ->orWhere('code', 'ilike', "%{$yearInt}%");
+                    })->orWhereYear('created_at', $yearInt);
+                });
+
+                $studentsQuery->where(function ($q) use ($yearInt) {
+                    $q->whereHas('academicSession', function ($sq) use ($yearInt) {
+                        $sq->whereYear('start_date', $yearInt);
+                    })->orWhere('admission_number', 'ilike', "%/{$yearInt}/%")
+                        ->orWhereYear('created_at', $yearInt);
+                });
+            }
+        }
+
+        // 2. Cohort / Intake Filter
+        if ($selectedCohort !== '') {
+            $applicationsQuery->whereHas('offering.intake', function ($q) use ($selectedCohort) {
+                $q->where('name', 'ilike', "%{$selectedCohort}%")
+                    ->orWhere('code', 'ilike', "%{$selectedCohort}%");
+            });
+        }
+
+        // 3. Programme / Course Filter
+        if ($selectedProgramme !== '') {
+            $applicationsQuery->where(function ($q) use ($selectedProgramme) {
+                if (is_numeric($selectedProgramme)) {
+                    $q->whereHas('offering', fn ($oq) => $oq->where('course_id', (int) $selectedProgramme));
+                } else {
+                    $q->whereHas('offering.course', fn ($cq) => $cq->where('code', 'ilike', $selectedProgramme)->orWhere('name', 'ilike', "%{$selectedProgramme}%"));
+                }
+            });
+
+            $studentsQuery->where(function ($q) use ($selectedProgramme) {
+                if (is_numeric($selectedProgramme)) {
+                    $q->where('course_id', (int) $selectedProgramme);
+                } else {
+                    $q->whereHas('course', fn ($cq) => $cq->where('code', 'ilike', $selectedProgramme)->orWhere('name', 'ilike', "%{$selectedProgramme}%"));
+                }
+            });
+        }
+
+        // 4. Level Filter
+        if ($selectedLevel !== '') {
+            $levelKeywords = match (strtolower($selectedLevel)) {
+                'undergraduate' => ['bachelor', 'bcs', 'bba', 'bse', 'bsc', 'bed', 'llb', 'mbchb', 'degree'],
+                'postgraduate', 'masters', 'phd' => ['master', 'msc', 'mba', 'mph', 'phd', 'doctorate', 'postgraduate'],
+                'diploma' => ['diploma', 'dip', 'hdip'],
+                'certificate' => ['certificate', 'cert'],
+                'short course', 'short' => ['executive', 'short', 'bootcamp', 'certificate'],
+                default => [$selectedLevel],
+            };
+
+            $applicationsQuery->whereHas('offering.course', function ($cq) use ($levelKeywords) {
+                $cq->where(function ($sub) use ($levelKeywords) {
+                    foreach ($levelKeywords as $kw) {
+                        $sub->orWhere('name', 'ilike', "%{$kw}%")->orWhere('code', 'ilike', "%{$kw}%");
+                    }
+                });
+            });
+
+            $studentsQuery->whereHas('course', function ($cq) use ($levelKeywords) {
+                $cq->where(function ($sub) use ($levelKeywords) {
+                    foreach ($levelKeywords as $kw) {
+                        $sub->orWhere('name', 'ilike', "%{$kw}%")->orWhere('code', 'ilike', "%{$kw}%");
+                    }
+                });
+            });
+        }
+
+        // Fetch filtered datasets
+        $applications = $applicationsQuery->get();
+        $filteredAppIds = $applications->pluck('id');
+        $filteredStudentUserIds = $studentsQuery->pluck('user_id');
+
+        $profiles = ApplicantProfile::query()
+            ->with('user')
+            ->when($filteredAppIds->isNotEmpty(), function ($q) use ($filteredAppIds) {
+                $q->whereHas('applications', fn ($aq) => $aq->whereIn('id', $filteredAppIds));
+            })
             ->get();
-        $profiles = ApplicantProfile::query()->with('user')->get();
-        $studentsCount = Student::query()->count();
+
+        $studentsCount = $studentsQuery->count();
         $staffCount = Staff::query()->whereHas('user', fn ($query) => $query->where('is_active', true))->count();
         $coursesCount = Course::query()->count();
         $subjectsCount = Subject::query()->count();
@@ -69,10 +241,23 @@ final class DashboardController extends Controller
         $offerRejected = $applications->where('status', 'DECLINED')->count();
         $submitted = $applications->whereNotIn('status', ['DRAFT'])->count();
 
-        $paid = (float) ApplicationPaymentAttempt::query()->where('status', 'PAID')->sum('amount');
-        $target = (float) DB::table('admission_applications')
-            ->join('programme_offerings', 'programme_offerings.id', '=', 'admission_applications.programme_offering_id')
-            ->sum('programme_offerings.application_fee');
+        // Financials calculated for filtered scope
+        if ($filteredAppIds->isNotEmpty()) {
+            $paid = (float) ApplicationPaymentAttempt::query()
+                ->whereIn('admission_application_id', $filteredAppIds)
+                ->where('status', 'PAID')
+                ->sum('amount');
+            $target = (float) DB::table('admission_applications')
+                ->join('programme_offerings', 'programme_offerings.id', '=', 'admission_applications.programme_offering_id')
+                ->whereIn('admission_applications.id', $filteredAppIds)
+                ->sum('programme_offerings.application_fee');
+        } else {
+            $paid = (float) ApplicationPaymentAttempt::query()->where('status', 'PAID')->sum('amount');
+            $target = (float) DB::table('admission_applications')
+                ->join('programme_offerings', 'programme_offerings.id', '=', 'admission_applications.programme_offering_id')
+                ->sum('programme_offerings.application_fee');
+        }
+
         $budgetRequested = (float) BudgetProposal::query()->sum('requested_amount');
         $budgetApproved = (float) BudgetProposal::query()->sum('approved_amount');
         $financialRate = $this->decimalPercentage($paid, $target);
@@ -113,12 +298,8 @@ final class DashboardController extends Controller
         $supportCount = $profiles->where('has_support_need', true)->count();
         $youthCount = $profiles->filter(fn (ApplicantProfile $profile): bool => $profile->date_of_birth !== null && $profile->date_of_birth->age <= 35)->count();
 
-        $graduatedCount = 0;
-        $alumniCount = 0;
-        try {
-            $graduatedCount = DB::table('students')->where('admission_number', 'like', '%GRD%')->count();
-        } catch (\Throwable) {
-        }
+        $graduatedCount = $studentsCount;
+        $alumniCount = $studentsCount;
 
         $activeResearchProjects = 0;
         $researchSupervisors = 0;
@@ -167,10 +348,79 @@ final class DashboardController extends Controller
             'governance' => ['auditReadiness' => $auditReadiness, 'pendingSenateApprovals' => $applications->where('status', 'APPROVAL_PENDING')->count(), 'budgetUtilization' => $budgetRate],
         ];
 
+        // Available filter options
+        $availableYears = ['2026/2027', '2025/2026', '2024/2025', '2023/2024'];
+        try {
+            $dbYears = CohortYear::query()->pluck('name')->filter()->values()->all();
+            if (! empty($dbYears)) {
+                $availableYears = array_values(array_unique(array_merge($availableYears, $dbYears)));
+            }
+        } catch (\Throwable) {
+        }
+
+        $availableSemesters = [
+            'Semester 1',
+            'Semester 2',
+            'Trimester 1',
+            'Trimester 2',
+            'Trimester 3',
+        ];
+
+        $availableCohorts = [
+            '2026/2027 - September Intake',
+            '2026/2027 - January Intake',
+            '2026/2027 - May Intake',
+            '2025/2026 - September Intake',
+            '2025/2026 - January Intake',
+        ];
+        try {
+            $dbIntakes = AdmissionIntake::query()->pluck('name')->filter()->values()->all();
+            if (! empty($dbIntakes)) {
+                $availableCohorts = array_values(array_unique(array_merge($availableCohorts, $dbIntakes)));
+            }
+        } catch (\Throwable) {
+        }
+
+        $availableProgrammes = Course::query()->orderBy('name')->get(['id', 'code', 'name']);
+
+        $availableLevels = [
+            'Undergraduate' => 'Undergraduate (Degree)',
+            'Postgraduate' => 'Postgraduate (Masters / PhD)',
+            'Diploma' => 'Diploma Programmes',
+            'Certificate' => 'Certificate Courses',
+            'Short Course' => 'Executive & Short Courses',
+        ];
+
+        $activeFilters = array_filter([
+            'academic_year' => $selectedAcademicYear,
+            'semester' => $selectedSemester,
+            'cohort' => $selectedCohort,
+            'programme' => $selectedProgramme,
+            'level' => $selectedLevel,
+        ]);
+
+        $filtersPayload = [
+            'academic_year' => $selectedAcademicYear,
+            'semester' => $selectedSemester,
+            'cohort' => $selectedCohort,
+            'programme' => $selectedProgramme,
+            'level' => $selectedLevel,
+            'options' => [
+                'academic_years' => $availableYears,
+                'semesters' => $availableSemesters,
+                'cohorts' => $availableCohorts,
+                'programmes' => $availableProgrammes,
+                'levels' => $availableLevels,
+            ],
+            'active' => $activeFilters,
+            'active_count' => count($activeFilters),
+            'has_active' => count($activeFilters) > 0,
+        ];
+
         return [
             'dashboardType' => 'admin',
             'stats' => ['students' => $studentsCount, 'staff' => $staffCount, 'courses' => $coursesCount, 'subjects' => $subjectsCount],
-            'students' => Student::query()->with(['user', 'course'])->latest()->limit(6)->get(),
+            'students' => $studentsQuery->latest()->limit(6)->get(),
             'results' => StudentResult::query()->with(['student.user', 'subject'])->latest()->limit(5)->get(),
             'attendanceRate' => $attendanceRate,
             'stakeholders' => User::query()->where('role', '!=', 'admin')->where('is_active', true)->orderBy('role')->orderBy('name')->get(),
@@ -182,6 +432,7 @@ final class DashboardController extends Controller
                 ['label' => 'Governance readiness', 'values' => array_fill(0, 5, $auditReadiness)],
             ],
             'metrics' => $metrics,
+            'filters' => $filtersPayload,
         ];
     }
 
@@ -190,16 +441,139 @@ final class DashboardController extends Controller
         $student = $user->student()->with(['course', 'academicSession'])->first();
         $total = $student ? AttendanceRecord::query()->where('student_id', $student->id)->count() : 0;
         $present = $student ? AttendanceRecord::query()->where('student_id', $student->id)->where('present', true)->count() : 0;
+        $attendanceRate = $this->percentage($present, $total);
 
-        return ['dashboardType' => 'student', 'student' => $student, 'results' => $student ? StudentResult::query()->with('subject')->where('student_id', $student->id)->get() : collect(), 'attendanceRate' => $this->percentage($present, $total)];
+        $results = $student ? StudentResult::query()->with('subject.staff.user')->where('student_id', $student->id)->get() : collect();
+        $subjects = $student?->course_id ? Subject::query()->with('staff.user')->where('course_id', $student->course_id)->get() : collect();
+
+        // Calculate Average Score and GPA
+        $avgScore = $results->isNotEmpty() ? round($results->avg(fn ($r) => (float) ($r->test_score + $r->exam_score)), 1) : 0.0;
+        $gpa = $results->isNotEmpty() ? round($results->avg(function ($r): float {
+            $tot = $r->test_score + $r->exam_score;
+            if ($tot >= 70) {
+                return 4.0;
+            }
+            if ($tot >= 60) {
+                return 3.0;
+            }
+            if ($tot >= 50) {
+                return 2.0;
+            }
+            if ($tot >= 40) {
+                return 1.0;
+            }
+
+            return 0.0;
+        }), 2) : 0.0;
+
+        $academicStanding = $avgScore >= 70 ? 'Distinction / Dean\'s List' : ($avgScore >= 60 ? 'Credit Standing' : ($avgScore >= 50 ? 'Good Standing' : ($avgScore > 0 ? 'Academic Warning' : 'Enrolled')));
+
+        // Per-subject attendance breakdown
+        $subjectAttendance = collect();
+        if ($student) {
+            try {
+                $subjectAttendance = AttendanceRecord::query()
+                    ->join('attendances', 'attendances.id', '=', 'attendance_records.attendance_id')
+                    ->where('attendance_records.student_id', $student->id)
+                    ->select('attendances.subject_id', DB::raw('count(*) as total'), DB::raw('sum(case when attendance_records.present = true then 1 else 0 end) as present'))
+                    ->groupBy('attendances.subject_id')
+                    ->get()
+                    ->keyBy('subject_id');
+            } catch (\Throwable) {
+            }
+        }
+
+        // Upcoming Exam Schedule
+        $upcomingExams = collect();
+        if ($subjects->isNotEmpty()) {
+            try {
+                $upcomingExams = ExamSchedule::query()
+                    ->whereIn('subject_id', $subjects->pluck('id'))
+                    ->with(['subject', 'center'])
+                    ->orderBy('exam_date')
+                    ->limit(4)
+                    ->get();
+            } catch (\Throwable) {
+            }
+        }
+
+        // Upcoming Calendar Events
+        $upcomingEvents = collect();
+        try {
+            $upcomingEvents = CalendarEvent::query()
+                ->where('user_id', $user->id)
+                ->where('start_time', '>=', now()->startOfDay())
+                ->orderBy('start_time')
+                ->limit(4)
+                ->get();
+        } catch (\Throwable) {
+        }
+
+        return [
+            'dashboardType' => 'student',
+            'student' => $student,
+            'results' => $results,
+            'subjects' => $subjects,
+            'attendanceRate' => $attendanceRate,
+            'attendancePresent' => $present,
+            'attendanceTotal' => $total,
+            'avgScore' => $avgScore,
+            'gpa' => $gpa,
+            'academicStanding' => $academicStanding,
+            'subjectAttendance' => $subjectAttendance,
+            'upcomingExams' => $upcomingExams,
+            'upcomingEvents' => $upcomingEvents,
+        ];
     }
 
     private function teacherDashboard(User $user): array
     {
         $teacher = $user->staffProfile()->with('course')->first();
         $subjects = $teacher ? Subject::query()->with('course')->where('staff_id', $teacher->id)->get() : collect();
+        $studentCount = $teacher?->course_id ? Student::query()->where('course_id', $teacher->course_id)->count() : 0;
+        $subjectIds = $subjects->pluck('id');
 
-        return ['dashboardType' => 'teacher', 'teacher' => $teacher, 'subjects' => $subjects, 'studentCount' => $teacher?->course_id ? Student::query()->where('course_id', $teacher->course_id)->count() : 0, 'recentResults' => $subjects->isEmpty() ? collect() : StudentResult::query()->with(['student.user', 'subject'])->whereIn('subject_id', $subjects->pluck('id'))->latest()->limit(8)->get()];
+        $recentResults = $subjectIds->isEmpty()
+            ? collect()
+            : StudentResult::query()->with(['student.user', 'subject'])->whereIn('subject_id', $subjectIds)->latest()->limit(8)->get();
+
+        $allSubjectResults = $subjectIds->isEmpty()
+            ? collect()
+            : StudentResult::query()->whereIn('subject_id', $subjectIds)->get();
+
+        $gradedCount = $allSubjectResults->count();
+        $classAverage = $allSubjectResults->isNotEmpty()
+            ? round($allSubjectResults->avg(fn ($r) => (float) ($r->test_score + $r->exam_score)), 1)
+            : 0.0;
+
+        $attendanceSessionsCount = 0;
+        if ($subjectIds->isNotEmpty()) {
+            try {
+                $attendanceSessionsCount = Attendance::query()->whereIn('subject_id', $subjectIds)->count();
+            } catch (\Throwable) {
+            }
+        }
+
+        $assignedStudents = collect();
+        if ($teacher?->course_id) {
+            $assignedStudents = Student::query()
+                ->with(['user', 'course'])
+                ->where('course_id', $teacher->course_id)
+                ->limit(8)
+                ->get();
+        }
+
+        return [
+            'dashboardType' => 'teacher',
+            'teacher' => $teacher,
+            'subjects' => $subjects,
+            'studentCount' => $studentCount,
+            'recentResults' => $recentResults,
+            'gradedCount' => $gradedCount,
+            'classAverage' => $classAverage,
+            'attendanceSessionsCount' => $attendanceSessionsCount,
+            'assignedStudents' => $assignedStudents,
+        ];
     }
 
     private function parentDashboard(User $user): array
@@ -207,7 +581,32 @@ final class DashboardController extends Controller
         $children = $user->children()->with(['user', 'course', 'academicSession'])->get();
         $studentIds = $children->pluck('id');
 
-        return ['dashboardType' => 'parent', 'children' => $children, 'childResults' => $studentIds->isEmpty() ? collect() : StudentResult::query()->with(['student.user', 'subject'])->whereIn('student_id', $studentIds)->get(), 'childAttendance' => $this->childAttendance($studentIds)];
+        $childResults = $studentIds->isEmpty()
+            ? collect()
+            : StudentResult::query()->with(['student.user', 'subject'])->whereIn('student_id', $studentIds)->get();
+
+        $childAttendance = $this->childAttendance($studentIds);
+
+        $childMetrics = $children->mapWithKeys(function (Student $child) use ($childResults, $childAttendance): array {
+            $results = $childResults->where('student_id', $child->id);
+            $avgScore = $results->isNotEmpty() ? round($results->avg(fn ($r) => (float) ($r->test_score + $r->exam_score)), 1) : 0.0;
+            $attendance = $childAttendance[$child->id] ?? 0;
+
+            return [$child->id => [
+                'avgScore' => $avgScore,
+                'publishedResultsCount' => $results->count(),
+                'attendanceRate' => $attendance,
+                'status' => $avgScore >= 60 ? 'Good Academic Progress' : ($avgScore > 0 ? 'Needs Attention' : 'Active Enrollment'),
+            ]];
+        })->all();
+
+        return [
+            'dashboardType' => 'parent',
+            'children' => $children,
+            'childResults' => $childResults,
+            'childAttendance' => $childAttendance,
+            'childMetrics' => $childMetrics,
+        ];
     }
 
     private function childAttendance(Collection $studentIds): array

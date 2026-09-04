@@ -5,108 +5,96 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\SystemBackup;
+use App\Models\SystemBroadcast;
 use App\Models\SystemMaintenanceConfig;
 use App\Models\SystemVersion;
 use App\Modules\Platform\Audit\AuditRecorder;
+use App\Modules\Platform\Modules\ModuleCatalogue;
+use App\Services\SystemBackupService;
+use App\Services\SystemHealthService;
+use App\Services\SystemUpgradeService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class SystemMaintenanceController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, SystemHealthService $healthService, SystemUpgradeService $upgrades): View
     {
         $this->authorizeAdmin($request);
 
-        $config = SystemMaintenanceConfig::first();
+        $config = SystemMaintenanceConfig::query()->first() ?? new SystemMaintenanceConfig([
+            'is_lockdown' => false,
+            'lockdown_type' => 'read_only',
+            'locked_modules' => [],
+        ]);
         $backups = SystemBackup::latest()->paginate(10, ['*'], 'backups_page');
         $versions = SystemVersion::latest('installed_at')->get();
-        $currentVersion = SystemVersion::latest('installed_at')->first();
+        $currentVersion = $upgrades->current();
+        $metrics = $healthService->metrics();
 
-        // System Specs Info
         $specs = [
             'php_version' => PHP_VERSION,
             'laravel_version' => app()->version(),
             'os_version' => PHP_OS.' ('.php_uname('r').')',
             'database_type' => DB::connection()->getDriverName(),
-            'server_software' => $request->server('SERVER_SOFTWARE', 'Nginx/1.24.0 (Alpine)'),
+            'server_software' => $request->server('SERVER_SOFTWARE', php_sapi_name()),
             'memory_limit' => ini_get('memory_limit'),
             'max_execution_time' => ini_get('max_execution_time').' seconds',
         ];
 
-        // Simulated health metrics
-        $diskTotal = disk_total_space(base_path()) ?: 100000000000;
-        $diskFree = disk_free_space(base_path()) ?: 40000000000;
-        $diskUsed = $diskTotal - $diskFree;
-        $diskPercentage = round(($diskUsed / $diskTotal) * 100, 1);
+        $health = $metrics;
 
-        $cpuLoad = function_exists('sys_getloadavg') ? sys_getloadavg()[0] * 100 : rand(14, 28);
-        $cpuPercentage = max(5, min(95, (int) $cpuLoad));
-
-        $ramUsed = rand(450, 720); // Simulated MB
-        $ramLimit = 2048; // Simulated MB limit
-        $ramPercentage = round(($ramUsed / $ramLimit) * 100, 1);
-
-        $dbStatus = 'Connected';
-        try {
-            DB::select('SELECT 1');
-        } catch (\Throwable $e) {
-            $dbStatus = 'Disconnected: '.$e->getMessage();
-        }
-
-        $health = [
-            'cpu_percentage' => $cpuPercentage,
-            'ram_used' => $ramUsed,
-            'ram_limit' => $ramLimit,
-            'ram_percentage' => $ramPercentage,
-            'disk_total' => round($diskTotal / (1024 * 1024 * 1024), 1).' GB',
-            'disk_used' => round($diskUsed / (1024 * 1024 * 1024), 1).' GB',
-            'disk_percentage' => $diskPercentage,
-            'db_status' => $dbStatus,
-        ];
-
-        // Read last 60 lines of Laravel error logs if present
         $logPath = storage_path('logs/laravel.log');
         $errorLogs = '';
-        if (file_exists($logPath)) {
-            $file = file($logPath);
-            if ($file) {
-                $errorLogs = implode('', array_slice($file, -60));
+        if (is_file($logPath) && ($fp = @fopen($logPath, 'rb')) !== false) {
+            $size = (int) @filesize($logPath);
+            $bytesToRead = min($size, 65536);
+            if ($bytesToRead > 0) {
+                fseek($fp, -$bytesToRead, SEEK_END);
+                $chunk = (string) fread($fp, $bytesToRead);
+                $lines = explode("\n", $chunk);
+                $errorLogs = implode("\n", array_slice($lines, -60));
             }
-        } else {
-            $errorLogs = '[2026-08-29 14:02:18] testing.INFO: Logger boot complete. No critical exceptions registered.';
+            fclose($fp);
         }
 
-        // List of core system modules for modular lockdowns
-        $modules = [
-            'registration' => 'Registration & Admissions',
-            'curriculum' => 'Curriculum Setup',
-            'cohort' => 'Cohort Setup',
-            'examination' => 'Examination & Grading Board',
-            'fees' => 'Fees Billing & M-Pesa',
-            'transfers' => 'Student Transfers Registry',
-            'pg-research' => 'PG Research & Graduate Studies',
-            'student-affairs' => 'Student Affairs & Work Study',
-            'imprest' => 'Imprest Management',
-            'service-providers' => 'Service Providers & Procurement',
-            'budgeting' => 'Budgeting & Planning',
-            'lms' => 'LMS Virtual Classrooms',
-            'graduation' => 'Graduation & Alumni',
-            'task-management' => 'Task Management',
-            'reports' => 'Reports & Analytics',
-        ];
+        $modules = [];
+        foreach (ModuleCatalogue::all() as $key => $definition) {
+            $modules[$key] = $definition['name'];
+        }
 
-        $recentLogs = DB::table('audit_events')
-            ->orderBy('occurred_at', 'desc')
-            ->limit(15)
-            ->get();
+        $recentLogs = collect();
+        try {
+            $recentLogs = DB::table('audit_events')
+                ->orderBy('occurred_at', 'desc')
+                ->limit(15)
+                ->get();
+        } catch (\Throwable) {
+            $recentLogs = collect();
+        }
+
+        $broadcasts = SystemBroadcast::query()->latest()->limit(20)->get();
+        $consoleLog = $metrics['console_log'];
 
         return view('admin.setups.system-maintenance', compact(
-            'config', 'backups', 'versions', 'currentVersion', 'specs', 'health', 'errorLogs', 'modules', 'recentLogs'
+            'config',
+            'backups',
+            'versions',
+            'currentVersion',
+            'specs',
+            'health',
+            'errorLogs',
+            'modules',
+            'recentLogs',
+            'broadcasts',
+            'consoleLog',
         ));
     }
 
@@ -122,12 +110,10 @@ final class SystemMaintenanceController extends Controller
             'scheduled_start' => ['nullable', 'date'],
             'scheduled_end' => ['nullable', 'date', 'after:scheduled_start'],
             'locked_modules' => ['nullable', 'array'],
+            'locked_modules.*' => ['string'],
         ]);
 
-        $config = SystemMaintenanceConfig::first();
-        if (! $config) {
-            $config = new SystemMaintenanceConfig;
-        }
+        $config = SystemMaintenanceConfig::query()->first() ?? new SystemMaintenanceConfig;
 
         $config->is_lockdown = (bool) ($validated['is_lockdown'] ?? false);
         $config->lockdown_type = $validated['lockdown_type'];
@@ -138,7 +124,6 @@ final class SystemMaintenanceController extends Controller
         $config->locked_modules = $validated['locked_modules'] ?? [];
         $config->save();
 
-        // Create log event
         app(AuditRecorder::class)->record('system.maintenance.lockdown_updated', [
             'actor_user_id' => $request->user()->id,
             'actor_role' => $request->user()->activeRole(),
@@ -170,9 +155,11 @@ final class SystemMaintenanceController extends Controller
                 Artisan::call('cache:clear');
             }
 
+            app(SystemHealthService::class)->recordConsole('Cache cleared: '.$target);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Cache cleared successfully for target: '.ucwords($target),
+                'message' => 'Cache cleared successfully for target: '.ucwords((string) $target),
             ]);
         } catch (\Throwable $e) {
             return response()->json([
@@ -187,10 +174,17 @@ final class SystemMaintenanceController extends Controller
         $this->authorizeAdmin($request);
 
         try {
-            // Run database optimization command
-            if (DB::connection()->getDriverName() === 'pgsql') {
+            if (DB::connection()->getDriverName() === 'pgsql' && ! app()->runningUnitTests()) {
                 DB::statement('VACUUM ANALYZE');
             }
+
+            $config = SystemMaintenanceConfig::query()->first();
+            if ($config) {
+                $config->last_optimize_at = now();
+                $config->save();
+            }
+
+            app(SystemHealthService::class)->recordConsole('Database optimize completed.');
 
             return response()->json([
                 'success' => true,
@@ -199,67 +193,205 @@ final class SystemMaintenanceController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Database optimization completed with minor query warnings.',
-            ]);
+                'message' => 'Database optimization failed: '.$e->getMessage(),
+            ], 500);
         }
     }
 
-    public function triggerBackup(Request $request): RedirectResponse
+    public function triggerBackup(Request $request, SystemBackupService $backups): RedirectResponse
     {
         $this->authorizeAdmin($request);
 
         try {
-            $filename = 'mema_backup_'.date('Y_m_d_His').'.sql';
-            $size = rand(1048576, 5242880); // simulated size 1-5MB
+            $backup = $backups->create($request->user());
 
-            SystemBackup::create([
-                'filename' => $filename,
-                'file_size' => $size,
-                'created_by' => $request->user()->id,
-                'status' => 'completed',
+            app(AuditRecorder::class)->record('system.maintenance.backup_created', [
+                'actor_user_id' => $request->user()->id,
+                'actor_role' => $request->user()->activeRole(),
+                'subject_type' => SystemBackup::class,
+                'subject_id' => $backup->id,
+                'after' => ['filename' => $backup->filename, 'file_size' => $backup->file_size],
             ]);
 
-            return back()->with('success', "Database backup created successfully: {$filename}");
+            app(SystemHealthService::class)->recordConsole('Backup written: '.$backup->filename.' ('.$backup->file_size.' bytes)');
+
+            return back()->with('success', "Database backup created successfully: {$backup->filename}");
         } catch (\Throwable $e) {
             return back()->with('error', 'Failed to generate system backup: '.$e->getMessage());
         }
     }
 
-    public function downloadBackup(Request $request, SystemBackup $backup): JsonResponse
+    public function downloadBackup(Request $request, SystemBackup $backup, SystemBackupService $backups): StreamedResponse
     {
         $this->authorizeAdmin($request);
+
+        return $backups->download($backup);
+    }
+
+    public function restoreBackup(Request $request, SystemBackup $backup, SystemBackupService $backups): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+
+        $request->validate([
+            'confirm' => ['required', 'accepted'],
+        ]);
+
+        try {
+            $result = $backups->restore($backup);
+
+            app(AuditRecorder::class)->record('system.maintenance.backup_restored', [
+                'actor_user_id' => $request->user()->id,
+                'actor_role' => $request->user()->activeRole(),
+                'subject_type' => SystemBackup::class,
+                'subject_id' => $backup->id,
+                'after' => $result,
+            ]);
+
+            app(SystemHealthService::class)->recordConsole($result['message']);
+
+            return response()->json([
+                'success' => true,
+                'message' => $result['message'],
+                'executed' => $result['executed'],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Restore failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function applyUpgrade(Request $request, SystemUpgradeService $upgrades): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+
+        $validated = $request->validate([
+            'type' => ['nullable', 'string', 'in:major,minor,patch'],
+            'changelog' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $version = $upgrades->apply(
+            $validated['type'] ?? 'patch',
+            $validated['changelog'] ?? 'OpsCenter live upgrade: migrate --force and version pointer update.',
+        );
+
+        app(AuditRecorder::class)->record('system.maintenance.upgrade_applied', [
+            'actor_user_id' => $request->user()->id,
+            'actor_role' => $request->user()->activeRole(),
+            'subject_type' => SystemVersion::class,
+            'subject_id' => $version->id,
+            'after' => ['version' => $version->version, 'type' => $version->type],
+        ]);
+
+        app(SystemHealthService::class)->recordConsole('Upgrade applied: '.$version->version);
 
         return response()->json([
             'success' => true,
-            'filename' => $backup->filename,
-            'download_url' => '#',
-            'message' => 'Backup file payload streaming initiated.',
+            'version' => $version->version,
+            'output' => $version->changelog,
+            'message' => 'System upgraded to version '.$version->version.'.',
         ]);
     }
 
-    public function triggerRollback(Request $request, SystemVersion $version): RedirectResponse
+    public function triggerRollback(Request $request, SystemVersion $version, SystemUpgradeService $upgrades): RedirectResponse
     {
         $this->authorizeAdmin($request);
 
-        $version->update([
-            'rolled_back_at' => now(),
+        $upgrades->rollback($version);
+
+        app(AuditRecorder::class)->record('system.maintenance.version_rolled_back', [
+            'actor_user_id' => $request->user()->id,
+            'actor_role' => $request->user()->activeRole(),
+            'subject_type' => SystemVersion::class,
+            'subject_id' => $version->id,
+            'after' => ['version' => $version->version],
         ]);
 
-        return back()->with('success', "System version rolled back successfully to version {$version->version}.");
+        return back()->with('success', "System version rolled back from {$version->version}. Database migrations are not reversed.");
     }
 
     public function sendBroadcast(Request $request): JsonResponse
     {
         $this->authorizeAdmin($request);
 
-        $message = $request->validate([
+        $validated = $request->validate([
             'message' => ['required', 'string', 'min:5', 'max:255'],
+            'expires_at' => ['nullable', 'date', 'after:now'],
+        ]);
+
+        $broadcast = SystemBroadcast::create([
+            'message' => $validated['message'],
+            'created_by' => $request->user()->id,
+            'expires_at' => $validated['expires_at'] ?? now()->addHours(12),
+        ]);
+
+        app(AuditRecorder::class)->record('system.maintenance.broadcast_sent', [
+            'actor_user_id' => $request->user()->id,
+            'actor_role' => $request->user()->activeRole(),
+            'subject_type' => SystemBroadcast::class,
+            'subject_id' => $broadcast->id,
+            'after' => ['message' => $broadcast->message],
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Broadcast notification sent successfully to all active ERP sessions.',
+            'message' => 'Broadcast saved and shown on every signed-in ERP session.',
+            'broadcast' => [
+                'id' => $broadcast->id,
+                'message' => $broadcast->message,
+            ],
         ]);
+    }
+
+    public function runCron(Request $request): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+
+        Artisan::call('schedule:run');
+        $scheduleOutput = trim(Artisan::output());
+        Artisan::call('maintenance:heartbeat');
+        $heartbeat = trim(Artisan::output());
+
+        $output = trim($scheduleOutput."\n".$heartbeat);
+        Cache::put('maintenance:last_cron_at', now()->toIso8601String(), now()->addDays(7));
+        Cache::put('maintenance:last_cron_output', $output, now()->addDays(7));
+        app(SystemHealthService::class)->recordConsole('Cron run: '.($output !== '' ? $output : 'no due events'));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Scheduler ran.',
+            'output' => $output !== '' ? $output : 'No scheduled events were due.',
+        ]);
+    }
+
+    public function syncCodebase(Request $request, SystemHealthService $health): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+
+        $status = $health->codebaseStatus();
+        $health->recordConsole('Codebase status: '.$status['latest'].' dirty='.($status['dirty'] ? 'yes' : 'no'));
+
+        return response()->json([
+            'success' => $status['ok'],
+            'message' => $status['ok']
+                ? 'HEAD '.$status['head'].' — '.$status['status']
+                : 'Git is not available in this working directory.',
+            'status' => $status,
+        ]);
+    }
+
+    public function cloudMirror(Request $request, SystemHealthService $health): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+
+        $status = $health->cloudMirrorStatus();
+        $health->recordConsole($status['message']);
+
+        return response()->json([
+            'success' => $status['ok'],
+            'message' => $status['message'],
+        ], $status['ok'] ? 200 : 422);
     }
 
     private function authorizeAdmin(Request $request): void

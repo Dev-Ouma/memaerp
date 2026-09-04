@@ -21,6 +21,8 @@ final class SystemMaintenanceConfig extends Model
         'scheduled_start',
         'scheduled_end',
         'locked_modules',
+        'last_cron_run_at',
+        'last_optimize_at',
     ];
 
     protected $casts = [
@@ -28,5 +30,7 @@ final class SystemMaintenanceConfig extends Model
         'scheduled_start' => 'datetime',
         'scheduled_end' => 'datetime',
         'locked_modules' => 'array',
+        'last_cron_run_at' => 'datetime',
+        'last_optimize_at' => 'datetime',
     ];
 }

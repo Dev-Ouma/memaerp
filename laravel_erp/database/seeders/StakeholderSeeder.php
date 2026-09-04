@@ -30,6 +30,17 @@ final class StakeholderSeeder extends Seeder
         $studentUser = $this->account('dit0012026@student.mema.ac.ke', 'Amina', 'Kamau', 'student');
         $parent = $this->account('parent@mema.ac.ke', 'Mary', 'Kamau', 'parent');
 
+        // Named operational desks — RBAC roles are attached by RbacCatalogueSeeder.
+        $this->account('registrar@mema.ac.ke', 'Godfrey', 'Ouma', 'staff', 'Academic Registrar');
+        $this->account('admissions.officer@mema.ac.ke', 'Faith', 'Chebet', 'staff', 'Senior Admissions Officer');
+        $this->account('finance.officer@mema.ac.ke', 'Amina', 'Hassan', 'staff', 'Finance Officer');
+        $this->account('curriculum.manager@mema.ac.ke', 'Peter', 'Kariuki', 'staff', 'Curriculum Manager');
+        $this->account('hr.officer@mema.ac.ke', 'Grace', 'Atieno', 'staff', 'HR Officer');
+        $this->account('registration.officer@mema.ac.ke', 'John', 'Mwangi', 'staff', 'Registration Officer');
+        $this->account('transfers.officer@mema.ac.ke', 'Lucy', 'Wambui', 'staff', 'Transfers Officer');
+        $this->account('lms.manager@mema.ac.ke', 'Brian', 'Otieno', 'staff', 'LMS Manager');
+        $this->account('graduation.officer@mema.ac.ke', 'Helen', 'Njeri', 'staff', 'Graduation Officer');
+
         $staff = Staff::updateOrCreate(['user_id' => $teacher->id], ['course_id' => $course->id]);
         $student = Student::updateOrCreate(
             ['user_id' => $studentUser->id],
@@ -60,7 +71,7 @@ final class StakeholderSeeder extends Seeder
         }
     }
 
-    private function account(string $email, string $firstName, string $lastName, string $role): User
+    private function account(string $email, string $firstName, string $lastName, string $role, ?string $title = null): User
     {
         return User::updateOrCreate(
             ['email' => $email],
@@ -70,6 +81,7 @@ final class StakeholderSeeder extends Seeder
                 'last_name' => $lastName,
                 'password' => Hash::make('password'),
                 'role' => $role,
+                'title' => $title,
                 'gender' => null,
                 'is_active' => true,
             ],

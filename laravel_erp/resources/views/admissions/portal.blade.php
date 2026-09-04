@@ -1,32 +1,105 @@
 @extends('layouts.app')
 
-@section('title', 'My Application Portal')
-@section('section', 'Admissions Portal')
+@section('title', 'Admissions & Applicant Portal')
+@section('section', 'Applicant Workspace')
 
 @section('content')
-<div class="mema-dashboard-container py-2 font-quicksand">
+<style>
+    .portal-btn-primary {
+        background-color: #0A3E50 !important;
+        color: #ffffff !important;
+        text-decoration: none !important;
+    }
+    .portal-btn-primary:hover {
+        background-color: #072c39 !important;
+        color: #ffffff !important;
+    }
+    .portal-btn-secondary {
+        background-color: #1E8449 !important;
+        color: #ffffff !important;
+        text-decoration: none !important;
+    }
+    .portal-btn-secondary:hover {
+        background-color: #166534 !important;
+        color: #ffffff !important;
+    }
+    .portal-btn-accent {
+        background-color: #E67E22 !important;
+        color: #ffffff !important;
+        text-decoration: none !important;
+    }
+    .portal-btn-accent:hover {
+        background-color: #d35400 !important;
+        color: #ffffff !important;
+    }
+</style>
 
-@if(!$application)
-    <div class="bg-white border border-slate-200 rounded-2xl p-10 text-center shadow-xs max-w-xl mx-auto my-8 space-y-4">
-        <div class="w-16 h-16 bg-[#0A3E50]/10 text-[#0A3E50] rounded-2xl flex items-center justify-center mx-auto shadow-2xs">
-            <i data-lucide="compass" class="w-8 h-8 text-[#0A3E50]"></i>
-        </div>
+<div class="mema-dashboard-container py-2 font-quicksand" style="max-width:1240px;margin:0 auto;">
+
+    <!-- Top Navigation & Applicant Switcher Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
         <div>
-            <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">No Active Application Found</h1>
-            <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto leading-relaxed">
-                You do not have an open application yet. Explore our published academic programmes and submit your application online.
+            <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-[#0A3E50]/10 text-[#0A3E50]">
+                    Applicant Onboarding Workspace
+                </span>
+                @if($isAdminOrStaff)
+                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                        Admin / Staff Review Mode
+                    </span>
+                @endif
+            </div>
+            <h1 class="text-xl sm:text-2xl font-extrabold text-[#0A3E50] mt-1.5 tracking-tight">
+                {{ $application ? ($application->applicant?->user?->name . ' • ' . $application->offering?->course?->name) : 'MEMA Admissions Command & Application Portal' }}
+            </h1>
+            <p class="text-xs text-slate-500 font-medium mt-0.5">
+                Manage admission applications, verify supporting evidence, settle application fees, and accept offers.
             </p>
         </div>
-        <div class="pt-2">
-            <a href="{{ route('admissions.catalogue') }}" class="px-6 py-2.5 rounded-xl bg-[#0A3E50] hover:bg-[#08303e] font-extrabold text-xs transition-all shadow-md inline-flex items-center justify-center gap-2 text-white">
-                <i data-lucide="book-open" class="w-4 h-4 text-[#E67E22]"></i>
-                <span>Explore Programme Catalogue</span>
+
+        <!-- Quick Switcher Dropdown & Actions -->
+        <div class="flex items-center gap-2.5 flex-wrap">
+            @if($allApplications->isNotEmpty())
+                <div class="relative">
+                    <select onchange="if(this.value) window.location.href='{{ route('admissions.portal') }}?application_id=' + this.value" class="bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 shadow-2xs focus:outline-none focus:border-[#0A3E50] cursor-pointer">
+                        <option value="">-- Switch Application Dossier ({{ $allApplications->count() }}) --</option>
+                        @foreach($allApplications as $appItem)
+                            <option value="{{ $appItem->id }}" @if($application && $application->id === $appItem->id) selected @endif>
+                                {{ $appItem->applicant?->user?->name ?? 'Applicant' }} ({{ $appItem->offering?->course?->code ?? 'Programme' }}) - {{ $appItem->application_number }} [{{ $appItem->status }}]
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
+
+            <a href="{{ route('admissions.catalogue') }}" class="px-4 py-2 rounded-xl portal-btn-primary font-extrabold text-xs shadow-md inline-flex items-center gap-1.5">
+                <i data-lucide="compass" class="w-4 h-4 text-[#E67E22]"></i>
+                <span>Explore Programmes</span>
             </a>
         </div>
     </div>
-@else
-    @php($paid = $application->isPaid())
-    @php($canEdit = in_array($application->status, ['DRAFT', 'RETURNED_FOR_CORRECTION', 'INFO_REQUESTED']))
+
+@if($application)
+    @php
+        $paid = $application->isPaid();
+        $canEdit = in_array($application->status, ['DRAFT', 'RETURNED_FOR_CORRECTION', 'INFO_REQUESTED']);
+        $providers = (array) config('admission.payments.providers', []);
+        $feeAmount = (float) ($application->fee_amount_expected ?? config('admission.fee.amount', 1500));
+        $feeCurrency = $application->fee_currency ?? config('admission.fee.currency', 'KES');
+        $settledAttempt = $application->payments->firstWhere('status', 'PAID')
+            ?? $application->payments->firstWhere('status', 'WAIVED');
+        $openAttempt = $application->payments
+            ->whereIn('status', ['INITIATED', 'PENDING', 'AWAITING_VERIFICATION'])
+            ->sortByDesc('created_at')
+            ->first();
+        $methods = collect([
+            ['key' => 'mpesa', 'provider' => 'mpesa_stk', 'icon' => 'smartphone', 'label' => 'M-Pesa STK Push', 'blurb' => 'A prompt is sent to your phone. Enter your M-Pesa PIN to pay.', 'needs_phone' => true],
+            ['key' => 'paybill', 'provider' => 'mpesa_c2b', 'icon' => 'hash', 'label' => 'M-Pesa Paybill', 'blurb' => 'Pay to the paybill below using your application number as the account.', 'needs_phone' => false],
+            ['key' => 'card', 'provider' => 'card', 'icon' => 'credit-card', 'label' => 'Debit or Credit Card', 'blurb' => 'You will be redirected to our secure card processor.', 'needs_phone' => false],
+            ['key' => 'bank', 'provider' => 'bank_transfer', 'icon' => 'landmark', 'label' => 'Bank Transfer or Deposit', 'blurb' => 'Deposit at any branch, then enter the transaction reference here.', 'needs_phone' => false],
+            ['key' => 'cashier', 'provider' => 'cashier', 'icon' => 'building-2', 'label' => 'College Cashier', 'blurb' => 'Pay at the finance office and enter the receipt number here.', 'needs_phone' => false],
+        ])->filter(fn (array $method): bool => (bool) data_get($providers, $method['provider'].'.enabled', false))->values();
+    @endphp
 
     {{-- Top Application Header --}}
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
@@ -48,16 +121,16 @@
                     {{ str_replace('_', ' ', $application->status) }}
                 </span>
             </div>
-            <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 mt-2 tracking-tight">{{ $application->offering->course->name }}</h1>
+            <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 mt-2 tracking-tight">{{ $application->offering?->course?->name ?? 'Course Programme' }}</h1>
             <p class="text-xs text-slate-500 font-medium mt-0.5">
-                {{ $application->offering->intake->name }} · {{ $application->offering->campus }} ({{ $application->offering->study_mode }})
+                {{ $application->offering?->intake?->name ?? 'September Intake' }} · {{ $application->offering?->campus ?? 'Main Campus' }} ({{ $application->study_mode ?? 'Full-Time' }})
             </p>
         </div>
 
         <div class="flex items-center gap-2 flex-wrap">
             @if(in_array($application->status, ['ADMITTED', 'ACCEPTED', 'READY_TO_ENROL', 'ENROLLED']))
-                <a href="{{ route('admissions.application.letter', $application) }}" target="_blank" class="px-4 py-2 rounded-xl bg-[#0A3E50] hover:bg-[#072c39] font-extrabold text-xs text-white transition-all shadow-md inline-flex items-center gap-1.5">
-                    <i data-lucide="printer" class="w-4 h-4 text-[#E67E22]"></i>
+                <a href="{{ route('admissions.application.letter', $application) }}" target="_blank" class="px-4 py-2 rounded-xl portal-btn-secondary font-extrabold text-xs shadow-md inline-flex items-center gap-1.5">
+                    <i data-lucide="printer" class="w-4 h-4 text-white"></i>
                     <span>Official Offer Letter (PDF)</span>
                 </a>
             @endif
@@ -70,9 +143,9 @@
     {{-- Top 4 KPI Metrics --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs transition-all hover:border-[#0A3E50]">
-            <div class="text-xs font-bold text-slate-700 uppercase tracking-wider">Applicant ID</div>
-            <div class="text-lg font-extrabold text-[#0A3E50] mt-2 mb-1 leading-none font-mono">{{ $application->applicant->applicant_number }}</div>
-            <p class="text-[11px] text-slate-500 mb-2">Authenticated Profile</p>
+            <div class="text-xs font-bold text-slate-700 uppercase tracking-wider">Candidate / ID</div>
+            <div class="text-lg font-extrabold text-[#0A3E50] mt-2 mb-1 leading-none font-mono">{{ $application->applicant?->applicant_number ?? 'APP-2026' }}</div>
+            <p class="text-[11px] text-slate-500 mb-2">{{ $application->applicant?->user?->name ?? 'Applicant Profile' }}</p>
             <span class="inline-block px-2 py-0.5 rounded text-[10.5px] font-bold text-blue-800 bg-blue-50 border border-blue-200">Verified Identity</span>
         </div>
 
@@ -88,11 +161,11 @@
         <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs transition-all hover:border-[#0A3E50]">
             <div class="text-xs font-bold text-slate-700 uppercase tracking-wider">Processing Fee</div>
             <div class="text-xl font-extrabold @if($paid) text-emerald-700 @else text-amber-700 @endif mt-2 mb-1 leading-none">
-                {{ $paid ? 'KES 1,000 Paid' : 'KES 1,000 Due' }}
+                {{ $paid ? 'KES '.number_format((float) config('admission.fee.amount'), 0).' Paid' : 'KES '.number_format((float) config('admission.fee.amount'), 0).' Due' }}
             </div>
             <p class="text-[11px] text-slate-500 mb-2">{{ $paid ? 'Settled via M-Pesa' : 'Payment required to submit' }}</p>
             <span class="inline-block px-2 py-0.5 rounded text-[10.5px] font-bold @if($paid) text-emerald-800 bg-emerald-50 border border-emerald-200 @else text-amber-800 bg-amber-50 border border-amber-200 @endif">
-                {{ $paid ? 'Confirmed' : 'Pending Payment' }}
+                {{ $paid ? 'Confirmed & Verified' : 'Pending Payment' }}
             </span>
         </div>
 
@@ -103,10 +176,10 @@
                 @elseif($application->status === 'SUBMITTED') Under Review
                 @elseif($application->status === 'ADMITTED') Offer Dispatched
                 @elseif($application->status === 'ENROLLED') Registered Student
-                @else Processing @endif
+                @else {{ str_replace('_', ' ', $application->status) }} @endif
             </div>
             <p class="text-[11px] text-slate-500 mb-2">Updated {{ $application->updated_at->diffForHumans() }}</p>
-            <span class="inline-block px-2 py-0.5 rounded text-[10.5px] font-bold text-slate-700 bg-slate-100 border border-slate-200">Live Stage</span>
+            <span class="inline-block px-2 py-0.5 rounded text-[10.5px] font-bold text-slate-700 bg-slate-100 border border-slate-200">Live Status</span>
         </div>
     </div>
 
@@ -148,7 +221,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                         <div>
                             <label class="block font-bold text-slate-700 mb-1">Date of Birth *</label>
-                            <input type="date" name="date_of_birth" value="{{ old('date_of_birth', $application->applicant->date_of_birth ? (is_string($application->applicant->date_of_birth) ? $application->applicant->date_of_birth : $application->applicant->date_of_birth->format('Y-m-d')) : '') }}" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]" required>
+                            <input type="date" name="date_of_birth" value="{{ old('date_of_birth', $application->applicant?->date_of_birth ? (is_string($application->applicant->date_of_birth) ? $application->applicant->date_of_birth : $application->applicant->date_of_birth->format('Y-m-d')) : '') }}" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]" required>
                         </div>
                         <div>
                             <label class="block font-bold text-slate-700 mb-1">Gender *</label>
@@ -161,23 +234,23 @@
                         </div>
                         <div>
                             <label class="block font-bold text-slate-700 mb-1">Nationality *</label>
-                            <input name="nationality" value="{{ old('nationality', $application->applicant->nationality ?? 'Kenyan') }}" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]" required>
+                            <input name="nationality" value="{{ old('nationality', $application->applicant?->nationality ?? 'Kenyan') }}" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]" required>
                         </div>
                         <div>
                             <label class="block font-bold text-slate-700 mb-1">County / Region *</label>
-                            <input name="county" value="{{ old('county', $application->applicant->county) }}" placeholder="e.g. Nairobi" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]" required>
+                            <input name="county" value="{{ old('county', $application->applicant?->county) }}" placeholder="e.g. Nairobi" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]" required>
                         </div>
                         <div>
                             <label class="block font-bold text-slate-700 mb-1">Identity Document Type *</label>
                             <select name="identity_type" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 bg-white focus:outline-none focus:border-[#0A3E50]" required>
-                                <option value="national_id" @if(old('identity_type', $application->applicant->identity_type) === 'national_id') selected @endif>National ID Card</option>
-                                <option value="birth_certificate" @if(old('identity_type', $application->applicant->identity_type) === 'birth_certificate') selected @endif>Birth Certificate</option>
-                                <option value="passport" @if(old('identity_type', $application->applicant->identity_type) === 'passport') selected @endif>Passport</option>
+                                <option value="national_id" @if(old('identity_type', $application->applicant?->identity_type) === 'national_id') selected @endif>National ID Card</option>
+                                <option value="birth_certificate" @if(old('identity_type', $application->applicant?->identity_type) === 'birth_certificate') selected @endif>Birth Certificate</option>
+                                <option value="passport" @if(old('identity_type', $application->applicant?->identity_type) === 'passport') selected @endif>Passport</option>
                             </select>
                         </div>
                         <div>
                             <label class="block font-bold text-slate-700 mb-1">Identity / Document Number *</label>
-                            <input name="identity_number" value="{{ old('identity_number', $application->applicant->identity_number) }}" placeholder="e.g. 38472910" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]" required>
+                            <input name="identity_number" value="{{ old('identity_number', $application->applicant?->identity_number) }}" placeholder="e.g. 38472910" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-[#0A3E50]" required>
                         </div>
                     </div>
 
@@ -199,7 +272,7 @@
                         </div>
                         <div class="flex items-center pt-5">
                             <label class="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700">
-                                <input type="checkbox" name="has_support_need" value="1" @if($application->applicant->has_support_need) checked @endif class="rounded text-[#0A3E50] focus:ring-[#0A3E50]">
+                                <input type="checkbox" name="has_support_need" value="1" @if($application->applicant?->has_support_need) checked @endif class="rounded text-[#0A3E50] focus:ring-[#0A3E50]">
                                 <span>I require learning accessibility support</span>
                             </label>
                         </div>
@@ -212,7 +285,7 @@
                         </label>
                     </div>
 
-                    <button type="submit" class="w-full py-2.5 rounded-xl bg-[#0A3E50] hover:bg-[#072c39] text-white font-extrabold text-xs transition-colors shadow-sm">
+                    <button type="submit" class="w-full py-2.5 rounded-xl portal-btn-primary font-extrabold text-xs transition-colors shadow-sm">
                         Save Application Details
                     </button>
                 </form>
@@ -247,7 +320,7 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="w-full py-2.5 rounded-xl bg-[#0A3E50] hover:bg-[#072c39] text-white font-extrabold text-xs transition-colors shadow-sm flex items-center justify-center gap-1.5">
+                        <button type="submit" class="w-full py-2.5 rounded-xl portal-btn-primary font-extrabold text-xs transition-colors shadow-sm flex items-center justify-center gap-1.5">
                             <i data-lucide="upload" class="w-3.5 h-3.5 text-[#E67E22]"></i> Upload Document
                         </button>
                     </form>
@@ -276,12 +349,12 @@
                     @endif
                 </div>
 
-                {{-- Kenyan Executive World-Class Payment Gateway Hub --}}
+                {{-- Payment Gateway Hub --}}
                 <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-5" id="payment-gateway-container">
                     <div class="flex justify-between items-center pb-3 border-b border-slate-100">
                         <div>
                             <div class="text-[11px] font-bold text-[#E67E22] uppercase tracking-wider">Step 4 of 4 • Executive Settlement</div>
-                            <h2 class="text-sm font-extrabold text-[#0A3E50]">Official Application Fee Checkout (KES 1,000)</h2>
+                            <h2 class="text-sm font-extrabold text-[#0A3E50]">Official Application Fee Checkout (KES {{ number_format((float) config('admission.fee.amount'), 0) }})</h2>
                         </div>
                         <span class="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-xs font-bold @if($paid) bg-emerald-50 text-emerald-800 border border-emerald-200 @else bg-amber-50 text-amber-800 border border-amber-200 @endif">
                             <span class="w-1.5 h-1.5 rounded-full @if($paid) bg-emerald-500 @else bg-amber-500 animate-ping @endif"></span>
@@ -290,248 +363,139 @@
                     </div>
 
                     @if(!$paid)
-                        {{-- Payment Channel Selector Tabs --}}
-                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2" id="payment-channel-tabs">
-                            <button type="button" onclick="switchPayChannel('stk')" id="tab-stk" class="pay-tab active p-3 rounded-xl border border-[#1E8449] bg-emerald-50/70 text-center transition-all cursor-pointer shadow-2xs">
-                                <i data-lucide="smartphone" class="w-5 h-5 mx-auto text-[#1E8449] mb-1"></i>
-                                <span class="block text-[11px] font-extrabold text-slate-800 leading-tight">STK Push</span>
-                                <span class="text-[9.5px] font-bold text-[#1E8449]">Instant Prompt</span>
-                            </button>
-
-                            <button type="button" onclick="switchPayChannel('paybill')" id="tab-paybill" class="pay-tab p-3 rounded-xl border border-slate-200 bg-white text-center hover:bg-slate-50 transition-all cursor-pointer shadow-2xs">
-                                <i data-lucide="building-2" class="w-5 h-5 mx-auto text-[#004F9E] mb-1"></i>
-                                <span class="block text-[11px] font-extrabold text-slate-800 leading-tight">KCB Paybill</span>
-                                <span class="text-[9.5px] font-bold text-slate-500">522 522</span>
-                            </button>
-
-                            <button type="button" onclick="switchPayChannel('pochi')" id="tab-pochi" class="pay-tab p-3 rounded-xl border border-slate-200 bg-white text-center hover:bg-slate-50 transition-all cursor-pointer shadow-2xs">
-                                <i data-lucide="wallet" class="w-5 h-5 mx-auto text-[#E67E22] mb-1"></i>
-                                <span class="block text-[11px] font-extrabold text-slate-800 leading-tight">Pochi Biashara</span>
-                                <span class="text-[9.5px] font-bold text-slate-500">0113636154</span>
-                            </button>
-
-                            <button type="button" onclick="switchPayChannel('till')" id="tab-till" class="pay-tab p-3 rounded-xl border border-slate-200 bg-white text-center hover:bg-slate-50 transition-all cursor-pointer shadow-2xs">
-                                <i data-lucide="shopping-bag" class="w-5 h-5 mx-auto text-teal-700 mb-1"></i>
-                                <span class="block text-[11px] font-extrabold text-slate-800 leading-tight">Buy Goods / Till</span>
-                                <span class="text-[9.5px] font-bold text-slate-500">0113636154</span>
-                            </button>
-
-                            <button type="button" onclick="switchPayChannel('card')" id="tab-card" class="pay-tab p-3 rounded-xl border border-slate-200 bg-white text-center hover:bg-slate-50 transition-all cursor-pointer shadow-2xs">
-                                <i data-lucide="credit-card" class="w-5 h-5 mx-auto text-purple-700 mb-1"></i>
-                                <span class="block text-[11px] font-extrabold text-slate-800 leading-tight">Card / Stripe</span>
-                                <span class="text-[9.5px] font-bold text-slate-500">Visa • MC</span>
-                            </button>
-                        </div>
-
-                        {{-- Channel 1: STK Push (Default) --}}
-                        <div id="channel-content-stk" class="pay-content space-y-4 bg-emerald-50/40 p-5 rounded-xl border border-emerald-200">
-                            <div class="flex items-start justify-between gap-3">
-                                <div>
-                                    <h3 class="font-extrabold text-xs text-slate-900 flex items-center gap-1.5">
-                                        <span class="w-2 h-2 rounded-full bg-[#1E8449]"></span> Safaricom M-Pesa Instant STK Push
-                                    </h3>
-                                    <p class="text-[11.5px] text-slate-600 mt-0.5">
-                                        Enter your Safaricom phone number. A PIN prompt will pop up on your screen instantly.
-                                    </p>
-                                </div>
-                                <span class="font-mono font-bold text-xs text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200">KES 1,000</span>
-                            </div>
-
-                            <form method="post" action="{{ route('admissions.application.payment', $application) }}" onsubmit="showStkTriggerAnimation(event, this)">
-                                @csrf
-                                <input type="hidden" name="channel" value="mpesa">
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-                                    <div class="sm:col-span-2">
-                                        <label class="block text-xs font-bold text-slate-700 mb-1">M-Pesa Mobile Number *</label>
-                                        <div class="relative">
-                                            <input type="tel" name="phone_number" value="0113636154" id="stk-phone-input" required class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-[#1E8449] pl-10 shadow-2xs">
-                                            <i data-lucide="phone" class="w-4 h-4 text-emerald-600 absolute left-3 top-2.5"></i>
+                        @if($openAttempt)
+                            {{-- An attempt is open. Until a provider callback or a Finance
+                                 Officer confirms it, nothing has been settled. --}}
+                            <div class="p-5 rounded-xl border border-amber-300 bg-amber-50/60 space-y-4">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <strong class="font-extrabold text-sm text-amber-950 block">
+                                            {{ $openAttempt->status === 'AWAITING_VERIFICATION' ? 'Awaiting Finance confirmation' : 'Payment started — not yet confirmed' }}
+                                        </strong>
+                                        <p class="text-[11.5px] text-slate-700 mt-0.5">
+                                            @if($openAttempt->status === 'AWAITING_VERIFICATION')
+                                                Your transaction code is with the Finance office. Your receipt appears here once it is verified.
+                                            @else
+                                                Complete the payment on your phone or at the bank, then enter the transaction code below.
+                                            @endif
+                                        </p>
+                                        <div class="font-mono text-[11px] text-slate-600 mt-1">
+                                            Reference: {{ $openAttempt->reference }} • {{ strtoupper((string) $openAttempt->channel) }}
+                                            @if($openAttempt->provider_request_ref) • Code: {{ $openAttempt->provider_request_ref }} @endif
                                         </div>
+                                        @if($openAttempt->failure_reason)
+                                            <p class="text-[11px] text-rose-700 font-bold mt-1">{{ $openAttempt->failure_reason }}</p>
+                                        @endif
                                     </div>
-                                    <div>
-                                        <button type="submit" id="stk-submit-btn" class="w-full py-2 px-4 rounded-lg bg-[#1E8449] hover:bg-[#166534] text-white font-extrabold text-xs transition-all shadow-md flex items-center justify-center gap-1.5">
-                                            <i data-lucide="send" class="w-3.5 h-3.5"></i> Send STK Prompt
+                                    <span class="px-3 py-1 rounded-full text-[10.5px] font-extrabold text-amber-900 bg-amber-100 border border-amber-300 whitespace-nowrap">
+                                        {{ str_replace('_', ' ', $openAttempt->status) }}
+                                    </span>
+                                </div>
+
+                                @if($openAttempt->channel === 'paybill' && data_get($providers, 'mpesa_c2b.shortcode'))
+                                    <div class="bg-white rounded-lg border border-slate-200 p-3 text-[11.5px] text-slate-700 space-y-0.5">
+                                        <div>Paybill: <strong class="font-mono">{{ data_get($providers, 'mpesa_c2b.shortcode') }}</strong></div>
+                                        <div>Account number: <strong class="font-mono">{{ $application->application_number }}</strong></div>
+                                    </div>
+                                @elseif($openAttempt->channel === 'bank' && data_get($providers, 'bank_transfer.account_number'))
+                                    <div class="bg-white rounded-lg border border-slate-200 p-3 text-[11.5px] text-slate-700 space-y-0.5">
+                                        <div>{{ data_get($providers, 'bank_transfer.bank_name') }} — {{ data_get($providers, 'bank_transfer.branch') }}</div>
+                                        <div>{{ data_get($providers, 'bank_transfer.account_name') }}</div>
+                                        <div>Account: <strong class="font-mono">{{ data_get($providers, 'bank_transfer.account_number') }}</strong></div>
+                                        <div>Reference: <strong class="font-mono">{{ $application->application_number }}</strong></div>
+                                    </div>
+                                @endif
+
+                                @if($openAttempt->status !== 'AWAITING_VERIFICATION')
+                                    <form method="post" action="{{ route('admissions.application.payment.declare', [$application, $openAttempt]) }}" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                                        @csrf
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-700 mb-1">Transaction code *</label>
+                                            <input type="text" name="transaction_code" required value="{{ old('transaction_code') }}" placeholder="e.g. SFH4K2L9XZ"
+                                                   class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono font-bold uppercase text-slate-900 focus:outline-none focus:border-[#1E8449]">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-700 mb-1">Name on the payment</label>
+                                            <input type="text" name="payer_name" value="{{ old('payer_name', $application->applicant?->user?->name) }}"
+                                                   class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#1E8449]">
+                                        </div>
+                                        <button type="submit" class="w-full py-2 px-4 rounded-lg portal-btn-secondary font-extrabold text-xs shadow-md flex items-center justify-center gap-1.5">
+                                            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Submit for verification
                                         </button>
-                                    </div>
-                                </div>
-                                <div id="stk-waiting-indicator" class="hidden mt-3 p-3 bg-white rounded-lg border border-emerald-300 text-xs text-emerald-900 flex items-center gap-3">
-                                    <div class="w-4 h-4 border-2 border-[#1E8449] border-t-transparent rounded-full animate-spin"></div>
-                                    <span>STK push dispatched to <strong>0113636154</strong>. Please enter your M-Pesa PIN on your phone to complete...</span>
-                                </div>
-                            </form>
-                        </div>
-
-                        {{-- Channel 2: KCB Paybill 522 522 / Account 0113636154 --}}
-                        <div id="channel-content-paybill" class="pay-content hidden space-y-4 bg-blue-50/40 p-5 rounded-xl border border-blue-200">
-                            <div class="flex items-start justify-between gap-3">
-                                <div>
-                                    <h3 class="font-extrabold text-xs text-slate-900 flex items-center gap-1.5">
-                                        <span class="w-2 h-2 rounded-full bg-[#004F9E]"></span> KCB Paybill Gateway
-                                    </h3>
-                                    <p class="text-[11.5px] text-slate-600 mt-0.5">
-                                        Pay via M-Pesa Paybill using the official institutional collection credentials below:
+                                        @error('transaction_code')
+                                            <p class="sm:col-span-3 text-[11px] font-bold text-rose-700">{{ $message }}</p>
+                                        @enderror
+                                    </form>
+                                    <p class="text-[10.5px] text-slate-500">
+                                        Entering a code does not settle the fee. Finance verifies it against the provider statement first.
                                     </p>
-                                </div>
-                                <span class="font-mono font-bold text-xs text-blue-900 bg-white px-2 py-0.5 rounded border border-blue-200">KCB Bank</span>
+                                @endif
                             </div>
+                        @endif
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                                <div class="bg-white p-3.5 rounded-lg border border-slate-200 flex justify-between items-center shadow-2xs">
-                                    <div>
-                                        <span class="block text-[10px] text-slate-400 font-bold uppercase">Business Number (Paybill)</span>
-                                        <span class="font-mono text-base font-extrabold text-[#004F9E]">522 522</span>
+                        @if($methods->isEmpty())
+                            <div class="p-5 rounded-xl border border-slate-300 bg-slate-50 text-xs text-slate-700">
+                                No payment method is currently switched on. Contact the Admissions office to pay your application fee.
+                            </div>
+                        @elseif(!$openAttempt)
+                            <div class="space-y-3">
+                                @foreach($methods as $method)
+                                    <div class="bg-emerald-50/40 p-5 rounded-xl border border-emerald-200 space-y-3">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div>
+                                                <h3 class="font-extrabold text-xs text-slate-900 flex items-center gap-1.5">
+                                                    <i data-lucide="{{ $method['icon'] }}" class="w-3.5 h-3.5 text-[#1E8449]"></i> {{ $method['label'] }}
+                                                </h3>
+                                                <p class="text-[11.5px] text-slate-600 mt-0.5">{{ $method['blurb'] }}</p>
+                                            </div>
+                                            <span class="font-mono font-bold text-xs text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200 whitespace-nowrap">
+                                                {{ $feeCurrency }} {{ number_format($feeAmount, 0) }}
+                                            </span>
+                                        </div>
+
+                                        <form method="post" action="{{ route('admissions.application.payment', $application) }}">
+                                            @csrf
+                                            <input type="hidden" name="channel" value="{{ $method['key'] }}">
+                                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                                                @if($method['needs_phone'])
+                                                    <div class="sm:col-span-2">
+                                                        <label class="block text-xs font-bold text-slate-700 mb-1">M-Pesa mobile number *</label>
+                                                        <div class="relative">
+                                                            <input type="tel" name="phone" required placeholder="07XXXXXXXX"
+                                                                   value="{{ old('phone', $application->applicant?->phone ?? $application->applicant?->user?->phone_number) }}"
+                                                                   class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-[#1E8449] pl-8 shadow-2xs">
+                                                            <i data-lucide="phone" class="w-4 h-4 text-emerald-600 absolute left-2.5 top-2.5"></i>
+                                                        </div>
+                                                    </div>
+                                                @else
+                                                    <div class="sm:col-span-2 text-[11px] text-slate-500 self-center">
+                                                        Reference to quote: <strong class="font-mono text-slate-800">{{ $application->application_number }}</strong>
+                                                    </div>
+                                                @endif
+                                                <button type="submit" class="w-full py-2 px-4 rounded-lg portal-btn-secondary font-extrabold text-xs shadow-md flex items-center justify-center gap-1.5">
+                                                    <i data-lucide="send" class="w-3.5 h-3.5"></i> Pay {{ $feeCurrency }} {{ number_format($feeAmount, 0) }}
+                                                </button>
+                                            </div>
+                                        </form>
                                     </div>
-                                    <button type="button" onclick="copyToClip('522522', this)" class="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10.5px] font-bold transition-colors">Copy</button>
-                                </div>
-                                <div class="bg-white p-3.5 rounded-lg border border-slate-200 flex justify-between items-center shadow-2xs">
-                                    <div>
-                                        <span class="block text-[10px] text-slate-400 font-bold uppercase">Account Number</span>
-                                        <span class="font-mono text-base font-extrabold text-[#004F9E]">0113636154</span>
-                                    </div>
-                                    <button type="button" onclick="copyToClip('0113636154', this)" class="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10.5px] font-bold transition-colors">Copy</button>
-                                </div>
+                                @endforeach
+                                @error('channel') <p class="text-[11px] font-bold text-rose-700">{{ $message }}</p> @enderror
+                                @error('phone') <p class="text-[11px] font-bold text-rose-700">{{ $message }}</p> @enderror
                             </div>
-
-                            <div class="bg-white p-3 rounded-lg border border-slate-200 text-xs text-slate-600 space-y-1">
-                                <strong class="text-slate-800 block font-bold">Manual USSD Payment Steps:</strong>
-                                <p class="text-[11.5px]">1. Go to M-Pesa &rarr; Lipa na M-Pesa &rarr; <strong>Pay Bill</strong>.<br>
-                                2. Enter Business No: <strong>522522</strong>.<br>
-                                3. Enter Account No: <strong>0113636154</strong> (or Ref: <strong>{{ $application->application_number }}</strong>).<br>
-                                4. Enter Amount: <strong>1000</strong> &rarr; Enter PIN &rarr; Send.</p>
-                            </div>
-
-                            <form method="post" action="{{ route('admissions.application.payment', $application) }}">
-                                @csrf
-                                <input type="hidden" name="channel" value="paybill">
-                                <button type="submit" class="w-full py-2.5 rounded-lg bg-[#004F9E] hover:bg-[#003870] text-white font-extrabold text-xs transition-colors shadow-md flex items-center justify-center gap-2">
-                                    <i data-lucide="check-circle-2" class="w-4 h-4"></i> I Have Paid via KCB Paybill (Confirm Receipt)
-                                </button>
-                            </form>
-                        </div>
-
-                        {{-- Channel 3: Pochi la Biashara 0113636154 --}}
-                        <div id="channel-content-pochi" class="pay-content hidden space-y-4 bg-amber-50/40 p-5 rounded-xl border border-amber-200">
-                            <div class="flex items-start justify-between gap-3">
-                                <div>
-                                    <h3 class="font-extrabold text-xs text-slate-900 flex items-center gap-1.5">
-                                        <span class="w-2 h-2 rounded-full bg-[#E67E22]"></span> Pochi la Biashara Direct Transfer
-                                    </h3>
-                                    <p class="text-[11.5px] text-slate-600 mt-0.5">
-                                        Send application fee directly to the university admissions Pochi la Biashara mobile wallet:
-                                    </p>
-                                </div>
-                                <span class="font-mono font-bold text-xs text-amber-900 bg-white px-2 py-0.5 rounded border border-amber-200">Pochi la Biashara</span>
-                            </div>
-
-                            <div class="bg-white p-4 rounded-lg border border-slate-200 flex justify-between items-center shadow-2xs">
-                                <div>
-                                    <span class="block text-[10px] text-slate-400 font-bold uppercase">Pochi Mobile Number</span>
-                                    <span class="font-mono text-lg font-extrabold text-[#E67E22]">0113636154</span>
-                                    <span class="block text-[10.5px] text-slate-500 mt-0.5">Recipient: MEMA Admissions &amp; Enrolments</span>
-                                </div>
-                                <button type="button" onclick="copyToClip('0113636154', this)" class="px-3 py-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">Copy Number</button>
-                            </div>
-
-                            <div class="bg-white p-3 rounded-lg border border-slate-200 text-xs text-slate-600 space-y-1">
-                                <strong class="text-slate-800 block font-bold">Steps to Pay via Pochi:</strong>
-                                <p class="text-[11.5px]">1. Dial <strong>*334#</strong> or open M-Pesa App.<br>
-                                2. Select <strong>Lipa na M-Pesa</strong> &rarr; <strong>Pochi la Biashara</strong> &rarr; <strong>Send Money</strong>.<br>
-                                3. Enter Phone No: <strong>0113636154</strong> &rarr; Amount: <strong>1000</strong> &rarr; PIN &rarr; Confirm.</p>
-                            </div>
-
-                            <form method="post" action="{{ route('admissions.application.payment', $application) }}">
-                                @csrf
-                                <input type="hidden" name="channel" value="pochi">
-                                <button type="submit" class="w-full py-2.5 rounded-lg bg-[#E67E22] hover:bg-[#d35400] text-white font-extrabold text-xs transition-colors shadow-md flex items-center justify-center gap-2">
-                                    <i data-lucide="check-circle-2" class="w-4 h-4"></i> I Have Sent via Pochi la Biashara (Confirm Settlement)
-                                </button>
-                            </form>
-                        </div>
-
-                        {{-- Channel 4: Buy Goods / Till 0113636154 --}}
-                        <div id="channel-content-till" class="pay-content hidden space-y-4 bg-teal-50/40 p-5 rounded-xl border border-teal-200">
-                            <div class="flex items-start justify-between gap-3">
-                                <div>
-                                    <h3 class="font-extrabold text-xs text-slate-900 flex items-center gap-1.5">
-                                        <span class="w-2 h-2 rounded-full bg-teal-700"></span> Lipa na M-Pesa Buy Goods (Till)
-                                    </h3>
-                                    <p class="text-[11.5px] text-slate-600 mt-0.5">
-                                        Pay via merchant till at zero transaction cost:
-                                    </p>
-                                </div>
-                                <span class="font-mono font-bold text-xs text-teal-900 bg-white px-2 py-0.5 rounded border border-teal-200">Buy Goods</span>
-                            </div>
-
-                            <div class="bg-white p-4 rounded-lg border border-slate-200 flex justify-between items-center shadow-2xs">
-                                <div>
-                                    <span class="block text-[10px] text-slate-400 font-bold uppercase">Till Number</span>
-                                    <span class="font-mono text-lg font-extrabold text-teal-800">0113636154</span>
-                                    <span class="block text-[10.5px] text-slate-500 mt-0.5">Merchant: MEMA College Collections</span>
-                                </div>
-                                <button type="button" onclick="copyToClip('0113636154', this)" class="px-3 py-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">Copy Till</button>
-                            </div>
-
-                            <form method="post" action="{{ route('admissions.application.payment', $application) }}">
-                                @csrf
-                                <input type="hidden" name="channel" value="till">
-                                <button type="submit" class="w-full py-2.5 rounded-lg bg-teal-800 hover:bg-teal-900 text-white font-extrabold text-xs transition-colors shadow-md flex items-center justify-center gap-2">
-                                    <i data-lucide="check-circle-2" class="w-4 h-4"></i> I Have Paid via Till 0113636154 (Confirm Payment)
-                                </button>
-                            </form>
-                        </div>
-
-                        {{-- Channel 5: Card / Stripe 3D-Secure --}}
-                        <div id="channel-content-card" class="pay-content hidden space-y-4 bg-purple-50/30 p-5 rounded-xl border border-purple-200">
-                            <div class="flex items-start justify-between gap-3">
-                                <div>
-                                    <h3 class="font-extrabold text-xs text-slate-900 flex items-center gap-1.5">
-                                        <span class="w-2 h-2 rounded-full bg-purple-700"></span> Global Debit / Credit Card (Stripe 3D-Secure 2.0)
-                                    </h3>
-                                    <p class="text-[11.5px] text-slate-600 mt-0.5">
-                                        International Visa, Mastercard, and American Express supported with instant automated clearance.
-                                    </p>
-                                </div>
-                                <span class="font-mono font-bold text-xs text-purple-900 bg-white px-2 py-0.5 rounded border border-purple-200">Stripe Verified</span>
-                            </div>
-
-                            <form method="post" action="{{ route('admissions.application.payment', $application) }}" class="space-y-3">
-                                @csrf
-                                <input type="hidden" name="channel" value="stripe">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1">Cardholder Name *</label>
-                                    <input type="text" placeholder="John Doe" value="{{ old('card_name', $application->applicant->user->name ?? 'Applicant') }}" required class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-purple-600 shadow-2xs">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1">Card Number *</label>
-                                    <input type="text" placeholder="4242 •••• •••• 4242" value="4242 4242 4242 4242" maxlength="19" required class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-purple-600 shadow-2xs">
-                                </div>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-700 mb-1">Expiry (MM/YY) *</label>
-                                        <input type="text" placeholder="12/28" value="12/28" maxlength="5" required class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono text-center font-bold text-slate-900 focus:outline-none focus:border-purple-600 shadow-2xs">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-700 mb-1">CVV / CVC *</label>
-                                        <input type="password" placeholder="•••" value="123" maxlength="4" required class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono text-center font-bold text-slate-900 focus:outline-none focus:border-purple-600 shadow-2xs">
-                                    </div>
-                                </div>
-
-                                <button type="submit" class="w-full py-2.5 rounded-lg bg-purple-900 hover:bg-purple-950 text-white font-extrabold text-xs transition-colors shadow-md flex items-center justify-center gap-2">
-                                    <i data-lucide="lock" class="w-4 h-4 text-purple-300"></i> Pay KES 1,000 via Stripe Secure Card Gateway
-                                </button>
-                            </form>
-                        </div>
+                        @endif
                     @else
-                        {{-- Confirmed Receipt Card --}}
                         <div class="p-5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs text-emerald-950 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-xs">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold shadow-2xs">
                                     <i data-lucide="check-check" class="w-5 h-5 text-emerald-700"></i>
                                 </div>
                                 <div>
-                                    <strong class="font-extrabold text-sm block">Payment Cleared &amp; Settled</strong>
-                                    <div class="font-mono text-[11px] text-emerald-800 mt-0.5">Official Receipt: {{ $application->payments()->where('status', 'PAID')->value('receipt_number') ?? 'MEMA-RCPT-2026' }}</div>
-                                    <span class="text-[10.5px] text-slate-600">Channel: {{ strtoupper($application->payments()->where('status', 'PAID')->value('channel') ?? 'M-PESA') }} • KES 1,000.00</span>
+                                    <strong class="font-extrabold text-sm block">Payment cleared &amp; settled</strong>
+                                    <div class="font-mono text-[11px] text-emerald-800 mt-0.5">Official receipt: {{ $settledAttempt?->receipt_number ?? '—' }}</div>
+                                    <span class="text-[10.5px] text-slate-600">
+                                        Channel: {{ strtoupper((string) ($settledAttempt?->channel ?? '—')) }}
+                                        @if($settledAttempt?->paid_at) • Confirmed {{ $settledAttempt->paid_at->format('d M Y, H:i') }} @endif
+                                    </span>
                                 </div>
                             </div>
                             <span class="px-3 py-1 rounded-full text-xs font-extrabold text-emerald-900 bg-emerald-100 border border-emerald-300">CLEARED</span>
@@ -539,63 +503,16 @@
                     @endif
                 </div>
 
-                <script>
-                    function switchPayChannel(channel) {
-                        document.querySelectorAll('.pay-tab').forEach(b => {
-                            b.classList.remove('active', 'border-[#1E8449]', 'bg-emerald-50/70');
-                            b.classList.add('border-slate-200', 'bg-white');
-                        });
-                        document.querySelectorAll('.pay-content').forEach(c => c.classList.add('hidden'));
-
-                        const activeTab = document.getElementById('tab-' + channel);
-                        const activeContent = document.getElementById('channel-content-' + channel);
-
-                        if (activeTab) {
-                            activeTab.classList.add('active', 'border-[#1E8449]', 'bg-emerald-50/70');
-                            activeTab.classList.remove('border-slate-200', 'bg-white');
-                        }
-                        if (activeContent) {
-                            activeContent.classList.remove('hidden');
-                        }
-                    }
-
-                    function copyToClip(text, btn) {
-                        navigator.clipboard.writeText(text);
-                        const orig = btn.textContent;
-                        btn.textContent = 'Copied!';
-                        btn.classList.add('bg-emerald-100', 'text-emerald-800');
-                        setTimeout(() => {
-                            btn.textContent = orig;
-                            btn.classList.remove('bg-emerald-100', 'text-emerald-800');
-                        }, 2000);
-                    }
-
-                    function showStkTriggerAnimation(e, form) {
-                        const ind = document.getElementById('stk-waiting-indicator');
-                        const btn = document.getElementById('stk-submit-btn');
-                        if (ind) ind.classList.remove('hidden');
-                        if (btn) {
-                            btn.disabled = true;
-                            btn.classList.add('opacity-75');
-                            btn.innerHTML = '<span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Dispatched STK Prompt...';
-                        }
-                    }
-                </script>
-
                 {{-- Final Submit Button --}}
                 <form method="post" action="{{ route('admissions.application.submit', $application) }}">
                     @csrf
-                    <button type="submit" class="w-full py-3.5 rounded-xl bg-[#0A3E50] hover:bg-[#072c39] text-white font-extrabold text-sm transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" @disabled(!$paid || $application->completion_percent < 100)>
-                        Submit Application for Formal Review <i data-lucide="arrow-right" class="w-4 h-4 text-[#E67E22]"></i>
+                    <button type="submit" class="w-full py-3.5 rounded-xl portal-btn-primary font-extrabold text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" @disabled(!$paid || $application->completion_percent < 100)>
+                        <span>Submit Application for Formal Review</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 text-[#E67E22]"></i>
                     </button>
-                    @if(!$paid || $application->completion_percent < 100)
-                        <p class="text-center text-[11px] text-slate-400 mt-2">
-                            Please complete personal information, upload at least one document, and confirm payment to submit.
-                        </p>
-                    @endif
                 </form>
             @else
-                {{-- Post-submission Summary View --}}
+                {{-- Submitted Dossier Summary View --}}
                 <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
                     <div class="flex justify-between items-center pb-3 border-b border-slate-100">
                         <h2 class="text-sm font-extrabold text-[#0A3E50] uppercase tracking-wide">Submitted Application Dossier</h2>
@@ -604,20 +521,20 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                         <div>
+                            <span class="text-slate-500 block">Candidate Name</span>
+                            <span class="font-bold text-slate-900 text-sm">{{ $application->applicant?->user?->name ?? 'Candidate' }}</span>
+                        </div>
+                        <div>
                             <span class="text-slate-500 block">Degree Programme</span>
-                            <span class="font-bold text-slate-900 text-sm">{{ $application->offering->course->name }}</span>
+                            <span class="font-bold text-slate-900 text-sm">{{ $application->offering?->course?->name ?? 'Course Programme' }}</span>
                         </div>
                         <div>
                             <span class="text-slate-500 block">Intake &amp; Campus</span>
-                            <span class="font-bold text-slate-900 text-sm">{{ $application->offering->intake->name }} · {{ $application->offering->campus }}</span>
-                        </div>
-                        <div>
-                            <span class="text-slate-500 block">Submission Date</span>
-                            <span class="font-bold text-slate-900">{{ $application->submitted_at ? (is_string($application->submitted_at) ? $application->submitted_at : $application->submitted_at->format('d M, Y H:i')) : ($application->updated_at ? (is_string($application->updated_at) ? $application->updated_at : $application->updated_at->format('d M, Y')) : '—') }}</span>
+                            <span class="font-bold text-slate-900 text-sm">{{ $application->offering?->intake?->name ?? 'September 2026' }} · {{ $application->offering?->campus ?? 'Main Campus' }}</span>
                         </div>
                         <div>
                             <span class="text-slate-500 block">Official Submission Receipt</span>
-                            <span class="font-mono font-bold text-emerald-800">{{ $application->submission_receipt_number ?? 'MC/SUB/2026/001' }}</span>
+                            <span class="font-mono font-bold text-emerald-800">{{ $application->submission_receipt_number ?? 'MEMA/SUB/2026/001' }}</span>
                         </div>
                     </div>
                 </div>
@@ -631,7 +548,7 @@
                             </div>
                             <div>
                                 <h2 class="text-lg font-extrabold text-emerald-950">Congratulations! You Have Been Admitted</h2>
-                                <p class="text-xs text-slate-600 mt-0.5">Please review your offer and confirm acceptance before {{ $application->offering->intake->acceptance_deadline ? date('d M, Y', strtotime($application->offering->intake->acceptance_deadline)) : '30 September 2026' }}.</p>
+                                <p class="text-xs text-slate-600 mt-0.5">Please review your offer and confirm acceptance before {{ $application->offering?->intake?->acceptance_deadline ? date('d M, Y', strtotime($application->offering->intake->acceptance_deadline)) : '30 September 2026' }}.</p>
                             </div>
                         </div>
 
@@ -639,16 +556,9 @@
                             <form method="post" action="{{ route('admissions.application.respond', $application) }}" class="inline">
                                 @csrf
                                 <input type="hidden" name="response" value="ACCEPTED">
-                                <button type="submit" class="px-6 py-2.5 rounded-xl bg-[#1E8449] hover:bg-[#166534] text-white font-extrabold text-xs transition-colors shadow-sm flex items-center gap-1.5">
+                                <input type="hidden" name="offer_declaration" value="1">
+                                <button type="submit" class="px-6 py-2.5 rounded-xl portal-btn-secondary font-extrabold text-xs shadow-sm flex items-center gap-1.5">
                                     <i data-lucide="check" class="w-4 h-4"></i> Accept Admission Offer
-                                </button>
-                            </form>
-
-                            <form method="post" action="{{ route('admissions.application.respond', $application) }}" class="inline" onsubmit="return confirm('Are you sure you want to decline this admission offer?');">
-                                @csrf
-                                <input type="hidden" name="response" value="DECLINED">
-                                <button type="submit" class="px-4 py-2.5 rounded-xl border border-red-300 text-red-700 hover:bg-red-50 font-bold text-xs transition-colors">
-                                    Decline Offer
                                 </button>
                             </form>
 
@@ -674,7 +584,7 @@
                                 <span>I accept my admission to MEMA College and agree to abide by all academic regulations and student code of conduct.</span>
                             </label>
 
-                            <button type="submit" class="px-6 py-2.5 rounded-xl bg-[#0A3E50] hover:bg-[#08303e] text-white font-extrabold text-xs transition-colors shadow-sm flex items-center gap-1.5">
+                            <button type="submit" class="px-6 py-2.5 rounded-xl portal-btn-primary font-extrabold text-xs shadow-sm flex items-center gap-1.5">
                                 <i data-lucide="user-check" class="w-4 h-4 text-[#E67E22]"></i> Complete Enrolment &amp; Issue Registration No.
                             </button>
                         </form>
@@ -727,7 +637,7 @@
                         </div>
                     @empty
                         <div class="text-center py-6 text-slate-400 text-xs">
-                            Application initiated.
+                            Application initiated and recorded.
                         </div>
                     @endforelse
                 </div>
@@ -735,5 +645,109 @@
         </div>
     </div>
 @endif
+
+    <!-- All Applicants & Applications Hub Table (Always Visible for Exploration / Admin / Switcher) -->
+    <section class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs mt-8">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 border-b border-slate-100">
+            <div>
+                <h2 class="text-base font-extrabold text-[#0A3E50]">All Active Applicant Dossiers</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Click any applicant to switch and inspect their complete application lifecycle, verification status, and offer details.</p>
+            </div>
+            <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-[#0A3E50]/10 text-[#0A3E50]">
+                {{ $allApplications->count() }} Total Applications
+            </span>
+        </div>
+
+        <div class="overflow-x-auto mt-4">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 text-slate-600 font-extrabold border-b border-slate-200">
+                        <th class="py-3 px-4">Candidate Name</th>
+                        <th class="py-3 px-4">Programme</th>
+                        <th class="py-3 px-4">Application Reference</th>
+                        <th class="py-3 px-4">Offer Ref</th>
+                        <th class="py-3 px-4 text-center">Lifecycle Status</th>
+                        <th class="py-3 px-4 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @forelse($allApplications as $appRow)
+                        <tr class="hover:bg-slate-50/80 transition-colors @if($application && $application->id === $appRow->id) bg-teal-50/50 @endif">
+                            <td class="py-3 px-4">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-7 h-7 rounded-lg bg-[#0A3E50] text-white font-bold text-xs flex items-center justify-center">
+                                        {{ strtoupper(substr($appRow->applicant?->user?->first_name ?: 'A', 0, 1)) }}
+                                    </span>
+                                    <div>
+                                        <strong class="text-slate-900 text-xs block">{{ $appRow->applicant?->user?->name ?? 'Candidate' }}</strong>
+                                        <span class="text-[10.5px] text-slate-400 font-mono">{{ $appRow->applicant?->applicant_number }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3 px-4">
+                                <strong class="text-[#0A3E50]">{{ $appRow->offering?->course?->name ?? 'Course' }}</strong>
+                                <span class="block text-[10.5px] text-slate-500">{{ $appRow->offering?->intake?->name ?? 'September 2026' }}</span>
+                            </td>
+                            <td class="py-3 px-4 font-mono font-bold text-slate-700">
+                                {{ $appRow->application_number }}
+                            </td>
+                            <td class="py-3 px-4 font-mono text-[11px] text-slate-600">
+                                {{ $appRow->offer?->offer_number ?? '—' }}
+                            </td>
+                            <td class="py-3 px-4 text-center">
+                                <span class="inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold
+                                    @if(in_array($appRow->status, ['ADMITTED', 'ACCEPTED', 'READY_TO_ENROL', 'ENROLLED'])) bg-emerald-50 text-emerald-800 border border-emerald-200
+                                    @elseif(in_array($appRow->status, ['UNDER_REVIEW', 'SHORTLISTED', 'APPROVAL_PENDING', 'SUBMITTED'])) bg-blue-50 text-blue-800 border border-blue-200
+                                    @else bg-amber-50 text-amber-800 border border-amber-200 @endif">
+                                    {{ str_replace('_', ' ', $appRow->status) }}
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 text-center">
+                                <a href="{{ route('admissions.portal') }}?application_id={{ $appRow->id }}" class="px-3 py-1.5 rounded-lg portal-btn-primary font-extrabold text-[11px] shadow-2xs inline-flex items-center gap-1">
+                                    <span>Open Portal</span> &rarr;
+                                </a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="text-center py-8 text-slate-400">
+                                No applicant dossiers found.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Published Programmes Explorer -->
+    <section class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs mt-6">
+        <div class="flex justify-between items-center pb-4 border-b border-slate-100">
+            <div>
+                <h2 class="text-base font-extrabold text-[#0A3E50]">Published Academic Programmes &amp; Offerings</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Explore approved intake curricula and start a new admission application.</p>
+            </div>
+            <a href="{{ route('admissions.catalogue') }}" class="text-xs font-extrabold text-[#0A3E50] hover:underline">View Full Catalogue &rarr;</a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+            @foreach($openOfferings as $offering)
+                <div class="bg-slate-50/70 border border-slate-200 rounded-xl p-4 flex flex-col justify-between hover:border-[#0A3E50] transition-all shadow-2xs">
+                    <div>
+                        <span class="font-mono text-[10px] font-bold text-slate-500 uppercase">{{ $offering->course?->code }}</span>
+                        <h3 class="font-extrabold text-sm text-[#0A3E50] mt-0.5 leading-snug">{{ $offering->course?->name }}</h3>
+                        <p class="text-[11px] text-slate-500 mt-1">{{ $offering->intake?->name ?? 'September 2026' }}</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-200 flex justify-between items-center">
+                        <span class="font-bold text-xs text-slate-700">Fee: KES {{ number_format((float)$offering->application_fee, 0) }}</span>
+                        <a href="{{ route('admissions.apply', $offering) }}" class="px-3 py-1 rounded-lg portal-btn-accent font-extrabold text-[11px] shadow-2xs">
+                            Apply Now
+                        </a>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </section>
+
 </div>
 @endsection

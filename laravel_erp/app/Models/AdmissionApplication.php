@@ -83,6 +83,66 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
         return $this->hasOne(StudentConversion::class, 'admission_application_id');
     }
 
+    /**
+     * Readiness is derived from what the application actually holds, never from
+     * whichever handler happened to run last: a form save after an upload used
+     * to reset a complete application back to 80% and lock the applicant out of
+     * submission with no way back.
+     *
+     * @return array{percent:int, outstanding:list<string>}
+     */
+    public function completionState(): array
+    {
+        $outstanding = [];
+
+        if (! $this->hasCompletedForm()) {
+            $outstanding[] = 'Personal, identification and education details';
+        }
+        if (! $this->declarations_accepted) {
+            $outstanding[] = 'Declaration and consent';
+        }
+        if ($this->documents()->count() < 1) {
+            $outstanding[] = 'At least one supporting document';
+        }
+
+        $sections = 3;
+
+        return [
+            'percent' => (int) round((($sections - count($outstanding)) / $sections) * 100),
+            'outstanding' => $outstanding,
+        ];
+    }
+
+    /** Persist the derived completion figure and hand it back. */
+    public function refreshCompletion(): int
+    {
+        $percent = $this->completionState()['percent'];
+        if ((int) $this->completion_percent !== $percent) {
+            $this->forceFill(['completion_percent' => $percent])->save();
+        }
+
+        return $percent;
+    }
+
+    /** Every mandatory form field the applicant is asked for must be present. */
+    private function hasCompletedForm(): bool
+    {
+        $form = $this->form_data ?? [];
+        $profile = $this->applicant;
+
+        foreach (['gender', 'education'] as $key) {
+            if (blank($form[$key] ?? null)) {
+                return false;
+            }
+        }
+
+        return $profile !== null
+            && filled($profile->date_of_birth)
+            && filled($profile->nationality)
+            && filled($profile->identity_type)
+            && filled($profile->identity_number);
+    }
+
     public function isPaid(): bool
     {
         $expectedAmount = (int) ($this->fee_amount_expected ?? 1000);

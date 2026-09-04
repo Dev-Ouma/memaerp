@@ -18,6 +18,10 @@ final class AdmissionModuleSeeder extends Seeder
             ['name' => 'September 2026 Intake', 'opens_at' => '2026-06-01', 'closes_at' => '2026-09-20', 'acceptance_deadline' => '2026-09-30', 'is_published' => true],
         );
 
+        Course::firstOrCreate(['code' => 'DIT'], ['name' => 'Diploma in Information Technology']);
+        Course::firstOrCreate(['code' => 'CS'], ['name' => 'Bachelor of Science in Computer Science']);
+        Course::firstOrCreate(['code' => 'BBA'], ['name' => 'Bachelor of Business Administration']);
+
         Course::query()->orderBy('name')->each(function (Course $course) use ($intake): void {
             ProgrammeOffering::updateOrCreate(
                 ['course_id' => $course->id, 'admission_intake_id' => $intake->id, 'campus' => 'Main Campus', 'study_mode' => 'Full-time'],

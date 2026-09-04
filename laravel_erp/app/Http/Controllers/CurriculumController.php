@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AuthorizesCataloguePermission;
 use App\Models\AcademicCourseUnit;
 use App\Models\AcademicDepartment;
 use App\Models\AcademicProgramme;
@@ -13,10 +14,14 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 final class CurriculumController extends Controller
 {
+    use AuthorizesCataloguePermission;
+
     /**
      * Header row of the Course Unit bulk upload template. Keys match the
      * request fields accepted by storeCourseUnit().
@@ -61,7 +66,7 @@ final class CurriculumController extends Controller
             'totalDepartments' => $departments->count(),
             'activeAcademicDepts' => $departments->where('status', 'Active')->count(),
             'serviceDepts' => 4,
-            'totalAcademicStaff' => $departments->sum('staff_count') ?: 246,
+            'totalAcademicStaff' => $departments->sum('staff_count') ?: 0,
         ];
 
         return view('curriculum.department', compact('stats', 'departments', 'schools'));
@@ -69,6 +74,8 @@ final class CurriculumController extends Controller
 
     public function storeDepartment(Request $request): RedirectResponse|JsonResponse
     {
+        $this->authorizePermission($request, 'curriculum.manage');
+
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:30', 'unique:academic_departments,code'],
             'name' => ['required', 'string', 'max:190'],
@@ -85,13 +92,13 @@ final class CurriculumController extends Controller
         $department = AcademicDepartment::create([
             'code' => strtoupper(trim($validated['code'])),
             'name' => trim($validated['name']),
-            'school' => $validated['school'] ? trim($validated['school']) : null,
-            'hod' => $validated['hod'] ? trim($validated['hod']) : null,
+            'school' => ($validated['school'] ?? null) ? trim((string) $validated['school']) : null,
+            'hod' => ($validated['hod'] ?? null) ? trim((string) $validated['hod']) : null,
             'programmes_count' => (int) ($validated['programmes_count'] ?? 0),
             'staff_count' => (int) ($validated['staff_count'] ?? 0),
-            'email' => $validated['email'] ? strtolower(trim($validated['email'])) : null,
-            'phone' => $validated['phone'] ? trim($validated['phone']) : null,
-            'description' => $validated['description'] ? trim($validated['description']) : null,
+            'email' => ($validated['email'] ?? null) ? strtolower(trim((string) $validated['email'])) : null,
+            'phone' => ($validated['phone'] ?? null) ? trim((string) $validated['phone']) : null,
+            'description' => ($validated['description'] ?? null) ? trim((string) $validated['description']) : null,
             'status' => $validated['status'],
         ]);
 
@@ -108,6 +115,8 @@ final class CurriculumController extends Controller
 
     public function updateDepartment(Request $request, AcademicDepartment $department): RedirectResponse|JsonResponse
     {
+        $this->authorizePermission($request, 'curriculum.manage');
+
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:30', 'unique:academic_departments,code,'.$department->id],
             'name' => ['required', 'string', 'max:190'],
@@ -124,13 +133,13 @@ final class CurriculumController extends Controller
         $department->update([
             'code' => strtoupper(trim($validated['code'])),
             'name' => trim($validated['name']),
-            'school' => $validated['school'] ? trim($validated['school']) : null,
-            'hod' => $validated['hod'] ? trim($validated['hod']) : null,
+            'school' => ($validated['school'] ?? null) ? trim((string) $validated['school']) : null,
+            'hod' => ($validated['hod'] ?? null) ? trim((string) $validated['hod']) : null,
             'programmes_count' => (int) ($validated['programmes_count'] ?? 0),
             'staff_count' => (int) ($validated['staff_count'] ?? 0),
-            'email' => $validated['email'] ? strtolower(trim($validated['email'])) : null,
-            'phone' => $validated['phone'] ? trim($validated['phone']) : null,
-            'description' => $validated['description'] ? trim($validated['description']) : null,
+            'email' => ($validated['email'] ?? null) ? strtolower(trim((string) $validated['email'])) : null,
+            'phone' => ($validated['phone'] ?? null) ? trim((string) $validated['phone']) : null,
+            'description' => ($validated['description'] ?? null) ? trim((string) $validated['description']) : null,
             'status' => $validated['status'],
         ]);
 
@@ -147,6 +156,8 @@ final class CurriculumController extends Controller
 
     public function destroyDepartment(Request $request, AcademicDepartment $department, RecycleBinService $recycleBin): RedirectResponse|JsonResponse
     {
+        $this->authorizePermission($request, 'curriculum.manage');
+
         $validated = $request->validate(['deletion_reason' => ['required', 'string', 'min:10', 'max:500']]);
         $name = $department->name;
         $recycleBin->delete($department, $request->user(), 'department', $validated['deletion_reason'], route('curriculum.department'));
@@ -557,6 +568,8 @@ final class CurriculumController extends Controller
 
     public function storeSchool(Request $request): RedirectResponse|JsonResponse
     {
+        $this->authorizePermission($request, 'curriculum.manage');
+
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:30', 'unique:schools,code'],
             'name' => ['required', 'string', 'max:190'],
@@ -573,23 +586,23 @@ final class CurriculumController extends Controller
         $school = School::create([
             'code' => strtoupper(trim($validated['code'])),
             'name' => trim($validated['name']),
-            'dean' => $validated['dean'] ? trim($validated['dean']) : null,
+            'dean' => ($validated['dean'] ?? null) ? trim((string) $validated['dean']) : null,
             'departments_count' => (int) ($validated['departments_count'] ?? 0),
             'programmes_count' => (int) ($validated['programmes_count'] ?? 0),
-            'email' => $validated['email'] ? strtolower(trim($validated['email'])) : null,
-            'phone' => $validated['phone'] ? trim($validated['phone']) : null,
-            'building' => $validated['building'] ? trim($validated['building']) : null,
-            'description' => $validated['description'] ? trim($validated['description']) : null,
+            'email' => ($validated['email'] ?? null) ? strtolower(trim((string) $validated['email'])) : null,
+            'phone' => ($validated['phone'] ?? null) ? trim((string) $validated['phone']) : null,
+            'building' => ($validated['building'] ?? null) ? trim((string) $validated['building']) : null,
+            'description' => ($validated['description'] ?? null) ? trim((string) $validated['description']) : null,
             'status' => $validated['status'],
         ]);
 
         try {
-            $institution = \Illuminate\Support\Facades\DB::table('institutions')->first();
+            $institution = DB::table('institutions')->first();
             if ($institution) {
-                \Illuminate\Support\Facades\DB::table('faculties')->updateOrInsert(
+                DB::table('faculties')->updateOrInsert(
                     ['institution_id' => $institution->id, 'code' => $school->code],
                     [
-                        'id' => (string) \Illuminate\Support\Str::uuid(),
+                        'id' => (string) Str::uuid(),
                         'name' => $school->name,
                         'is_active' => $school->status === 'Active',
                         'created_at' => now(),
@@ -613,6 +626,8 @@ final class CurriculumController extends Controller
 
     public function updateSchool(Request $request, School $school): RedirectResponse|JsonResponse
     {
+        $this->authorizePermission($request, 'curriculum.manage');
+
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:30', 'unique:schools,code,'.$school->id],
             'name' => ['required', 'string', 'max:190'],
@@ -631,20 +646,20 @@ final class CurriculumController extends Controller
         $school->update([
             'code' => strtoupper(trim($validated['code'])),
             'name' => trim($validated['name']),
-            'dean' => $validated['dean'] ? trim($validated['dean']) : null,
+            'dean' => ($validated['dean'] ?? null) ? trim((string) $validated['dean']) : null,
             'departments_count' => (int) ($validated['departments_count'] ?? 0),
             'programmes_count' => (int) ($validated['programmes_count'] ?? 0),
-            'email' => $validated['email'] ? strtolower(trim($validated['email'])) : null,
-            'phone' => $validated['phone'] ? trim($validated['phone']) : null,
-            'building' => $validated['building'] ? trim($validated['building']) : null,
-            'description' => $validated['description'] ? trim($validated['description']) : null,
+            'email' => ($validated['email'] ?? null) ? strtolower(trim((string) $validated['email'])) : null,
+            'phone' => ($validated['phone'] ?? null) ? trim((string) $validated['phone']) : null,
+            'building' => ($validated['building'] ?? null) ? trim((string) $validated['building']) : null,
+            'description' => ($validated['description'] ?? null) ? trim((string) $validated['description']) : null,
             'status' => $validated['status'],
         ]);
 
         try {
-            $institution = \Illuminate\Support\Facades\DB::table('institutions')->first();
+            $institution = DB::table('institutions')->first();
             if ($institution) {
-                \Illuminate\Support\Facades\DB::table('faculties')->where('code', $oldCode)->update([
+                DB::table('faculties')->where('code', $oldCode)->update([
                     'code' => $school->code,
                     'name' => $school->name,
                     'is_active' => $school->status === 'Active',
@@ -667,6 +682,8 @@ final class CurriculumController extends Controller
 
     public function destroySchool(Request $request, School $school, RecycleBinService $recycleBin): RedirectResponse|JsonResponse
     {
+        $this->authorizePermission($request, 'curriculum.manage');
+
         $validated = $request->validate(['deletion_reason' => ['required', 'string', 'min:10', 'max:500']]);
         $name = $school->name;
         $recycleBin->delete($school, $request->user(), 'school', $validated['deletion_reason'], route('curriculum.school'));
@@ -765,6 +782,8 @@ final class CurriculumController extends Controller
 
     public function storeProgramme(Request $request): RedirectResponse|JsonResponse
     {
+        $this->authorizePermission($request, 'curriculum.manage');
+
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:40', 'unique:academic_programmes,code'],
             'title' => ['required', 'string', 'max:190'],
@@ -785,22 +804,22 @@ final class CurriculumController extends Controller
         if ($request->hasFile('image_file')) {
             $file = $request->file('image_file');
             $cleanCode = strtolower(str_replace(['-', ' '], ['_', '_'], trim($validated['code'])));
-            $filename = 'prog_' . $cleanCode . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $filename = 'prog_'.$cleanCode.'_'.time().'.'.$file->getClientOriginalExtension();
             $file->move(public_path('images/courses'), $filename);
-            $imagePath = 'images/courses/' . $filename;
+            $imagePath = 'images/courses/'.$filename;
         }
 
         $programme = AcademicProgramme::create([
             'code' => strtoupper(trim($validated['code'])),
             'title' => trim($validated['title']),
-            'school' => $validated['school'] ? trim($validated['school']) : null,
+            'school' => ($validated['school'] ?? null) ? trim((string) $validated['school']) : null,
             'department' => $validated['department'] ? trim($validated['department']) : null,
             'award' => $validated['award'] ? trim($validated['award']) : null,
             'cue_code' => $validated['cue_code'] ? trim($validated['cue_code']) : null,
             'level' => $validated['level'],
             'duration_semesters' => (int) ($validated['duration_semesters'] ?? 8),
             'total_credits' => (int) ($validated['total_credits'] ?? 140),
-            'description' => $validated['description'] ? trim($validated['description']) : null,
+            'description' => ($validated['description'] ?? null) ? trim((string) $validated['description']) : null,
             'status' => $validated['status'],
             'image_path' => $imagePath,
         ]);
@@ -818,6 +837,8 @@ final class CurriculumController extends Controller
 
     public function updateProgramme(Request $request, AcademicProgramme $programme): RedirectResponse|JsonResponse
     {
+        $this->authorizePermission($request, 'curriculum.manage');
+
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:40', 'unique:academic_programmes,code,'.$programme->id],
             'title' => ['required', 'string', 'max:190'],
@@ -838,22 +859,22 @@ final class CurriculumController extends Controller
         if ($request->hasFile('image_file')) {
             $file = $request->file('image_file');
             $cleanCode = strtolower(str_replace(['-', ' '], ['_', '_'], trim($validated['code'])));
-            $filename = 'prog_' . $cleanCode . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $filename = 'prog_'.$cleanCode.'_'.time().'.'.$file->getClientOriginalExtension();
             $file->move(public_path('images/courses'), $filename);
-            $imagePath = 'images/courses/' . $filename;
+            $imagePath = 'images/courses/'.$filename;
         }
 
         $programme->update([
             'code' => strtoupper(trim($validated['code'])),
             'title' => trim($validated['title']),
-            'school' => $validated['school'] ? trim($validated['school']) : null,
+            'school' => ($validated['school'] ?? null) ? trim((string) $validated['school']) : null,
             'department' => $validated['department'] ? trim($validated['department']) : null,
             'award' => $validated['award'] ? trim($validated['award']) : null,
             'cue_code' => $validated['cue_code'] ? trim($validated['cue_code']) : null,
             'level' => $validated['level'],
             'duration_semesters' => (int) ($validated['duration_semesters'] ?? 8),
             'total_credits' => (int) ($validated['total_credits'] ?? 140),
-            'description' => $validated['description'] ? trim($validated['description']) : null,
+            'description' => ($validated['description'] ?? null) ? trim((string) $validated['description']) : null,
             'status' => $validated['status'],
             'image_path' => $imagePath,
         ]);
@@ -871,6 +892,8 @@ final class CurriculumController extends Controller
 
     public function destroyProgramme(Request $request, AcademicProgramme $programme, RecycleBinService $recycleBin): RedirectResponse|JsonResponse
     {
+        $this->authorizePermission($request, 'curriculum.manage');
+
         $validated = $request->validate(['deletion_reason' => ['required', 'string', 'min:10', 'max:500']]);
         $title = $programme->title;
         $recycleBin->delete($programme, $request->user(), 'programme', $validated['deletion_reason'], route('curriculum.programme'));
@@ -905,6 +928,8 @@ final class CurriculumController extends Controller
 
     public function storeCourseUnit(Request $request): RedirectResponse|JsonResponse
     {
+        $this->authorizePermission($request, 'curriculum.manage');
+
         $validated = $request->validate([
             'unit_code' => ['required', 'string', 'max:30', 'unique:academic_course_units,unit_code'],
             'unit_title' => ['required', 'string', 'max:190'],
@@ -927,7 +952,7 @@ final class CurriculumController extends Controller
             'practical_hours' => (int) ($validated['practical_hours'] ?? 0),
             'classification' => $validated['classification'],
             'prerequisites' => $validated['prerequisites'] ? trim($validated['prerequisites']) : 'None',
-            'description' => $validated['description'] ? trim($validated['description']) : null,
+            'description' => ($validated['description'] ?? null) ? trim((string) $validated['description']) : null,
             'status' => $validated['status'],
         ]);
 
@@ -944,6 +969,8 @@ final class CurriculumController extends Controller
 
     public function updateCourseUnit(Request $request, AcademicCourseUnit $courseUnit): RedirectResponse|JsonResponse
     {
+        $this->authorizePermission($request, 'curriculum.manage');
+
         $validated = $request->validate([
             'unit_code' => ['required', 'string', 'max:30', 'unique:academic_course_units,unit_code,'.$courseUnit->id],
             'unit_title' => ['required', 'string', 'max:190'],
@@ -966,7 +993,7 @@ final class CurriculumController extends Controller
             'practical_hours' => (int) ($validated['practical_hours'] ?? 0),
             'classification' => $validated['classification'],
             'prerequisites' => $validated['prerequisites'] ? trim($validated['prerequisites']) : 'None',
-            'description' => $validated['description'] ? trim($validated['description']) : null,
+            'description' => ($validated['description'] ?? null) ? trim((string) $validated['description']) : null,
             'status' => $validated['status'],
         ]);
 
@@ -983,6 +1010,8 @@ final class CurriculumController extends Controller
 
     public function destroyCourseUnit(Request $request, AcademicCourseUnit $courseUnit, RecycleBinService $recycleBin): RedirectResponse|JsonResponse
     {
+        $this->authorizePermission($request, 'curriculum.manage');
+
         $validated = $request->validate(['deletion_reason' => ['required', 'string', 'min:10', 'max:500']]);
         $code = $courseUnit->unit_code;
         $recycleBin->delete($courseUnit, $request->user(), 'course_unit', $validated['deletion_reason'], route('curriculum.course-unit'));

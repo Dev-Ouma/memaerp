@@ -10,12 +10,12 @@ use App\Models\ApplicantProfile;
 use App\Models\ProgrammeOffering;
 use App\Models\User;
 use App\Modules\Platform\Numbering\NumberGenerator;
+use App\Support\PasswordPolicy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 final class PublicAdmissionController extends Controller
@@ -51,14 +51,14 @@ final class PublicAdmissionController extends Controller
             'email' => ['required', 'string', 'email:filter', 'max:255', 'unique:users,email'],
             'phone' => ['required', 'string', 'regex:/^(\+?254|0)[17]\d{8}$/'],
             'county' => ['nullable', 'string', 'max:100'],
-            'password' => ['required', 'string', 'confirmed', Password::min(10)->mixedCase()->letters()->numbers()],
+            'password' => ['required', 'string', 'confirmed', PasswordPolicy::rules()],
             'terms' => ['accepted'],
         ], [
             'first_name.regex' => 'First name may only contain letters, spaces, hyphens, and apostrophes.',
             'last_name.regex' => 'Last name may only contain letters, spaces, hyphens, and apostrophes.',
             'email.email' => 'Please provide a valid email address.',
             'phone.regex' => 'Please enter a valid Kenyan phone number (e.g. +254712345678, 0712345678, or 0113636154).',
-            'password.min' => 'Password must contain at least 10 characters.',
+            ...PasswordPolicy::messages(),
             'terms.accepted' => 'You must accept the Terms of Admission and Privacy Policy.',
         ]);
 

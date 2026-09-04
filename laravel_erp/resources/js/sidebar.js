@@ -46,6 +46,16 @@ function initialiseSidebar() {
     const mobileButton = document.querySelector('.mobile-sidebar-toggle');
     const backdrop = document.querySelector('.sidebar-backdrop');
     const profile = sidebar.querySelector('.sidebar-profile');
+    
+    /* ------------------------------------------- drag prevention */
+    sidebar.addEventListener('dragstart', (event) => {
+        event.preventDefault();
+        return false;
+    });
+
+    sidebar.querySelectorAll('a, img, button, summary, svg, span').forEach((el) => {
+        el.setAttribute('draggable', 'false');
+    });
 
     /* ------------------------------------------------------ collapse */
 

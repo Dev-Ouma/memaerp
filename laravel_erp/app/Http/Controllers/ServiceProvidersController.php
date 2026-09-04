@@ -4,191 +4,195 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Services\OperationalRecordService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 final class ServiceProvidersController extends Controller
 {
-    /**
-     * Helper to load stats and rows for Service Providers submodules
-     */
-    private function getCommonData(): array
-    {
-        return [
-            'stats' => [
-                'totalProviders' => 42,
-                'pendingApprovals' => 3,
-                'billsUnpaid' => 14,
-                'totalOutstanding' => 'KES 4,850,200',
-            ],
-            'providers' => [
-                [
-                    'id' => 1,
-                    'provider_code' => 'PROV-SAFA-01',
-                    'name' => 'Safaricom PLC',
-                    'group' => 'Telecommunications & Internet ISP',
-                    'contact' => 'biz-ops@safaricom.co.ke',
-                    'outstanding_bills' => 'KES 1,200,000',
-                    'status' => 'Active Supplier',
-                ],
-                [
-                    'id' => 2,
-                    'provider_code' => 'PROV-KPLC-02',
-                    'name' => 'Kenya Power & Lighting Company (KPLC)',
-                    'group' => 'Utilities & Energy Infrastructure',
-                    'contact' => 'billing@kplc.co.ke',
-                    'outstanding_bills' => 'KES 650,000',
-                    'status' => 'Active Supplier',
-                ],
-                [
-                    'id' => 3,
-                    'provider_code' => 'PROV-TEXT-03',
-                    'name' => 'MEMA Textbooks & Stationers Ltd',
-                    'group' => 'Academic Publishing & Supplies',
-                    'contact' => 'supplies@memabooks.co.ke',
-                    'outstanding_bills' => 'KES 420,000',
-                    'status' => 'Pending Re-Audit',
-                ],
-            ],
-        ];
-    }
+    public function __construct(private readonly OperationalRecordService $records) {}
 
-    /**
-     * 1. Taxes Setup
-     */
     public function taxes(Request $request): View
     {
-        $stats = ['taxSchemes' => 3, 'withholdingTax' => '5.0%', 'vatRate' => '16.0%', 'lastAudited' => 'Active'];
-        $taxes = [
-            ['code' => 'VAT-16', 'name' => 'Standard Value Added Tax', 'rate' => '16.0%', 'type' => 'Output Tax', 'status' => 'Operational'],
-            ['code' => 'WHT-5', 'name' => 'Withholding Tax on Professional Services', 'rate' => '5.0%', 'type' => 'Withholding Tax', 'status' => 'Operational'],
-        ];
-
-        return view('service-providers.taxes', compact('stats', 'taxes'));
+        return $this->records->screen($request, 'service-providers.taxes', 'service-providers', 'tax', 'taxes', [
+            ['key' => 'taxCodes', 'op' => 'count'],
+            ['key' => 'active', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Active'],
+            ['key' => 'inactive', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Inactive'],
+            ['key' => 'vat', 'op' => 'count_match', 'field' => 'name', 'needle' => 'VAT'],
+        ], [
+            ['name' => 'tax_code', 'label' => 'Tax code', 'required' => true],
+            ['name' => 'name', 'label' => 'Name', 'required' => true],
+            ['name' => 'rate', 'label' => 'Rate %'],
+            ['name' => 'status', 'label' => 'Status'],
+        ]);
     }
 
-    /**
-     * 2. Items
-     */
     public function items(Request $request): View
     {
-        $stats = ['inventoryItems' => 142, 'reorderLevelAlerts' => 5, 'activeCategoryCount' => 8];
-        $items = [
-            ['code' => 'ITEM-DESK-01', 'name' => 'Double Pedestal Office Oak Desk', 'category' => 'Furniture & Equipment', 'unit_cost' => 'KES 15,000', 'stock' => 45],
-            ['code' => 'ITEM-PPR-A4', 'name' => 'Executive White A4 Printing Paper Reams', 'category' => 'Stationery Supplies', 'unit_cost' => 'KES 650', 'stock' => 240],
-        ];
-
-        return view('service-providers.items', compact('stats', 'items'));
+        return $this->records->screen($request, 'service-providers.items', 'service-providers', 'item', 'items', [
+            ['key' => 'catalogItems', 'op' => 'count'],
+            ['key' => 'active', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Active'],
+            ['key' => 'discontinued', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Discontinued'],
+            ['key' => 'services', 'op' => 'count_match', 'field' => 'item_type', 'needle' => 'Service'],
+        ], [
+            ['name' => 'item_code', 'label' => 'Item code', 'required' => true],
+            ['name' => 'name', 'label' => 'Name', 'required' => true],
+            ['name' => 'item_type', 'label' => 'Type'],
+            ['name' => 'unit_price', 'label' => 'Unit price'],
+            ['name' => 'status', 'label' => 'Status'],
+        ]);
     }
 
-    /**
-     * 3. Provider Groups
-     */
     public function providerGroups(Request $request): View
     {
-        $stats = ['activeGroups' => 6, 'capacityCap' => 'Unlimited', 'slaVetting' => 'Mandatory'];
-        $groups = [
-            ['code' => 'GRP-UTIL', 'name' => 'Utilities & Energy Infrastructure', 'desc' => 'Power, water, waste disposal corporate accounts', 'status' => 'Active Group'],
-            ['code' => 'GRP-IT', 'name' => 'IT Consultants & Internet Providers', 'desc' => 'Software licensing, broadband connections, support dockets', 'status' => 'Active Group'],
-        ];
-
-        return view('service-providers.provider-groups', compact('stats', 'groups'));
+        return $this->records->screen($request, 'service-providers.provider-groups', 'service-providers', 'provider_group', 'groups', [
+            ['key' => 'groups', 'op' => 'count'],
+            ['key' => 'active', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Active'],
+            ['key' => 'archived', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Archived'],
+            ['key' => 'strategic', 'op' => 'count_match', 'field' => 'priority', 'needle' => 'Strategic'],
+        ], [
+            ['name' => 'group_code', 'label' => 'Group code', 'required' => true],
+            ['name' => 'name', 'label' => 'Name', 'required' => true],
+            ['name' => 'priority', 'label' => 'Priority'],
+            ['name' => 'status', 'label' => 'Status'],
+        ]);
     }
 
-    /**
-     * 4. Providers
-     */
     public function providers(Request $request): View
     {
-        $data = $this->getCommonData();
-        $stats = $data['stats'];
-        $providers = $data['providers'];
-
-        return view('service-providers.providers', compact('stats', 'providers'));
+        return $this->records->screen($request, 'service-providers.providers', 'service-providers', 'provider', 'providers', [
+            ['key' => 'totalProviders', 'op' => 'count'],
+            ['key' => 'pendingApprovals', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Pending'],
+            ['key' => 'billsUnpaid', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Outstanding'],
+            ['key' => 'totalOutstanding', 'op' => 'sum_money', 'field' => 'outstanding_bills'],
+        ], [
+            ['name' => 'provider_code', 'label' => 'Provider code', 'required' => true],
+            ['name' => 'name', 'label' => 'Name', 'required' => true],
+            ['name' => 'group', 'label' => 'Group'],
+            ['name' => 'contact', 'label' => 'Contact'],
+            ['name' => 'outstanding_bills', 'label' => 'Outstanding bills'],
+            ['name' => 'status', 'label' => 'Status'],
+        ]);
     }
 
-    /**
-     * 5. Vendor Registration Approval
-     */
     public function vendorApproval(Request $request): View
     {
-        $stats = ['awaitingVetting' => 3, 'approvedVendors' => 42, 'rejectedVendors' => 2];
-        $approvals = [
-            ['ref' => 'VND-APP-09', 'name' => 'Apex Office Supplies Ltd', 'kra_pin' => 'P051234567A', 'compliance_doc' => 'Tax Compliance Clear', 'status' => 'Awaiting Vetting'],
-        ];
-
-        return view('service-providers.vendor-approval', compact('stats', 'approvals'));
+        return $this->records->screen($request, 'service-providers.vendor-approval', 'service-providers', 'vendor_approval', 'approvals', [
+            ['key' => 'pending', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Pending'],
+            ['key' => 'approved', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Approved'],
+            ['key' => 'rejected', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Rejected'],
+            ['key' => 'total', 'op' => 'count'],
+        ], [
+            ['name' => 'provider_code', 'label' => 'Provider code', 'required' => true],
+            ['name' => 'name', 'label' => 'Vendor name', 'required' => true],
+            ['name' => 'requested_by', 'label' => 'Requested by'],
+            ['name' => 'status', 'label' => 'Status'],
+        ]);
     }
 
-    /**
-     * 6. Supplier Invoice Permission
-     */
     public function invoicePermissions(Request $request): View
     {
-        $stats = ['authorizedStaff' => 8, 'policyLevel' => 'Strict Dual Control', 'lastAudited' => 'Compliant'];
-
-        return view('service-providers.invoice-permissions', compact('stats'));
+        return $this->records->screen($request, 'service-providers.invoice-permissions', 'service-providers', 'invoice_permission', 'rows', [
+            ['key' => 'policyLevel', 'op' => 'count'],
+            ['key' => 'lastAudited', 'op' => 'count'],
+            ['key' => 'active', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Active'],
+            ['key' => 'totalPermissions', 'op' => 'count'],
+        ], [
+            ['name' => 'staff_name', 'label' => 'Staff', 'required' => true],
+            ['name' => 'department', 'label' => 'Department'],
+            ['name' => 'limit_amount', 'label' => 'Invoice limit'],
+            ['name' => 'policy_level', 'label' => 'Policy level'],
+            ['name' => 'last_audited', 'label' => 'Last audited'],
+            ['name' => 'status', 'label' => 'Status'],
+        ], [
+            'stats' => [
+                'policyLevel' => 'Database-governed invoice upload policy',
+                'lastAudited' => 'Derived from module_records (no mock timestamps)',
+            ],
+        ]);
     }
 
-    /**
-     * 7. Bills
-     */
     public function bills(Request $request): View
     {
-        $stats = ['totalBills' => 148, 'unpaidBills' => 14, 'paidBills' => 134, 'totalBillsVolume' => 'KES 12,850,000'];
-        $bills = [
-            ['ref' => 'BILL-2027-012', 'vendor' => 'Safaricom PLC', 'amount' => 'KES 420,000', 'due_date' => '15 Mar 2027', 'status' => 'Unpaid / Awaiting Approval'],
-        ];
-
-        return view('service-providers.bills', compact('stats', 'bills'));
+        return $this->records->screen($request, 'service-providers.bills', 'service-providers', 'bill', 'bills', [
+            ['key' => 'unpaid', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Unpaid'],
+            ['key' => 'paid', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Paid'],
+            ['key' => 'overdue', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Overdue'],
+            ['key' => 'totalAmount', 'op' => 'sum_money', 'field' => 'amount'],
+        ], [
+            ['name' => 'bill_ref', 'label' => 'Bill ref', 'required' => true],
+            ['name' => 'provider_name', 'label' => 'Provider', 'required' => true],
+            ['name' => 'amount', 'label' => 'Amount'],
+            ['name' => 'due_date', 'label' => 'Due date', 'type' => 'date'],
+            ['name' => 'status', 'label' => 'Status'],
+        ]);
     }
 
-    /**
-     * 8. Supplier Payment Permission
-     */
     public function paymentPermissions(Request $request): View
     {
-        $stats = ['authorizedSignatures' => 4, 'tierLimit' => 'KES 500,000 limit per HOD', 'compliance' => 'RBAC Enabled'];
-
-        return view('service-providers.payment-permissions', compact('stats'));
+        return $this->records->screen($request, 'service-providers.payment-permissions', 'service-providers', 'payment_permission', 'rows', [
+            ['key' => 'tierLimit', 'op' => 'count'],
+            ['key' => 'compliance', 'op' => 'count'],
+            ['key' => 'active', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Active'],
+            ['key' => 'totalPermissions', 'op' => 'count'],
+        ], [
+            ['name' => 'staff_name', 'label' => 'Staff', 'required' => true],
+            ['name' => 'department', 'label' => 'Department'],
+            ['name' => 'limit_amount', 'label' => 'Payment limit'],
+            ['name' => 'status', 'label' => 'Status'],
+        ], [
+            'stats' => [
+                'tierLimit' => 'Limits stored per permission row in module_records',
+                'compliance' => 'Compliance derived from live permission rows',
+            ],
+        ]);
     }
 
-    /**
-     * 9. Payments
-     */
     public function payments(Request $request): View
     {
-        $stats = ['totalPaymentsVolume' => 'KES 8,420,000', 'paymentsToday' => 2, 'channelsActive' => 3];
-        $payments = [
-            ['ref' => 'PAY-2027-891', 'vendor' => 'Safaricom PLC', 'amount' => 'KES 1,200,000', 'mode' => 'EFT Bank Transfer', 'date' => '28 Aug 2026', 'status' => 'Settled & Reconciled'],
-        ];
-
-        return view('service-providers.payments', compact('stats', 'payments'));
+        return $this->records->screen($request, 'service-providers.payments', 'service-providers', 'payment', 'payments', [
+            ['key' => 'paid', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Paid'],
+            ['key' => 'pending', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Pending'],
+            ['key' => 'failed', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Failed'],
+            ['key' => 'totalAmount', 'op' => 'sum_money', 'field' => 'amount'],
+        ], [
+            ['name' => 'payment_ref', 'label' => 'Payment ref', 'required' => true],
+            ['name' => 'provider_name', 'label' => 'Provider', 'required' => true],
+            ['name' => 'amount', 'label' => 'Amount'],
+            ['name' => 'payment_date', 'label' => 'Payment date', 'type' => 'date'],
+            ['name' => 'status', 'label' => 'Status'],
+        ]);
     }
 
-    /**
-     * 10. Debit Notes
-     */
     public function debitNotes(Request $request): View
     {
-        $stats = ['activeDebitNotes' => 4, 'totalReductionValue' => 'KES 180,000', 'reconciliation' => 'Audit Cleared'];
-        $debitNotes = [
-            ['ref' => 'DBN-2027-01', 'vendor' => 'MEMA Textbooks & Stationers Ltd', 'amount' => 'KES 45,000', 'reason' => 'Damaged textbooks returned', 'status' => 'Ledger Applied'],
-        ];
-
-        return view('service-providers.debit-notes', compact('stats', 'debitNotes'));
+        return $this->records->screen($request, 'service-providers.debit-notes', 'service-providers', 'debit_note', 'debitNotes', [
+            ['key' => 'open', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Open'],
+            ['key' => 'applied', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Applied'],
+            ['key' => 'void', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Void'],
+            ['key' => 'totalAmount', 'op' => 'sum_money', 'field' => 'amount'],
+        ], [
+            ['name' => 'note_ref', 'label' => 'Note ref', 'required' => true],
+            ['name' => 'provider_name', 'label' => 'Provider', 'required' => true],
+            ['name' => 'amount', 'label' => 'Amount'],
+            ['name' => 'reason', 'label' => 'Reason'],
+            ['name' => 'status', 'label' => 'Status'],
+        ]);
     }
 
-    /**
-     * 11. Credit Notes
-     */
     public function creditNotes(Request $request): View
     {
-        $stats = ['activeCreditNotes' => 2, 'totalCreditValue' => 'KES 90,000', 'reconciliation' => 'Audit Cleared'];
-        $creditNotes = [
-            ['ref' => 'CRN-2027-04', 'vendor' => 'Safaricom PLC', 'amount' => 'KES 50,000', 'reason' => 'Broadband downtime rebate credit', 'status' => 'Ledger Applied'],
-        ];
-
-        return view('service-providers.credit-notes', compact('stats', 'creditNotes'));
+        return $this->records->screen($request, 'service-providers.credit-notes', 'service-providers', 'credit_note', 'creditNotes', [
+            ['key' => 'open', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Open'],
+            ['key' => 'applied', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Applied'],
+            ['key' => 'void', 'op' => 'count_match', 'field' => 'status', 'needle' => 'Void'],
+            ['key' => 'totalAmount', 'op' => 'sum_money', 'field' => 'amount'],
+        ], [
+            ['name' => 'note_ref', 'label' => 'Note ref', 'required' => true],
+            ['name' => 'provider_name', 'label' => 'Provider', 'required' => true],
+            ['name' => 'amount', 'label' => 'Amount'],
+            ['name' => 'reason', 'label' => 'Reason'],
+            ['name' => 'status', 'label' => 'Status'],
+        ]);
     }
 }

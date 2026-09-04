@@ -88,6 +88,26 @@ final class PermissionCatalogue
             ['admission.report.view', 'confidential', false, 'Run admission reports'],
             ['admission.report.export', 'confidential', false, 'Export admission reports'],
 
+            // Curriculum ---------------------------------------------------------------------------
+            ['curriculum.view', 'internal', false, 'View schools, departments, programmes and course units'],
+            ['curriculum.manage', 'internal', false, 'Create, amend and archive curriculum structures'],
+
+            // Staff & HR ---------------------------------------------------------------------------
+            ['smhr.view', 'confidential', false, 'View staff directory, leave and HR dashboards'],
+            ['smhr.staff.manage', 'confidential', false, 'Create and amend staff employment records'],
+            ['smhr.leave.submit', 'internal', false, 'Submit leave applications on behalf of staff'],
+            ['smhr.leave.approve', 'confidential', false, 'Approve or reject staff leave requests'],
+
+            // Operational modules (module_records write path) --------------------------------------
+            ['fees.manage', 'confidential', false, 'Create and amend fee structures, accounts and payables'],
+            ['registration.manage', 'confidential', false, 'Manage registration periods, promotions and student registration records'],
+            ['transfers.manage', 'confidential', false, 'Manage transfer windows, exemptions and credit transfers'],
+            ['lms.manage', 'internal', false, 'Manage LMS course shells, assignments and sync ledgers'],
+            ['graduation.manage', 'confidential', false, 'Manage graduation criteria, clearance and ceremony records'],
+            ['imprest.manage', 'confidential', false, 'Manage imprest requisitions, surrenders and permissions'],
+            ['student_affairs.manage', 'confidential', false, 'Manage work-study periods, positions and claims'],
+            ['service_providers.manage', 'confidential', false, 'Manage vendors, bills and provider payments'],
+
             // Platform -----------------------------------------------------------------------------
             ['platform.user.manage', 'confidential', false, 'Create and deactivate user accounts'],
             ['platform.role.manage', 'confidential', false, 'Grant and revoke roles'],
@@ -178,17 +198,18 @@ final class PermissionCatalogue
                     'admission.roll.publish', 'admission.conversion.execute', 'admission.analytics.view',
                     'admission.report.view', 'admission.report.export', 'admission.application.export',
                     'admission.identity.view', 'admission.application.authorise_duplicate',
+                    'registration.manage', 'graduation.manage', 'transfers.manage',
                 ],
             ],
             'finance_officer' => [
                 'name' => 'Finance Officer',
-                'description' => 'Owns the application fee: manual capture, waivers, reconciliation, refunds.',
+                'description' => 'Owns application fees and institutional fee ledgers, waivers and reconciliation.',
                 'default_scope_type' => 'institution',
                 'permissions' => [
                     'admission.application.view', 'admission.payment.view', 'admission.payment.record_manual',
                     'admission.payment.waive', 'admission.payment.reconcile', 'admission.payment.refund',
                     'admission.fee_setup.manage', 'admission.analytics.view', 'admission.report.view',
-                    'admission.report.export',
+                    'admission.report.export', 'fees.manage', 'imprest.manage', 'service_providers.manage',
                 ],
             ],
             'admissions_manager' => [
@@ -214,8 +235,54 @@ final class PermissionCatalogue
                 'permissions' => [
                     'platform.user.manage', 'platform.role.manage', 'platform.audit.view',
                     'platform.system.configure', 'platform.integration.manage',
-                    'admission.programme.view', 'admission.analytics.view',
+                    'admission.programme.view', 'admission.application.view', 'admission.application.view_any',
+                    'admission.offer.view', 'admission.analytics.view', 'admission.report.view',
+                    'curriculum.view', 'curriculum.manage',
+                    'smhr.view', 'smhr.staff.manage', 'smhr.leave.submit', 'smhr.leave.approve',
+                    'fees.manage', 'registration.manage', 'transfers.manage', 'lms.manage',
+                    'graduation.manage', 'imprest.manage', 'student_affairs.manage', 'service_providers.manage',
                 ],
+            ],
+            'curriculum_manager' => [
+                'name' => 'Curriculum Manager',
+                'description' => 'Maintains schools, departments, programmes and course units.',
+                'default_scope_type' => 'institution',
+                'permissions' => [
+                    'curriculum.view', 'curriculum.manage',
+                ],
+            ],
+            'hr_officer' => [
+                'name' => 'HR Officer',
+                'description' => 'Owns staff records and leave approvals in SMHR.',
+                'default_scope_type' => 'institution',
+                'permissions' => [
+                    'smhr.view', 'smhr.staff.manage', 'smhr.leave.submit', 'smhr.leave.approve',
+                    'platform.user.manage',
+                ],
+            ],
+            'registration_officer' => [
+                'name' => 'Registration Officer',
+                'description' => 'Manages registration periods, promotions and student registration records.',
+                'default_scope_type' => 'institution',
+                'permissions' => ['registration.manage'],
+            ],
+            'transfers_officer' => [
+                'name' => 'Transfers Officer',
+                'description' => 'Manages transfer windows, exemptions and credit transfers.',
+                'default_scope_type' => 'institution',
+                'permissions' => ['transfers.manage'],
+            ],
+            'lms_manager' => [
+                'name' => 'LMS Manager',
+                'description' => 'Manages LMS course shells, assignments and sync ledgers.',
+                'default_scope_type' => 'institution',
+                'permissions' => ['lms.manage'],
+            ],
+            'graduation_officer' => [
+                'name' => 'Graduation Officer',
+                'description' => 'Manages graduation criteria, clearance and ceremony records.',
+                'default_scope_type' => 'institution',
+                'permissions' => ['graduation.manage'],
             ],
             'auditor' => [
                 'name' => 'Auditor',
@@ -225,6 +292,7 @@ final class PermissionCatalogue
                     'platform.audit.view', 'admission.application.view', 'admission.application.view_any',
                     'admission.payment.view', 'admission.review.view', 'admission.offer.view',
                     'admission.analytics.view', 'admission.report.view',
+                    'curriculum.view', 'smhr.view',
                 ],
             ],
             'data_protection_officer' => [
@@ -235,6 +303,7 @@ final class PermissionCatalogue
                     'platform.audit.view', 'platform.retention.execute', 'admission.application.view',
                     'admission.application.view_any', 'admission.identity.view', 'admission.support_needs.view',
                     'admission.document.view', 'admission.document.download', 'admission.report.view',
+                    'smhr.view',
                 ],
             ],
         ];

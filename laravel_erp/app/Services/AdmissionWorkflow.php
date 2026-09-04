@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\Admission\OfferResponse;
 use App\Models\AdmissionApplication;
 use App\Models\AdmissionOffer;
 use App\Models\ApplicationStatusHistory;
@@ -145,6 +146,54 @@ final class AdmissionWorkflow
         return $this->move($application, 'ENROLLED', $reason, 'Enrolment completed and student record created.');
     }
 
+    /** @param array{declaration_version?: string, terms_version?: string, ip_address?: string, user_agent?: string} $evidence */
+    public function respondToOffer(AdmissionApplication $application, string $response, array $evidence): AdmissionApplication
+    {
+        return DB::transaction(function () use ($application, $response, $evidence): AdmissionApplication {
+            $application = AdmissionApplication::query()->lockForUpdate()->with('offer')->findOrFail($application->id);
+            $offer = $application->offer;
+            if ($offer === null || $application->status !== 'ADMITTED') {
+                throw ValidationException::withMessages(['response' => 'This application does not have an active admission offer.']);
+            }
+            if ($offer->expires_at !== null && $offer->expires_at->isPast()) {
+                throw ValidationException::withMessages(['response' => 'This admission offer has expired. Contact Admissions for assistance.']);
+            }
+
+            $respondedAt = now();
+            $payload = [
+                'offer_id' => $offer->id,
+                'application_id' => $application->id,
+                'response' => $response,
+                'responded_at' => $respondedAt->toISOString(),
+                'declaration_version' => $evidence['declaration_version'] ?? null,
+                'terms_version' => $evidence['terms_version'] ?? null,
+                'ip_address' => $evidence['ip_address'] ?? null,
+                'user_agent' => $evidence['user_agent'] ?? null,
+            ];
+            OfferResponse::create([
+                'admission_offer_id' => $offer->id,
+                'admission_application_id' => $application->id,
+                'response' => $response,
+                'responded_at' => $respondedAt,
+                'declaration_version' => $payload['declaration_version'],
+                'terms_version' => $payload['terms_version'],
+                'ip_address' => $payload['ip_address'],
+                'user_agent' => mb_substr((string) $payload['user_agent'], 0, 255),
+                'correlation_id' => (string) Str::uuid(),
+                'evidence_hash' => hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR)),
+            ]);
+
+            $result = $this->move($application, $response, 'applicant_offer_response');
+            $offer->update(['status' => $response, 'responded_at' => $respondedAt]);
+            AuditLog::record('admission.offer_responded', $offer, null, [
+                'response' => $response,
+                'evidence_hash' => hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR)),
+            ]);
+
+            return $result;
+        });
+    }
+
     /**
      * A status change is the visible half of a decision; this writes the half
      * the review, approval and waitlist workspaces are built on.
@@ -191,7 +240,15 @@ final class AdmissionWorkflow
         $token = Str::random(48);
         AdmissionOffer::firstOrCreate(
             ['admission_application_id' => $application->id],
-            ['offer_number' => $number, 'verification_token' => $token, 'expires_at' => $application->offering->intake->acceptance_deadline, 'checksum' => hash('sha256', $application->id.$number.$token)],
+            [
+                'offer_number' => $number,
+                'verification_token' => $token,
+                'status' => 'ISSUED',
+                'issued_at' => now(),
+                'expires_at' => $application->offering->intake->acceptance_deadline
+                    ?? now()->addDays((int) config('admission.offers.default_acceptance_days', 30)),
+                'checksum' => hash('sha256', $application->id.$number.$token),
+            ],
         );
     }
 }

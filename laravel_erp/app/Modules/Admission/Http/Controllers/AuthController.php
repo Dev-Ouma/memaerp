@@ -10,17 +10,17 @@ use App\Modules\Admission\Services\ApplicantRegistrationService;
 use App\Modules\Platform\Api\ApiException;
 use App\Modules\Platform\Api\ApiResponse;
 use App\Modules\Platform\Auth\ApiTokenService;
+use App\Support\PasswordPolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
 
 final class AuthController
 {
     public function register(Request $request, ApplicantRegistrationService $service): JsonResponse
     {
         $data = $request->validate([
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'], 'password' => ['required', Password::min(10)->mixedCase()->numbers()],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'], 'password' => ['required', PasswordPolicy::rules()],
             'first_name' => ['required', 'string', 'max:100'], 'middle_name' => ['nullable', 'string', 'max:100'], 'last_name' => ['required', 'string', 'max:100'],
             'phone' => ['required', 'string', 'max:32'], 'phone_country_code' => ['nullable', 'string', 'max:5'], 'nationality' => ['nullable', 'string', 'max:80'],
             'county' => ['nullable', 'string', 'max:80'], 'acquisition_source' => ['nullable', 'string', 'max:60'], 'programme_offering_id' => ['nullable', 'integer', 'exists:programme_offerings,id'],

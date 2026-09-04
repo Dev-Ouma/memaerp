@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 #[Fillable(['candidate_id', 'category_id', 'period_id', 'reference', 'grounds', 'evidence_path', 'status', 'assigned_to', 'decision_notes', 'decided_by', 'decided_at', 'submitted_at'])]
 final class PgAppeal extends Model
@@ -44,7 +45,7 @@ final class PgAppeal extends Model
         return $this->belongsTo(User::class, 'decided_by');
     }
 
-    public function dueAt(): ?\Illuminate\Support\Carbon
+    public function dueAt(): ?Carbon
     {
         $sla = $this->category?->sla_days;
 

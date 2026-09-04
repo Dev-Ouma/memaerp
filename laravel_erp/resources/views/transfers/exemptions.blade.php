@@ -252,19 +252,19 @@
                                     <div class="hidden absolute right-0 mt-1.5 w-52 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-50 text-left dropdown-content">
                                         
                                         {{-- 1. Approve Transfer --}}
-                                        <button type="button" class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-[#047857] hover:bg-emerald-50/70 rounded-xl flex items-center gap-3 transition-colors" onclick="triggerActionAlert('success', 'Transfer Approved', 'Exemption transfer approved for {{ $row['name'] }}.')">
+                                        <button type="button" class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-[#047857] hover:bg-emerald-50/70 rounded-xl flex items-center gap-3 transition-colors" onclick="persistRecordStatus({{ $row['id'] ?? 'null' }}, 'Approved')">
                                             <i data-lucide="check" class="w-4 h-4 text-[#047857] stroke-[2.5]"></i>
                                             <span>Approve Transfer</span>
                                         </button>
 
                                         {{-- 2. Send Back --}}
-                                        <button type="button" class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-[#c25e00] hover:bg-orange-50/70 rounded-xl flex items-center gap-3 transition-colors" onclick="triggerActionAlert('warning', 'Application Sent Back', 'Exemption request returned to student for certified syllabi match.')">
+                                        <button type="button" class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-[#c25e00] hover:bg-orange-50/70 rounded-xl flex items-center gap-3 transition-colors" onclick="persistRecordStatus({{ $row['id'] ?? 'null' }}, 'Pending')">
                                             <i data-lucide="rotate-ccw" class="w-4 h-4 text-[#c25e00] stroke-[2.5]"></i>
                                             <span>Send Back</span>
                                         </button>
 
                                         {{-- 3. Reject Transfer --}}
-                                        <button type="button" class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-[#dc2626] hover:bg-red-50/70 rounded-xl flex items-center gap-3 transition-colors" onclick="triggerActionAlert('error', 'Transfer Rejected', 'Exemption rejected due to prerequisite non-equivalence.')">
+                                        <button type="button" class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-[#dc2626] hover:bg-red-50/70 rounded-xl flex items-center gap-3 transition-colors" onclick="persistRecordStatus({{ $row['id'] ?? 'null' }}, 'Rejected')">
                                             <i data-lucide="x" class="w-4 h-4 text-[#dc2626] stroke-[2.5]"></i>
                                             <span>Reject Transfer</span>
                                         </button>
@@ -419,7 +419,7 @@
                     </div>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-blue-100 text-blue-800">Student User</span>
-                        <strong class="text-slate-800" id="logs-actor-student">Daniel Kibet (BE02/33013/2025)</strong>
+                        <strong class="text-slate-800" id="logs-actor-student">Selected student</strong>
                     </div>
                     <p class="text-slate-500 mt-1 leading-relaxed">Application lodged via Student Portal with KNEC certified academic transcript.</p>
                 </div>
@@ -447,7 +447,7 @@
                     </div>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-amber-100 text-amber-800">Department Reviewer</span>
-                        <strong class="text-slate-800">Dr. Daniel Otieno (Chair of Economics)</strong>
+                        <strong class="text-slate-800">Department chair (from case record)</strong>
                     </div>
                     <p class="text-slate-600 mt-1 p-2 bg-amber-50/60 border border-amber-200/60 rounded italic text-[11px]">
                         "Please attach official unit syllabus breakdown and lecture contact hours for ECO 101 equivalence check."
@@ -494,6 +494,24 @@
             document.querySelectorAll('.dropdown-content').forEach(d => d.classList.add('hidden'));
         }
     });
+
+    function persistRecordStatus(id, status) {
+        if (!id) {
+            triggerActionAlert('error', 'Missing record', 'Save the exemption to the database before changing status.');
+            return;
+        }
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = @json(url('/transfers/exemptions')) + '/' + id + '/status';
+        form.innerHTML = `
+            <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').content}">
+            <input type="hidden" name="_method" value="PATCH">
+            <input type="hidden" name="status" value="${status}">
+            <input type="hidden" name="status_type" value="${String(status).toLowerCase()}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
 
     function triggerActionAlert(type, title, message) {
         const box = document.getElementById('transfer-alert-box');

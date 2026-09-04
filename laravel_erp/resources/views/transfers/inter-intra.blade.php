@@ -435,7 +435,7 @@
                     </div>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-slate-100 text-[#0A3E50]">Dean (School of Origin)</span>
-                        <strong class="text-slate-800">Prof. George Omondi (Dean, Computing)</strong>
+                        <strong class="text-slate-800">Receiving dean (from case record)</strong>
                     </div>
                     <p class="text-slate-500 mt-1">Dean approved release; no academic or fee arrears noted.</p>
                 </div>
@@ -448,7 +448,7 @@
                     </div>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-emerald-100 text-emerald-800">Academic Registrar</span>
-                        <strong class="text-slate-800">Prof. Esther Ndung'u (Academic Registrar)</strong>
+                        <strong class="text-slate-800">Academic Registrar (from case record)</strong>
                     </div>
                     <p class="text-slate-500 mt-1">Capacity verified (Quota Available: 48 seats). New registration number allocated.</p>
                 </div>
@@ -534,29 +534,22 @@
     }
 
     function updateTransferStatus(id, newStatus, name) {
-        const row = document.getElementById('transfer-row-' + id);
-        if (!row) return;
-
-        row.dataset.status = newStatus;
-        const badgeCell = row.querySelector('.transfer-status-cell');
-        if (badgeCell) {
-            if (newStatus === 'approved') {
-                badgeCell.innerHTML = '<span class="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 status-badge">Approved</span>';
-                triggerActionAlert('success', 'Transfer Endorsed', 'Transfer request officially endorsed. Capacity allocated in receiving department.');
-            } else if (newStatus === 'rejected') {
-                badgeCell.innerHTML = '<span class="px-2 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-800 status-badge">Rejected</span>';
-                triggerActionAlert('error', 'Transfer Application Rejected', 'Transfer request rejected. Student has been notified via email.');
-            } else {
-                badgeCell.innerHTML = '<span class="px-2 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 status-badge">Pending</span>';
-                triggerActionAlert('warning', 'Sent Back', 'Transfer request returned to releasing Dean for quota clarification.');
-            }
+        if (!id) {
+            triggerActionAlert('error', 'Missing record', 'Save the transfer to the database before changing status.');
+            return;
         }
-
-        // Close the modal if open
-        document.getElementById('app-form-modal').classList.remove('open');
-
-        // Apply filtering
-        filterRows();
+        const statusLabel = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = @json(url('/transfers/inter-intra')) + '/' + id + '/status';
+        form.innerHTML = `
+            <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').content}">
+            <input type="hidden" name="_method" value="PATCH">
+            <input type="hidden" name="status" value="${statusLabel}">
+            <input type="hidden" name="status_type" value="${newStatus}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
     }
 
     function printApplicationForm() {

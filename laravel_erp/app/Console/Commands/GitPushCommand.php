@@ -25,19 +25,20 @@ final class GitPushCommand extends Command
         $laravelPath = base_path();
 
         // 1. Build assets
-        if (!$this->option('no-build')) {
+        if (! $this->option('no-build')) {
             $this->line('📦 Step 1: Compiling production assets with Vite...');
             $buildProc = Process::fromShellCommandline('npm run build', $laravelPath);
             $buildProc->run();
-            if (!$buildProc->isSuccessful()) {
-                $this->error('❌ Asset build failed: ' . $buildProc->getErrorOutput());
+            if (! $buildProc->isSuccessful()) {
+                $this->error('❌ Asset build failed: '.$buildProc->getErrorOutput());
+
                 return self::FAILURE;
             }
             $this->info('✅ Assets built cleanly.');
         }
 
         // 2. Run test suite
-        if (!$this->option('no-test')) {
+        if (! $this->option('no-test')) {
             $this->line('🧪 Step 2: Running automated test suite in testing environment...');
             $env = array_merge($_ENV, [
                 'APP_ENV' => 'testing',
@@ -45,9 +46,10 @@ final class GitPushCommand extends Command
             ]);
             $testProc = Process::fromShellCommandline('php artisan test', $laravelPath, $env);
             $testProc->run();
-            if (!$testProc->isSuccessful()) {
+            if (! $testProc->isSuccessful()) {
                 $this->error('❌ Test suite failed. Fix failing tests before pushing.');
                 $this->line($testProc->getOutput());
+
                 return self::FAILURE;
             }
             $this->info('✅ All automated tests passed.');
@@ -61,10 +63,11 @@ final class GitPushCommand extends Command
 
         if (empty($statusOutput)) {
             $this->line('Checking if local branch is ahead of remote...');
-            $pushProc = Process::fromShellCommandline('git push origin ' . escapeshellarg($this->option('branch')), $basePath);
+            $pushProc = Process::fromShellCommandline('git push origin '.escapeshellarg($this->option('branch')), $basePath);
             $pushProc->run();
             if ($pushProc->isSuccessful()) {
                 $this->info('✅ Working tree clean. Synced with remote repository.');
+
                 return self::SUCCESS;
             }
         }
@@ -75,23 +78,25 @@ final class GitPushCommand extends Command
         $addProc->run();
 
         // 5. Commit
-        $commitMessage = $this->argument('message') ?? 'chore: automated update [' . now()->format('Y-m-d H:i:s') . ']';
+        $commitMessage = $this->argument('message') ?? 'chore: automated update ['.now()->format('Y-m-d H:i:s').']';
         $this->line("📝 Step 5: Creating commit: \"{$commitMessage}\"...");
-        $commitProc = Process::fromShellCommandline('git commit -m ' . escapeshellarg($commitMessage), $basePath);
+        $commitProc = Process::fromShellCommandline('git commit -m '.escapeshellarg($commitMessage), $basePath);
         $commitProc->run();
 
         // 6. Push to remote
         $branch = $this->option('branch');
         $this->line("🚀 Step 6: Pushing to origin/{$branch}...");
-        $pushProc = Process::fromShellCommandline('git push origin ' . escapeshellarg($branch), $basePath);
+        $pushProc = Process::fromShellCommandline('git push origin '.escapeshellarg($branch), $basePath);
         $pushProc->run();
 
-        if (!$pushProc->isSuccessful()) {
-            $this->error('❌ Git push failed: ' . $pushProc->getErrorOutput());
+        if (! $pushProc->isSuccessful()) {
+            $this->error('❌ Git push failed: '.$pushProc->getErrorOutput());
+
             return self::FAILURE;
         }
 
         $this->info("✨ Successfully automated commit and pushed to origin/{$branch}!");
+
         return self::SUCCESS;
     }
 }

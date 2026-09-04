@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['user_id', 'course_id', 'academic_session_id', 'admission_number'])]
 final class Student extends Model
@@ -25,6 +26,21 @@ final class Student extends Model
     public function academicSession(): BelongsTo
     {
         return $this->belongsTo(AcademicSession::class);
+    }
+
+    public function results(): HasMany
+    {
+        return $this->hasMany(StudentResult::class);
+    }
+
+    public function feeInvoices(): HasMany
+    {
+        return $this->hasMany(FeeInvoice::class);
+    }
+
+    public function courseEnrolments(): HasMany
+    {
+        return $this->hasMany(CourseEnrolment::class);
     }
 
     public function guardians(): BelongsToMany

@@ -1587,17 +1587,24 @@
 
 <body class="admissions-page">
     <a class="skip-link" href="#main-content">Skip to main content</a>
+    @if(isset($erpBroadcasts) && $erpBroadcasts->isNotEmpty())
+        <div class="px-4 py-2 bg-amber-50 border-b border-amber-200 text-amber-900 text-xs font-semibold">
+            @foreach($erpBroadcasts as $erpBroadcast)
+                <div>{{ $erpBroadcast->message }}</div>
+            @endforeach
+        </div>
+    @endif
     {{-- The collapsed preference is echoed from a cookie so the sidebar paints at its
          persisted width instead of flashing open while sidebar.js boots. --}}
     <div class="shell{{ request()->cookie('sidebar_collapsed') === 'true' ? ' sidebar-collapsed' : '' }}"
         id="app-shell">
         <aside class="sidebar" id="app-sidebar">
             <div class="sidebar-header">
-                <a class="brand" href="{{ route('dashboard') }}">
+                <a class="brand" href="{{ route('dashboard') }}" draggable="false">
                     <span class="mark" aria-hidden="true">
-                        <img src="{{ asset('images/system/logos/mema-college-mark-192.png') }}" alt="MEMA" style="width:28px;height:28px;object-fit:contain;border-radius:4px;">
+                        <img src="{{ asset('images/system/logos/mema-college-mark-192.png') }}" alt="MEMA" draggable="false" style="width:28px;height:28px;object-fit:contain;border-radius:4px;user-select:none;-webkit-user-drag:none;">
                     </span>
-                    <div><strong>MEMA</strong><small>ERP Portal</small></div>
+                    <div style="user-select:none;"><strong>MEMA</strong><small>ERP Portal</small></div>
                 </a>
                 <button class="sidebar-collapse-toggle" type="button" aria-controls="app-sidebar" aria-expanded="true"
                     aria-label="Collapse sidebar"><i data-lucide="panel-left-close" aria-hidden="true"></i></button>
@@ -1613,6 +1620,7 @@
                     <li><a href="#menu-search" data-modal-open="menu-search-modal" id="sidebar-menu-search"><i data-lucide="search"></i><span>Menu Search</span></a></li>
 
                     {{-- 1. ACADEMIC ARCHITECTURE & PLANNING --}}
+                    @erpModule('curriculum')
                     <li>
                         <details class="nav-group" data-nav-group="curriculum" {{ request()->routeIs('curriculum.*') ? 'open' : '' }}>
                             <summary>
@@ -1637,6 +1645,8 @@
                             </div>
                         </details>
                     </li>
+                    @enderpModule
+                    @erpModule('cohort')
                     <li>
                         <details class="nav-group" data-nav-group="cohort" {{ request()->routeIs('cohort.*') ? 'open' : '' }}>
                             <summary>
@@ -1653,8 +1663,10 @@
                             </div>
                         </details>
                     </li>
+                    @enderpModule
 
                     {{-- 2. STUDENT INTAKE & ADMISSIONS LIFECYCLE --}}
+                    @erpModule('admissions')
                     <li>
                         <details class="nav-group" data-nav-group="admissions" {{ request()->routeIs('admissions.*') ? 'open' : '' }}>
                             <summary>
@@ -1677,6 +1689,8 @@
                             </div>
                         </details>
                     </li>
+                    @enderpModule
+                    @erpModule('registration')
                     <li>
                         <details class="nav-group" data-nav-group="registration" {{ request()->routeIs('registration.*') ? 'open' : '' }}>
                             <summary>
@@ -1703,6 +1717,8 @@
                             </div>
                         </details>
                     </li>
+                    @enderpModule
+                    @erpModule('transfers')
                     <li>
                         <details class="nav-group" data-nav-group="transfers" {{ request()->routeIs('transfers.*') ? 'open' : '' }}>
                             <summary>
@@ -1718,8 +1734,10 @@
                             </div>
                         </details>
                     </li>
+                    @enderpModule
 
                     {{-- 3. ACADEMIC DELIVERY, EXAMS & RESEARCH --}}
+                    @erpModule('lms')
                     <li>
                         <details class="nav-group" data-nav-group="lms" {{ request()->routeIs('lms.*') ? 'open' : '' }}>
                             <summary>
@@ -1740,6 +1758,8 @@
                             </div>
                         </details>
                     </li>
+                    @enderpModule
+                    @erpModule('examination')
                     <li>
                         <details class="nav-group" data-nav-group="examination" {{ request()->routeIs('examination.*') ? 'open' : '' }}>
                             <summary>
@@ -1771,6 +1791,8 @@
                             </div>
                         </details>
                     </li>
+                    @enderpModule
+                    @erpModule('pg-research')
                     <li>
                         <details class="nav-group" data-nav-group="pg-research" {{ request()->routeIs('pg-research.*') ? 'open' : '' }}>
                             <summary>
@@ -1798,8 +1820,10 @@
                             </div>
                         </details>
                     </li>
+                    @enderpModule
 
                     {{-- 4. STUDENT AFFAIRS & CAMPUS LIFE --}}
+                    @erpModule('student-affairs')
                     <li>
                         <details class="nav-group" data-nav-group="student-affairs" {{ request()->routeIs('work-study.*') ? 'open' : '' }}>
                             <summary>
@@ -1820,8 +1844,10 @@
                             </div>
                         </details>
                     </li>
+                    @enderpModule
 
                     {{-- 5. GRADUATION & ALUMNI --}}
+                    @erpModule('graduation')
                     <li>
                         <details class="nav-group" data-nav-group="graduation" {{ request()->routeIs('graduation.*') ? 'open' : '' }}>
                             <summary>
@@ -1846,8 +1872,10 @@
                             </div>
                         </details>
                     </li>
+                    @enderpModule
 
                     {{-- 6. INSTITUTIONAL FINANCE & OPERATIONS --}}
+                    @erpModule('fees')
                     <li>
                         <details class="nav-group" data-nav-group="fees" {{ request()->routeIs('fees.*') ? 'open' : '' }}>
                             <summary>
@@ -1866,6 +1894,8 @@
                             </div>
                         </details>
                     </li>
+                    @enderpModule
+                    @erpModule('budgeting')
                     <li>
                         <details class="nav-group" data-nav-group="budgeting" {{ request()->routeIs('budgeting.*') ? 'open' : '' }}>
                             <summary>
@@ -1879,6 +1909,8 @@
                             </div>
                         </details>
                     </li>
+                    @enderpModule
+                    @erpModule('imprest')
                     <li>
                         <details class="nav-group" data-nav-group="imprest" {{ request()->routeIs('imprest.*') ? 'open' : '' }}>
                             <summary>
@@ -1896,6 +1928,8 @@
                             </div>
                         </details>
                     </li>
+                    @enderpModule
+                    @erpModule('service-providers')
                     <li>
                         <details class="nav-group" data-nav-group="service-providers" {{ request()->routeIs('service-providers.*') ? 'open' : '' }}>
                             <summary>
@@ -1918,8 +1952,10 @@
                             </div>
                         </details>
                     </li>
+                    @enderpModule
 
                     {{-- 7. HUMAN CAPITAL MANAGEMENT (STAFF & HR) --}}
+                    @erpModule('smhr')
                     <li>
                         <details class="nav-group" data-nav-group="smhr" {{ request()->routeIs('smhr.*') ? 'open' : '' }}>
                             <summary>
@@ -1942,8 +1978,10 @@
                             </div>
                         </details>
                     </li>
+                    @enderpModule
 
                     {{-- 8. OPERATIONS, INTELLIGENCE & PLATFORM GOVERNANCE --}}
+                    @erpModule('task-management')
                     <li>
                         <details class="nav-group" data-nav-group="task-management" {{ request()->routeIs('task-management.*') ? 'open' : '' }}>
                             <summary>
@@ -1952,12 +1990,17 @@
                                 <i data-lucide="chevron-right" class="chevron" aria-hidden="true"></i>
                             </summary>
                             <div class="nav-children">
-                                <a href="{{ route('task-management.roles') }}" {!! $current(request()->routeIs('task-management.roles') || request()->routeIs('task-management.index')) !!}>Role</a>
+                                @if(auth()->user()?->isAdmin())
+                                <a href="{{ route('task-management.users') }}" {!! $current(request()->routeIs('task-management.users') || (request()->routeIs('task-management.index') && auth()->user()->isAdmin())) !!}>College Users</a>
+                                @endif
+                                <a href="{{ route('task-management.roles') }}" {!! $current(request()->routeIs('task-management.roles')) !!}>Task Roles</a>
                                 <a href="{{ route('task-management.task-roles') }}" {!! $current(request()->routeIs('task-management.task-roles')) !!}>Task in Roles</a>
-                                <a href="{{ route('task-management.task-manager') }}" {!! $current(request()->routeIs('task-management.task-manager')) !!}>Task Manager</a>
+                                <a href="{{ route('task-management.task-manager') }}" {!! $current(request()->routeIs('task-management.task-manager') || (request()->routeIs('task-management.index') && ! auth()->user()->isAdmin())) !!}>Task Manager</a>
                             </div>
                         </details>
                     </li>
+                    @enderpModule
+                    @erpModule('reports')
                     <li>
                         <details class="nav-group" data-nav-group="reports" {{ request()->routeIs('reports.*') ? 'open' : '' }}>
                             <summary>
@@ -2009,6 +2052,7 @@
                             </div>
                         </details>
                     </li>
+                    @enderpModule
                     <li>
                         <details class="nav-group" data-nav-group="admin-setups" {{ request()->routeIs('admin.setups.*') && !request()->routeIs('admin.setups.recycle-bin.*') ? 'open' : '' }}>
                             <summary>
@@ -2018,6 +2062,7 @@
                             </summary>
                             <div class="nav-children">
                                 <a href="{{ route('admin.setups.index') }}" {!! $current(request()->routeIs('admin.setups.index') && !request()->routeIs('admin.setups.accounting') && !request()->routeIs('admin.setups.bank') && !request()->routeIs('admin.setups.invoicing') && !request()->routeIs('admin.setups.payment') && !request()->routeIs('admin.setups.module-manager')) !!}>Platform Setup Hub</a>
+                                <a href="{{ route('admin.setups.document-templates') }}" {!! $current(request()->routeIs('admin.setups.document-templates*')) !!} style="border-left: 2px solid #0A3E50; font-weight: bold; color: #0A3E50 !important;">Document Templates &amp; Generation</a>
                                 <a href="{{ route('admin.setups.accounting') }}" {!! $current(request()->routeIs('admin.setups.accounting')) !!}>Accounting</a>
                                 <a href="{{ route('admin.setups.bank') }}" {!! $current(request()->routeIs('admin.setups.bank')) !!}>Bank</a>
                                 <a href="{{ route('admin.setups.invoicing') }}" {!! $current(request()->routeIs('admin.setups.invoicing')) !!}>Invoicing</a>
@@ -2037,23 +2082,25 @@
                         </details>
                     </li>
                     @can('platform.audit.view')
+                    @erpModule('recycle-bin')
                     <li>
-                        <details class="nav-group" data-nav-group="recycle-bin" {{ request()->routeIs('admin.setups.recycle-bin.*') || request()->routeIs('recycle-bin') ? 'open' : '' }}>
+                        <details class="nav-group" data-nav-group="recycle-bin" {{ request()->routeIs('recycle-bin.*') || request()->routeIs('admin.setups.recycle-bin.*') || request()->routeIs('recycle-bin') ? 'open' : '' }}>
                             <summary>
                                 <i data-lucide="trash-2"></i>
                                 <span>Recycle Bin</span>
                                 <i data-lucide="chevron-right" class="chevron" aria-hidden="true"></i>
                             </summary>
                             <div class="nav-children">
-                                <a href="{{ route('admin.setups.recycle-bin.index') }}" {!! $current(request()->routeIs('admin.setups.recycle-bin.*') && empty(request()->query('type'))) !!}>All Trashed Records</a>
-                                <a href="{{ route('admin.setups.recycle-bin.index', ['type' => 'school']) }}" {!! $current(request()->query('type') === 'school') !!}>Academic Schools</a>
-                                <a href="{{ route('admin.setups.recycle-bin.index', ['type' => 'department']) }}" {!! $current(request()->query('type') === 'department') !!}>Departments</a>
-                                <a href="{{ route('admin.setups.recycle-bin.index', ['type' => 'programme']) }}" {!! $current(request()->query('type') === 'programme') !!}>Degree Programmes</a>
-                                <a href="{{ route('admin.setups.recycle-bin.index', ['type' => 'course_unit']) }}" {!! $current(request()->query('type') === 'course_unit') !!}>Course Units</a>
-                                <a href="{{ route('admin.setups.recycle-bin.index', ['type' => 'cohort_year']) }}" {!! $current(request()->query('type') === 'cohort_year') !!}>Academic Years</a>
+                                <a href="{{ route('recycle-bin.index') }}" {!! $current((request()->routeIs('recycle-bin.*') || request()->routeIs('admin.setups.recycle-bin.*')) && empty(request()->query('type'))) !!}>All Trashed Records</a>
+                                <a href="{{ route('recycle-bin.index', ['type' => 'school']) }}" {!! $current(request()->query('type') === 'school') !!}>Academic Schools</a>
+                                <a href="{{ route('recycle-bin.index', ['type' => 'department']) }}" {!! $current(request()->query('type') === 'department') !!}>Departments</a>
+                                <a href="{{ route('recycle-bin.index', ['type' => 'programme']) }}" {!! $current(request()->query('type') === 'programme') !!}>Degree Programmes</a>
+                                <a href="{{ route('recycle-bin.index', ['type' => 'course_unit']) }}" {!! $current(request()->query('type') === 'course_unit') !!}>Course Units</a>
+                                <a href="{{ route('recycle-bin.index', ['type' => 'cohort_year']) }}" {!! $current(request()->query('type') === 'cohort_year') !!}>Academic Years</a>
                             </div>
                         </details>
                     </li>
+                    @enderpModule
                     @endcan
                 </ul>
             </nav>
@@ -2156,6 +2203,10 @@
                 @if ($errors->any())
                     <div class="alert error">{{ $errors->first() }}</div>
                 @endif 
+                @include('partials.operational-create')
+                @isset($enrolmentCreate)
+                    @include('partials.operational-create', ['operationalCreate' => $enrolmentCreate])
+                @endisset
                 @yield('content')
             </div>
         </main>
@@ -2407,6 +2458,7 @@
                                     ['name' => 'Alumni Student Directory', 'url' => route('graduation.alumni-list')],
                                     ['name' => 'Graduation Ceremony Logistics & Gowns', 'url' => route('graduation.ceremony')],
                                     ['name' => 'Graduation Ceremony Report Summary', 'url' => route('graduation.ceremony-report')],
+                                    ['name' => 'College Users & Role Management', 'url' => route('task-management.users')],
                                     ['name' => 'Task Role Administrative Mapping', 'url' => route('task-management.roles')],
                                     ['name' => 'Task Mapped in Roles Bindings', 'url' => route('task-management.task-roles')],
                                     ['name' => 'Task Manager Action Tickets', 'url' => route('task-management.task-manager')],

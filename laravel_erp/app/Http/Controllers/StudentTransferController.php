@@ -4,577 +4,374 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AuthorizesCataloguePermission;
+use App\Models\CourseExemption;
+use App\Models\CreditTransfer;
+use App\Models\FacultyTransfer;
+use App\Models\Student;
+use App\Models\TransferWindow;
+use App\Support\SoftStatsBag;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 final class StudentTransferController extends Controller
 {
-    public function exemptions(Request $request): View
+    use AuthorizesCataloguePermission;
+
+    public function datesSetup(Request $request): View
     {
-        $status = $request->query('status');
-        $search = $request->query('search');
+        $records = TransferWindow::query()->latest()->get();
+        $dates = $records->map(fn (TransferWindow $row): array => [
+            'id' => $row->id,
+            'type' => $row->type,
+            'academic_year' => $row->academic_year,
+            'notification_date' => $row->notification_date?->format('Y-m-d') ?? '—',
+            'start_date' => $row->start_date?->format('Y-m-d') ?? '—',
+            'end_date' => $row->end_date?->format('Y-m-d') ?? '—',
+            'status' => $row->status,
+        ])->all();
+        $stats = new SoftStatsBag([
+            'windows' => $records->count(),
+            'creditTransfer' => $records->filter(fn (TransferWindow $r): bool => str_contains(strtolower($r->type), 'credit'))->count(),
+            'interIntra' => $records->filter(fn (TransferWindow $r): bool => str_contains(strtolower($r->type), 'inter'))->count(),
+            'open' => $records->filter(fn (TransferWindow $r): bool => str_contains(strtolower($r->status), 'open'))->count(),
+        ]);
 
-        $stats = [
-            'totalRequests' => 1683,
-            'pendingApprovals' => 321,
-            'unassignedPending' => 158,
-            'approvedExemptions' => 1147,
-            'rejectedRequests' => 148,
-            'totalRate' => '+100%',
-            'pendingRate' => '+19.07%',
-            'approvedRate' => '+68.15%',
-            'rejectedRate' => '+8.79%',
-        ];
-
-        $allEntries = [
-            [
-                'id' => 1,
-                'name' => 'DANIEL KIBET',
-                'admission_number' => 'BE02/33013/2025',
-                'course_code' => 'ECO 101',
-                'course_name' => 'Introduction to Microeconomics',
-                'programme_code' => 'BE02',
-                'programme_name' => 'Bachelor of Entrepreneurship and Business',
-                'status' => 'INSTRUCTOR SENTBACK',
-                'status_type' => 'sentback',
+        return view('transfers.dates-setup', compact('dates', 'stats'))->with('operationalCreate', [
+            'title' => 'Add transfer window',
+            'hint' => 'Persists to transfer_windows.',
+            'action' => route('transfers.dates.store'),
+            'fields' => [
+                ['name' => 'type', 'label' => 'Transfer type', 'required' => true],
+                ['name' => 'academic_year', 'label' => 'Academic year', 'required' => true],
+                ['name' => 'notification_date', 'label' => 'Notification date', 'type' => 'date'],
+                ['name' => 'start_date', 'label' => 'Start date', 'type' => 'date'],
+                ['name' => 'end_date', 'label' => 'End date', 'type' => 'date'],
+                ['name' => 'status', 'label' => 'Status'],
             ],
-            [
-                'id' => 2,
-                'name' => 'DELANY MUKARIA',
-                'admission_number' => 'BE02/35640/2025',
-                'course_code' => 'BEB 103',
-                'course_name' => 'Introduction to Management and Business Studies',
-                'programme_code' => 'BE02',
-                'programme_name' => 'Bachelor of Entrepreneurship and Business',
-                'status' => 'APPROVED',
-                'status_type' => 'approved',
-            ],
-            [
-                'id' => 3,
-                'name' => 'FIDELIS MARUCHA',
-                'admission_number' => 'BE02/50600/2024',
-                'course_code' => 'ECO 101',
-                'course_name' => 'Introduction to Microeconomics',
-                'programme_code' => 'BE02',
-                'programme_name' => 'Bachelor of Entrepreneurship and Business',
-                'status' => 'INSTRUCTOR SENTBACK',
-                'status_type' => 'sentback',
-            ],
-            [
-                'id' => 4,
-                'name' => 'FIDELIS MARUCHA',
-                'admission_number' => 'BE02/50600/2024',
-                'course_code' => 'ECO 102',
-                'course_name' => 'Introduction to Macroeconomics',
-                'programme_code' => 'BE02',
-                'programme_name' => 'Bachelor of Entrepreneurship and Business',
-                'status' => 'HOD REJECTED',
-                'status_type' => 'rejected',
-            ],
-            [
-                'id' => 5,
-                'name' => 'HILDAH AYABEI',
-                'admission_number' => 'BE02/34324/2025',
-                'course_code' => 'ECO 101',
-                'course_name' => 'Introduction to Microeconomics',
-                'programme_code' => 'BE02',
-                'programme_name' => 'Bachelor of Entrepreneurship and Business',
-                'status' => 'INSTRUCTOR SENTBACK',
-                'status_type' => 'sentback',
-            ],
-            [
-                'id' => 6,
-                'name' => 'IRENE KOECH',
-                'admission_number' => 'BE02/33890/2025',
-                'course_code' => 'ECO 101',
-                'course_name' => 'Introduction to Microeconomics',
-                'programme_code' => 'BE02',
-                'programme_name' => 'Bachelor of Entrepreneurship and Business',
-                'status' => 'INSTRUCTOR SENTBACK',
-                'status_type' => 'sentback',
-            ],
-            [
-                'id' => 7,
-                'name' => 'CYNTHIA CHEPKURUI',
-                'admission_number' => 'BE02/35112/2025',
-                'course_code' => 'BEB 101',
-                'course_name' => 'Business Mathematics and Statistics',
-                'programme_code' => 'BE02',
-                'programme_name' => 'Bachelor of Entrepreneurship and Business',
-                'status' => 'PENDING',
-                'status_type' => 'pending',
-            ],
-            [
-                'id' => 8,
-                'name' => 'BRIAN OMONDI',
-                'admission_number' => 'CS01/29840/2025',
-                'course_code' => 'CSC 102',
-                'course_name' => 'Structured Programming with C',
-                'programme_code' => 'CS01',
-                'programme_name' => 'Bachelor of Science in Computer Science',
-                'status' => 'APPROVED',
-                'status_type' => 'approved',
-            ],
-            [
-                'id' => 9,
-                'name' => 'MERCY WAMBUI',
-                'admission_number' => 'ED01/31902/2024',
-                'course_code' => 'EDF 101',
-                'course_name' => 'History and Foundations of Education',
-                'programme_code' => 'ED01',
-                'programme_name' => 'Bachelor of Technology Education',
-                'status' => 'RECOMMENDED',
-                'status_type' => 'recommended',
-            ],
-            [
-                'id' => 10,
-                'name' => 'KEVIN OTIENO',
-                'admission_number' => 'BE02/32450/2025',
-                'course_code' => 'BEB 105',
-                'course_name' => 'Financial Accounting I',
-                'programme_code' => 'BE02',
-                'programme_name' => 'Bachelor of Entrepreneurship and Business',
-                'status' => 'HOD SENDBACK',
-                'status_type' => 'sentback',
-            ],
-            [
-                'id' => 11,
-                'name' => 'GLADYS CHERONO',
-                'admission_number' => 'CS01/30012/2025',
-                'course_code' => 'MAT 102',
-                'course_name' => 'Discrete Mathematics',
-                'programme_code' => 'CS01',
-                'programme_name' => 'Bachelor of Science in Computer Science',
-                'status' => 'APPROVED',
-                'status_type' => 'approved',
-            ],
-            [
-                'id' => 12,
-                'name' => 'SAMUEL WAWERU',
-                'admission_number' => 'ED01/32890/2025',
-                'course_code' => 'PSY 101',
-                'course_name' => 'Introduction to Educational Psychology',
-                'programme_code' => 'ED01',
-                'programme_name' => 'Bachelor of Technology Education',
-                'status' => 'STUDENT SENDBACK',
-                'status_type' => 'sentback',
-            ],
-            [
-                'id' => 13,
-                'name' => 'SHARON JEPKEMOI',
-                'admission_number' => 'BE02/34812/2025',
-                'course_code' => 'BEB 107',
-                'course_name' => 'Principles of Marketing',
-                'programme_code' => 'BE02',
-                'programme_name' => 'Bachelor of Entrepreneurship and Business',
-                'status' => 'APPROVED',
-                'status_type' => 'approved',
-            ],
-            [
-                'id' => 14,
-                'name' => 'VICTOR KIPKEMBOI',
-                'admission_number' => 'CS01/31200/2025',
-                'course_code' => 'CSC 104',
-                'course_name' => 'Database Systems Design',
-                'programme_code' => 'CS01',
-                'programme_name' => 'Bachelor of Science in Computer Science',
-                'status' => 'PENDING',
-                'status_type' => 'pending',
-            ],
-            [
-                'id' => 15,
-                'name' => 'ESTHER NYAMBURA',
-                'admission_number' => 'ED01/33100/2025',
-                'course_code' => 'EDC 101',
-                'course_name' => 'Curriculum Development',
-                'programme_code' => 'ED01',
-                'programme_name' => 'Bachelor of Technology Education',
-                'status' => 'APPROVED',
-                'status_type' => 'approved',
-            ],
-            [
-                'id' => 16,
-                'name' => 'ABDULLAHI GUHAT',
-                'admission_number' => 'ED01/33239/2025',
-                'course_code' => 'BEB 109',
-                'course_name' => 'Critical Thinking',
-                'programme_code' => 'ED01',
-                'programme_name' => 'Bachelor of Technology Education',
-                'status' => 'APPROVED',
-                'status_type' => 'approved',
-            ],
-            [
-                'id' => 17,
-                'name' => 'ABDULLAHI GUHAT',
-                'admission_number' => 'ED01/33239/2025',
-                'course_code' => 'SST 201',
-                'course_name' => 'Probability and Statistics',
-                'programme_code' => 'ED01',
-                'programme_name' => 'Bachelor of Technology Education',
-                'status' => 'APPROVED',
-                'status_type' => 'approved',
-            ],
-            [
-                'id' => 18,
-                'name' => 'BETTY MUNYOKI',
-                'admission_number' => 'ED01/34411/2025',
-                'course_code' => 'MAT 103',
-                'course_name' => 'Calculus I',
-                'programme_code' => 'ED01',
-                'programme_name' => 'Bachelor of Technology Education',
-                'status' => 'APPROVED',
-                'status_type' => 'approved',
-            ],
-            [
-                'id' => 19,
-                'name' => 'BETTY MUNYOKI',
-                'admission_number' => 'ED01/34411/2025',
-                'course_code' => 'CSC 101',
-                'course_name' => 'Introduction to Computing Systems',
-                'programme_code' => 'ED01',
-                'programme_name' => 'Bachelor of Technology Education',
-                'status' => 'APPROVED',
-                'status_type' => 'approved',
-            ],
-            [
-                'id' => 20,
-                'name' => 'BETTY MUNYOKI',
-                'admission_number' => 'ED01/34411/2025',
-                'course_code' => 'MAT 101',
-                'course_name' => 'Foundations of Mathematics',
-                'programme_code' => 'ED01',
-                'programme_name' => 'Bachelor of Technology Education',
-                'status' => 'APPROVED',
-                'status_type' => 'approved',
-            ],
-        ];
-
-        return view('transfers.exemptions', compact('stats', 'allEntries', 'status', 'search'));
+        ]);
     }
 
-    public function datesSetup(): View
+    public function storeDate(Request $request): RedirectResponse
     {
-        $dates = [
+        $this->authorizePermission($request, 'transfers.manage');
+        $data = $request->validate([
+            'type' => ['required', 'string', 'max:80'],
+            'academic_year' => ['required', 'string', 'max:20'],
+            'notification_date' => ['nullable', 'date'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ]);
+        TransferWindow::query()->updateOrCreate(
+            ['type' => $data['type'], 'academic_year' => $data['academic_year']],
             [
-                'id' => 1,
-                'type' => 'Credit Transfer',
-                'academic_year' => '2023-2024',
-                'notification_date' => '19-02-2025',
-                'start_date' => '07-09-2026',
-                'end_date' => '27-05-2025',
+                'notification_date' => $data['notification_date'] ?? null,
+                'start_date' => $data['start_date'] ?? null,
+                'end_date' => $data['end_date'] ?? null,
+                'status' => $data['status'] ?? 'Open',
             ],
-            [
-                'id' => 2,
-                'type' => 'Credit Transfer',
-                'academic_year' => '2026-2027',
-                'notification_date' => '09-07-2026',
-                'start_date' => '09-07-2026',
-                'end_date' => '30-11-2026',
-            ],
-            [
-                'id' => 3,
-                'type' => 'Credit Transfer',
-                'academic_year' => '2025-2026',
-                'notification_date' => '11-07-2025',
-                'start_date' => '11-07-2025',
-                'end_date' => '06-08-2026',
-            ],
-            [
-                'id' => 4,
-                'type' => 'Credit Transfer',
-                'academic_year' => '2024-2025',
-                'notification_date' => '15-10-2024',
-                'start_date' => '15-10-2024',
-                'end_date' => '31-05-2025',
-            ],
-            [
-                'id' => 5,
-                'type' => 'Inter/Intra SchoolTransfer',
-                'academic_year' => '2023-2024',
-                'notification_date' => '05-04-2024',
-                'start_date' => '05-07-2024',
-                'end_date' => '05-11-2024',
-            ],
-            [
-                'id' => 6,
-                'type' => 'Inter/Intra SchoolTransfer',
-                'academic_year' => '2026-2027',
-                'notification_date' => '09-07-2026',
-                'start_date' => '07-09-2026',
-                'end_date' => '07-09-2026',
-            ],
-            [
-                'id' => 7,
-                'type' => 'Inter/Intra SchoolTransfer',
-                'academic_year' => '2025-2026',
-                'notification_date' => '11-07-2025',
-                'start_date' => '11-07-2025',
-                'end_date' => '31-07-2026',
-            ],
-            [
-                'id' => 8,
-                'type' => 'Inter/Intra SchoolTransfer',
-                'academic_year' => '2024-2025',
-                'notification_date' => '04-09-2024',
-                'start_date' => '04-09-2024',
-                'end_date' => '31-08-2025',
-            ],
-        ];
+        );
 
-        return view('transfers.dates-setup', compact('dates'));
+        return back()->with('success', 'Transfer window saved.');
     }
 
     public function interIntra(Request $request): View
     {
-        $status = $request->query('status');
-        $search = $request->query('search');
+        $query = FacultyTransfer::query()->latest();
+        if ($request->filled('status')) {
+            $needle = strtolower((string) $request->query('status'));
+            $query->whereRaw('LOWER(status) LIKE ?', ['%'.$needle.'%']);
+        }
+        if ($request->filled('search')) {
+            $needle = '%'.strtolower((string) $request->query('search')).'%';
+            $query->where(function ($q) use ($needle): void {
+                $q->whereRaw('LOWER(name) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(COALESCE(email, \'\')) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(COALESCE(reg_no, \'\')) LIKE ?', [$needle]);
+            });
+        }
+        $records = $query->get();
+        $transfers = $records->map(fn (FacultyTransfer $row): array => [
+            'id' => $row->id,
+            'name' => $row->name,
+            'email' => $row->email ?? '—',
+            'reg_no' => $row->reg_no ?? '—',
+            'type' => $row->type,
+            'current_programme' => $row->current_programme ?? '—',
+            'transfer_programme' => $row->transfer_programme ?? '—',
+            'reason' => $row->reason ?? '—',
+            'status' => $row->status,
+        ])->all();
+        $stats = new SoftStatsBag([
+            'total' => $records->count(),
+            'endorsed' => $records->filter(fn (FacultyTransfer $r): bool => str_contains(strtolower($r->status), 'endors') || str_contains(strtolower($r->status), 'approv'))->count(),
+            'pending' => $records->filter(fn (FacultyTransfer $r): bool => str_contains(strtolower($r->status), 'pending'))->count(),
+            'rejected' => $records->filter(fn (FacultyTransfer $r): bool => str_contains(strtolower($r->status), 'reject'))->count(),
+        ]);
 
-        $transfers = [
-            [
-                'id' => 1,
-                'name' => 'ABDIHAKIM OMAR',
-                'email' => 'ST63801212024@students.mema.ac.ke',
-                'reg_no' => 'ST63/80121/2024',
-                'type' => 'Intra',
-                'current_programme' => 'ST61 - Master of Data Science',
-                'transfer_programme' => 'ST63 - Master of Science in Cybersecurity and Digital Forensics',
-                'reason' => 'Change of Preference',
-                'status' => 'Pending',
+        return view('transfers.inter-intra', [
+            'transfers' => $transfers,
+            'stats' => $stats,
+            'search' => $request->query('search'),
+            'status' => $request->query('status'),
+        ])->with('operationalCreate', [
+            'title' => 'Add faculty transfer',
+            'hint' => 'Persists to faculty_transfers.',
+            'action' => route('transfers.inter-intra.store'),
+            'fields' => [
+                ['name' => 'name', 'label' => 'Student name', 'required' => true],
+                ['name' => 'email', 'label' => 'Email'],
+                ['name' => 'reg_no', 'label' => 'Registration number'],
+                ['name' => 'type', 'label' => 'Transfer type'],
+                ['name' => 'current_programme', 'label' => 'From programme'],
+                ['name' => 'transfer_programme', 'label' => 'To programme'],
+                ['name' => 'reason', 'label' => 'Reason', 'type' => 'textarea'],
+                ['name' => 'status', 'label' => 'Status'],
             ],
-            [
-                'id' => 2,
-                'name' => 'ABDINASIR AHMED SHEIKH ABDI',
-                'email' => 'ST0201232024@students.mema.ac.ke',
-                'reg_no' => 'ST02/0123/2024',
-                'type' => 'Intra',
-                'current_programme' => 'ST02 - Bachelor of Science in Cybersecurity and Digital Forensics',
-                'transfer_programme' => 'ST04 - Bachelor of Science in Computer Science',
-                'reason' => 'Change of Preference',
-                'status' => 'Pending',
-            ],
-            [
-                'id' => 3,
-                'name' => 'ABDINASIR AHMED SHEIKH ABDI',
-                'email' => 'ST0201232024@students.mema.ac.ke',
-                'reg_no' => 'ST02/0123/2024',
-                'type' => 'Intra',
-                'current_programme' => 'ST04 - Bachelor of Science in Computer Science',
-                'transfer_programme' => 'ST02 - Bachelor of Science in Cybersecurity and Digital Forensics',
-                'reason' => 'Applied for wrong Course',
-                'status' => 'Approved',
-            ],
-            [
-                'id' => 4,
-                'name' => 'ABEL WANJALA',
-                'email' => 'ED63599572025@students.mema.ac.ke',
-                'reg_no' => 'ED63/59957/2025',
-                'type' => 'Intra',
-                'current_programme' => 'ED61 - Master in Learning Design and Technology',
-                'transfer_programme' => 'ED63 - Master of Education in Educational Leadership and Policy',
-                'reason' => 'Change of Preference',
-                'status' => 'Rejected',
-            ],
-            [
-                'id' => 5,
-                'name' => 'ABRAHAM KATAM',
-                'email' => 'ED62571302025@students.mema.ac.ke',
-                'reg_no' => 'ED62/57130/2025',
-                'type' => 'Intra',
-                'current_programme' => 'ED63 - Master of Education in Educational Leadership and Policy',
-                'transfer_programme' => 'ED62 - Master of Education in Technology Education',
-                'reason' => '4',
-                'status' => 'Approved',
-            ],
-            [
-                'id' => 6,
-                'name' => 'ADAM Namunyu',
-                'email' => 'ED61580422025@students.mema.ac.ke',
-                'reg_no' => 'ED61/58042/2025',
-                'type' => 'Intra',
-                'current_programme' => 'ED62 - Master of Education in Technology Education',
-                'transfer_programme' => 'ED61 - Master in Learning Design and Technology',
-                'reason' => 'Applied for wrong Course',
-                'status' => 'Approved',
-            ],
-            [
-                'id' => 7,
-                'name' => 'ADAN ABDI',
-                'email' => 'BE03356702025@students.mema.ac.ke',
-                'reg_no' => 'BE03/35670/2025',
-                'type' => 'Intra',
-                'current_programme' => 'BE04 - Bachelor of Commerce',
-                'transfer_programme' => 'BE03 - Bachelor of Economics and Data Science',
-                'reason' => 'Change of Preference',
-                'status' => 'Approved',
-            ],
-            [
-                'id' => 8,
-                'name' => 'ADAN SOMO',
-                'email' => 'BE61571332025@students.mema.ac.ke',
-                'reg_no' => 'BE61/57133/2025',
-                'type' => 'Inter',
-                'current_programme' => 'ST61 - Master of Data Science',
-                'transfer_programme' => 'BE61 - Master of Business Administration',
-                'reason' => 'Change of Preference',
-                'status' => 'Approved',
-            ],
-            [
-                'id' => 9,
-                'name' => 'AGATHA MAINGI',
-                'email' => 'ED61569192025@students.mema.ac.ke',
-                'reg_no' => 'ED61/56919/2025',
-                'type' => 'Intra',
-                'current_programme' => 'ED63 - Master of Education in Educational Leadership and Policy',
-                'transfer_programme' => 'ED61 - Master in Learning Design and Technology',
-                'reason' => 'Change of Preference',
-                'status' => 'Approved',
-            ],
-            [
-                'id' => 10,
-                'name' => 'Agnes Wanambisi',
-                'email' => 'ST01342022025@students.mema.ac.ke',
-                'reg_no' => 'ST01/34202/2025',
-                'type' => 'Intra',
-                'current_programme' => 'ST02 - Bachelor of Science in Cybersecurity and Digital Forensics',
-                'transfer_programme' => 'ST01 - Bachelor of Data Science',
-                'reason' => '4',
-                'status' => 'Pending',
-            ],
-        ];
+        ]);
+    }
 
-        return view('transfers.inter-intra', compact('transfers', 'status', 'search'));
+    public function storeInterIntra(Request $request): RedirectResponse
+    {
+        $this->authorizePermission($request, 'transfers.manage');
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:190'],
+            'email' => ['nullable', 'email', 'max:190'],
+            'reg_no' => ['nullable', 'string', 'max:40'],
+            'type' => ['nullable', 'string', 'max:40'],
+            'current_programme' => ['nullable', 'string', 'max:190'],
+            'transfer_programme' => ['nullable', 'string', 'max:190'],
+            'reason' => ['nullable', 'string', 'max:2000'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ]);
+        FacultyTransfer::query()->create([
+            ...$data,
+            'type' => $data['type'] ?? 'Intra',
+            'status' => $data['status'] ?? 'Pending',
+            'student_id' => Student::query()->where('admission_number', $data['reg_no'] ?? '')->value('id'),
+        ]);
+
+        return back()->with('success', 'Faculty transfer saved.');
+    }
+
+    public function updateInterIntraStatus(Request $request, FacultyTransfer $transfer): RedirectResponse
+    {
+        $this->authorizePermission($request, 'transfers.manage');
+        $data = $request->validate([
+            'status' => ['required', 'string', 'max:40'],
+        ]);
+        $transfer->update(['status' => $data['status']]);
+
+        return back()->with('success', 'Transfer status updated.');
     }
 
     public function creditTransfers(Request $request): View
     {
-        $status = $request->query('status');
-        $search = $request->query('search');
+        $query = CreditTransfer::query()->latest();
+        if ($request->filled('status')) {
+            $needle = strtolower((string) $request->query('status'));
+            $query->whereRaw('LOWER(status) LIKE ?', ['%'.$needle.'%']);
+        }
+        if ($request->filled('search')) {
+            $needle = '%'.strtolower((string) $request->query('search')).'%';
+            $query->where(function ($q) use ($needle): void {
+                $q->whereRaw('LOWER(name) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(COALESCE(admission_number, \'\')) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(COALESCE(course_code, \'\')) LIKE ?', [$needle]);
+            });
+        }
+        $records = $query->get();
+        $creditEntries = $records->map(fn (CreditTransfer $row): array => [
+            'id' => $row->id,
+            'name' => $row->name,
+            'admission_number' => $row->admission_number ?? '—',
+            'course_code' => $row->course_code ?? '—',
+            'course_name' => $row->course_name ?? '—',
+            'programme_code' => $row->programme_code ?? '—',
+            'programme_name' => $row->programme_name ?? '—',
+            'prior_institution' => $row->prior_institution ?? '—',
+            'credits' => $row->credits !== null ? (string) $row->credits : '—',
+            'status' => $row->status,
+            'status_type' => $row->status_type ?? strtolower($row->status),
+        ])->all();
+        $total = $records->count();
+        $pending = $records->filter(fn (CreditTransfer $r): bool => str_contains(strtolower($r->status), 'pending'))->count();
+        $approved = $records->filter(fn (CreditTransfer $r): bool => str_contains(strtolower($r->status), 'approv'))->count();
+        $rejected = $records->filter(fn (CreditTransfer $r): bool => str_contains(strtolower($r->status), 'reject'))->count();
+        $stats = new SoftStatsBag([
+            'totalRequests' => $total,
+            'totalRate' => $this->percent($total, max(1, $total)),
+            'pendingApprovals' => $pending,
+            'unassignedPending' => $pending,
+            'pendingRate' => $this->percent($pending, max(1, $total)),
+            'approvedTransfers' => $approved,
+            'approvedRate' => $this->percent($approved, max(1, $total)),
+            'rejectedRequests' => $rejected,
+            'rejectedRate' => $this->percent($rejected, max(1, $total)),
+        ]);
 
-        $stats = [
-            'totalRequests' => 274,
-            'pendingApprovals' => 166,
-            'unassignedPending' => 100,
-            'approvedTransfers' => 75,
-            'rejectedRequests' => 17,
-            'totalRate' => '+100%',
-            'pendingRate' => '+60.58%',
-            'approvedRate' => '+27.37%',
-            'rejectedRate' => '+6.2%',
-        ];
+        return view('transfers.credit-transfers', [
+            'creditEntries' => $creditEntries,
+            'stats' => $stats,
+            'search' => $request->query('search'),
+            'status' => $request->query('status'),
+        ])->with('operationalCreate', [
+            'title' => 'Add credit transfer',
+            'hint' => 'Persists to credit_transfers.',
+            'action' => route('transfers.credits.store'),
+            'fields' => [
+                ['name' => 'name', 'label' => 'Student name', 'required' => true],
+                ['name' => 'admission_number', 'label' => 'Admission / reg number'],
+                ['name' => 'course_code', 'label' => 'Course code'],
+                ['name' => 'course_name', 'label' => 'Course name'],
+                ['name' => 'programme_code', 'label' => 'Programme code'],
+                ['name' => 'programme_name', 'label' => 'Programme name'],
+                ['name' => 'prior_institution', 'label' => 'Prior institution'],
+                ['name' => 'credits', 'label' => 'Credits', 'type' => 'number'],
+                ['name' => 'status', 'label' => 'Status'],
+            ],
+        ]);
+    }
 
-        $creditEntries = [
-            [
-                'id' => 1,
-                'name' => 'JARED ORWA',
-                'admission_number' => 'BE01/56068/2023',
-                'course_code' => 'BEB 107',
-                'course_name' => 'Entrepreneurial Environment',
-                'programme_code' => 'BE01',
-                'programme_name' => 'Bachelor of Economics and Statistics',
-                'status' => 'Instructor sentback',
-                'status_type' => 'sentback',
-            ],
-            [
-                'id' => 2,
-                'name' => 'JARED ORWA',
-                'admission_number' => 'BE01/56068/2023',
-                'course_code' => 'CSC 101',
-                'course_name' => 'Introduction to Computing Systems',
-                'programme_code' => 'BE01',
-                'programme_name' => 'Bachelor of Economics and Statistics',
-                'status' => 'Instructor sentback',
-                'status_type' => 'sentback',
-            ],
-            [
-                'id' => 3,
-                'name' => 'JARED ORWA',
-                'admission_number' => 'BE01/56068/2023',
-                'course_code' => 'SST 111',
-                'course_name' => 'Basic Statistics with R',
-                'programme_code' => 'BE01',
-                'programme_name' => 'Bachelor of Economics and Statistics',
-                'status' => 'Instructor sentback',
-                'status_type' => 'sentback',
-            ],
-            [
-                'id' => 4,
-                'name' => 'JARED ORWA',
-                'admission_number' => 'BE01/56068/2023',
-                'course_code' => 'ECO 101',
-                'course_name' => 'Introduction to Microeconomics',
-                'programme_code' => 'BE01',
-                'programme_name' => 'Bachelor of Economics and Statistics',
-                'status' => 'Instructor sentback',
-                'status_type' => 'sentback',
-            ],
-            [
-                'id' => 5,
-                'name' => 'JARED ORWA',
-                'admission_number' => 'BE01/56068/2023',
-                'course_code' => 'MAT 101',
-                'course_name' => 'Foundations of Mathematics',
-                'programme_code' => 'BE01',
-                'programme_name' => 'Bachelor of Economics and Statistics',
-                'status' => 'approved',
-                'status_type' => 'approved',
-            ],
-            [
-                'id' => 6,
-                'name' => 'MICHAEL LIWAN',
-                'admission_number' => 'ST01/55027/2023',
-                'course_code' => 'MAT 102',
-                'course_name' => 'Differential and Integral Calculus',
-                'programme_code' => 'ST01',
-                'programme_name' => 'Bachelor of Data Science',
-                'status' => 'approved',
-                'status_type' => 'approved',
-            ],
-            [
-                'id' => 7,
-                'name' => 'BEN TITO',
-                'admission_number' => 'ST01/56162/2023',
-                'course_code' => 'BEB 105',
-                'course_name' => 'IT Entrepreneurship',
-                'programme_code' => 'ST01',
-                'programme_name' => 'Bachelor of Data Science',
-                'status' => 'Instructor sentback',
-                'status_type' => 'sentback',
-            ],
-            [
-                'id' => 8,
-                'name' => 'LINET LYDIA',
-                'admission_number' => 'ST01/50451/2024',
-                'course_code' => 'CSC 101',
-                'course_name' => 'Introduction to Computing Systems',
-                'programme_code' => 'ST01',
-                'programme_name' => 'Bachelor of Data Science',
-                'status' => 'approved',
-                'status_type' => 'approved',
-            ],
-            [
-                'id' => 9,
-                'name' => 'SABASTIAN NZIOKA',
-                'admission_number' => 'BE04/33812/2025',
-                'course_code' => 'BCM 101',
-                'course_name' => 'Introduction to Business Mathematics',
-                'programme_code' => 'BE04',
-                'programme_name' => 'Bachelor of Commerce',
-                'status' => 'approved',
-                'status_type' => 'approved',
-            ],
-            [
-                'id' => 10,
-                'name' => 'SABASTIAN NZIOKA',
-                'admission_number' => 'BE04/33812/2025',
-                'course_code' => 'BCM 103',
-                'course_name' => 'Introduction to Financial Accounting',
-                'programme_code' => 'BE04',
-                'programme_name' => 'Bachelor of Commerce',
-                'status' => 'approved',
-                'status_type' => 'approved',
-            ],
-        ];
+    public function storeCredit(Request $request): RedirectResponse
+    {
+        $this->authorizePermission($request, 'transfers.manage');
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:190'],
+            'admission_number' => ['nullable', 'string', 'max:40'],
+            'course_code' => ['nullable', 'string', 'max:40'],
+            'course_name' => ['nullable', 'string', 'max:190'],
+            'programme_code' => ['nullable', 'string', 'max:40'],
+            'programme_name' => ['nullable', 'string', 'max:190'],
+            'prior_institution' => ['nullable', 'string', 'max:190'],
+            'credits' => ['nullable', 'integer', 'min:0', 'max:999'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ]);
+        $status = $data['status'] ?? 'Pending';
+        CreditTransfer::query()->create([
+            ...$data,
+            'status' => $status,
+            'status_type' => strtolower($status),
+            'student_id' => Student::query()->where('admission_number', $data['admission_number'] ?? '')->value('id'),
+        ]);
 
-        return view('transfers.credit-transfers', compact('stats', 'creditEntries', 'status', 'search'));
+        return back()->with('success', 'Credit transfer saved.');
+    }
+
+    public function updateCreditStatus(Request $request, CreditTransfer $credit): RedirectResponse
+    {
+        $this->authorizePermission($request, 'transfers.manage');
+        $data = $request->validate([
+            'status' => ['required', 'string', 'max:40'],
+            'status_type' => ['nullable', 'string', 'max:40'],
+        ]);
+        $credit->update([
+            'status' => $data['status'],
+            'status_type' => $data['status_type'] ?? strtolower($data['status']),
+        ]);
+
+        return back()->with('success', 'Credit transfer status updated.');
+    }
+
+    public function exemptions(Request $request): View
+    {
+        $query = CourseExemption::query()->latest();
+        if ($request->filled('status')) {
+            $needle = strtolower((string) $request->query('status'));
+            $query->whereRaw('LOWER(status) LIKE ?', ['%'.$needle.'%']);
+        }
+        if ($request->filled('search')) {
+            $needle = '%'.strtolower((string) $request->query('search')).'%';
+            $query->where(function ($q) use ($needle): void {
+                $q->whereRaw('LOWER(name) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(COALESCE(admission_number, \'\')) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(COALESCE(course_code, \'\')) LIKE ?', [$needle]);
+            });
+        }
+        $records = $query->get();
+        $allEntries = $records->map(fn (CourseExemption $row): array => [
+            'id' => $row->id,
+            'name' => $row->name,
+            'admission_number' => $row->admission_number ?? '—',
+            'course_code' => $row->course_code ?? '—',
+            'course_name' => $row->course_name ?? '—',
+            'programme_code' => $row->programme_code ?? '—',
+            'programme_name' => $row->programme_name ?? '—',
+            'status' => $row->status,
+        ])->all();
+        $total = $records->count();
+        $pending = $records->filter(fn (CourseExemption $r): bool => str_contains(strtolower($r->status), 'pending'))->count();
+        $approved = $records->filter(fn (CourseExemption $r): bool => str_contains(strtolower($r->status), 'approv'))->count();
+        $rejected = $records->filter(fn (CourseExemption $r): bool => str_contains(strtolower($r->status), 'reject'))->count();
+        $stats = new SoftStatsBag([
+            'totalRequests' => $total,
+            'totalRate' => $this->percent($total, max(1, $total)),
+            'pendingApprovals' => $pending,
+            'unassignedPending' => $pending,
+            'pendingRate' => $this->percent($pending, max(1, $total)),
+            'approvedExemptions' => $approved,
+            'approvedRate' => $this->percent($approved, max(1, $total)),
+            'rejectedRequests' => $rejected,
+            'rejectedRate' => $this->percent($rejected, max(1, $total)),
+        ]);
+
+        return view('transfers.exemptions', [
+            'allEntries' => $allEntries,
+            'stats' => $stats,
+            'search' => $request->query('search'),
+            'status' => $request->query('status'),
+        ])->with('operationalCreate', [
+            'title' => 'Add exemption',
+            'hint' => 'Persists to course_exemptions.',
+            'action' => route('transfers.exemptions.store'),
+            'fields' => [
+                ['name' => 'name', 'label' => 'Student name', 'required' => true],
+                ['name' => 'admission_number', 'label' => 'Admission / reg number'],
+                ['name' => 'course_code', 'label' => 'Course code'],
+                ['name' => 'course_name', 'label' => 'Course name'],
+                ['name' => 'programme_code', 'label' => 'Programme code'],
+                ['name' => 'programme_name', 'label' => 'Programme name'],
+                ['name' => 'status', 'label' => 'Status'],
+            ],
+        ]);
+    }
+
+    public function storeExemption(Request $request): RedirectResponse
+    {
+        $this->authorizePermission($request, 'transfers.manage');
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:190'],
+            'admission_number' => ['nullable', 'string', 'max:40'],
+            'course_code' => ['nullable', 'string', 'max:40'],
+            'course_name' => ['nullable', 'string', 'max:190'],
+            'programme_code' => ['nullable', 'string', 'max:40'],
+            'programme_name' => ['nullable', 'string', 'max:190'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ]);
+        CourseExemption::query()->create([
+            ...$data,
+            'status' => $data['status'] ?? 'Pending',
+            'student_id' => Student::query()->where('admission_number', $data['admission_number'] ?? '')->value('id'),
+        ]);
+
+        return back()->with('success', 'Exemption saved.');
+    }
+
+    public function updateExemptionStatus(Request $request, CourseExemption $exemption): RedirectResponse
+    {
+        $this->authorizePermission($request, 'transfers.manage');
+        $data = $request->validate([
+            'status' => ['required', 'string', 'max:40'],
+        ]);
+        $exemption->update(['status' => $data['status']]);
+
+        return back()->with('success', 'Exemption status updated.');
+    }
+
+    private function percent(int $part, int $whole): string
+    {
+        return round(($part / max(1, $whole)) * 100, 2).'%';
     }
 }

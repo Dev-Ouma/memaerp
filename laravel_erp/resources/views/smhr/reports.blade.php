@@ -29,26 +29,33 @@
     </div>
 
     {{-- Metrics --}}
+    @php
+        $rawSpend = $reportMetrics['annualPayrollSpend'] ?? 0;
+        $spendDisplay = is_numeric($rawSpend) ? ($rawSpend > 0 ? 'KES ' . number_format($rawSpend / 1000000, 1) . 'M' : 'KES 0.0M') : (string)$rawSpend;
+        
+        $rawPaye = $reportMetrics['totalPAYERemitted'] ?? 0;
+        $payeDisplay = is_numeric($rawPaye) ? ($rawPaye > 0 ? 'KES ' . number_format($rawPaye / 1000000, 1) . 'M' : 'KES 0.0M') : (string)$rawPaye;
+    @endphp
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
         <div class="bg-white rounded-xl border border-slate-200/90 p-4 shadow-xs">
             <div class="text-xs font-bold text-slate-600 uppercase tracking-wide">Annual Payroll Spend</div>
-            <div class="text-2xl font-extrabold text-[#0A3E50] mt-1.5">KES {{ number_format($reportMetrics['annualPayrollSpend'] / 1000000, 1) }}M</div>
-            <p class="text-[11px] text-slate-500 mt-0.5">148 Employees</p>
+            <div class="text-2xl font-extrabold text-[#0A3E50] mt-1.5">{{ $spendDisplay }}</div>
+            <p class="text-[11px] text-slate-500 mt-0.5">{{ (int) ($staffHeadcount ?? 0) }} Employees</p>
         </div>
         <div class="bg-white rounded-xl border border-slate-200/90 p-4 shadow-xs">
             <div class="text-xs font-bold text-slate-600 uppercase tracking-wide">Annual PAYE Remitted</div>
-            <div class="text-2xl font-extrabold text-blue-700 mt-1.5">KES {{ number_format($reportMetrics['totalPAYERemitted'] / 1000000, 1) }}M</div>
+            <div class="text-2xl font-extrabold text-blue-700 mt-1.5">{{ $payeDisplay }}</div>
             <p class="text-[11px] text-slate-500 mt-0.5">KRA Domestic Taxes</p>
         </div>
         <div class="bg-white rounded-xl border border-slate-200/90 p-4 shadow-xs">
             <div class="text-xs font-bold text-slate-600 uppercase tracking-wide">Leave Accrual Liability</div>
-            <div class="text-2xl font-extrabold text-amber-700 mt-1.5">{{ $reportMetrics['leaveLiabilityHours'] }}</div>
-            <p class="text-[11px] text-slate-500 mt-0.5">Accumulated leave days</p>
+            <div class="text-2xl font-extrabold text-amber-700 mt-1.5">{{ $reportMetrics['leaveLiabilityHours'] ?? 0 }}</div>
+            <p class="text-[11px] text-slate-500 mt-0.5">From saved HR report records</p>
         </div>
         <div class="bg-white rounded-xl border border-slate-200/90 p-4 shadow-xs">
             <div class="text-xs font-bold text-slate-600 uppercase tracking-wide">Statutory Compliance</div>
-            <div class="text-2xl font-extrabold text-[#1E8449] mt-1.5">{{ $reportMetrics['complianceRate'] }}</div>
-            <p class="text-[11px] text-slate-500 mt-0.5">Zero penalty rating</p>
+            <div class="text-2xl font-extrabold text-[#1E8449] mt-1.5">{{ $reportMetrics['complianceRate'] ?? '0%' }}</div>
+            <p class="text-[11px] text-slate-500 mt-0.5">From saved HR report records</p>
         </div>
     </div>
 
@@ -145,45 +152,25 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                    <tr class="hover:bg-slate-50/70 transition-colors report-row">
-                        <td class="py-3 px-4 font-mono font-bold text-[#0A3E50]">EMP-2026-001</td>
-                        <td class="py-3 px-4 font-bold text-slate-900">Prof. Allan Wabwire</td>
-                        <td class="py-3 px-4 font-mono text-slate-700">A009876543Z</td>
-                        <td class="py-3 px-4 text-slate-700">Dean, Computing &amp; Informatics</td>
-                        <td class="py-3 px-4 text-center font-bold text-slate-800">2025</td>
-                        <td class="py-3 px-4 text-center">
-                            <a href="{{ route('smhr.p9-form', 'EMP-2026-001') }}" class="px-3 py-1 rounded bg-[#0A3E50] hover:bg-[#08303e] text-white font-bold text-xs inline-flex items-center gap-1 shadow-2xs" style="color:#ffffff !important;">
-                                <i data-lucide="eye" class="w-3.5 h-3.5 text-white"></i>
-                                <span>Generate P9 Form</span>
-                            </a>
-                        </td>
-                    </tr>
-                    <tr class="hover:bg-slate-50/70 transition-colors report-row">
-                        <td class="py-3 px-4 font-mono font-bold text-[#0A3E50]">EMP-2026-014</td>
-                        <td class="py-3 px-4 font-bold text-slate-900">Dr. Mercy Chebet</td>
-                        <td class="py-3 px-4 font-mono text-slate-700">A008765432Y</td>
-                        <td class="py-3 px-4 text-slate-700">Senior Lecturer, AI</td>
-                        <td class="py-3 px-4 text-center font-bold text-slate-800">2025</td>
-                        <td class="py-3 px-4 text-center">
-                            <a href="{{ route('smhr.p9-form', 'EMP-2026-014') }}" class="px-3 py-1 rounded bg-[#0A3E50] hover:bg-[#08303e] text-white font-bold text-xs inline-flex items-center gap-1 shadow-2xs" style="color:#ffffff !important;">
-                                <i data-lucide="eye" class="w-3.5 h-3.5 text-white"></i>
-                                <span>Generate P9 Form</span>
-                            </a>
-                        </td>
-                    </tr>
-                    <tr class="hover:bg-slate-50/70 transition-colors report-row">
-                        <td class="py-3 px-4 font-mono font-bold text-[#0A3E50]">EMP-2026-035</td>
-                        <td class="py-3 px-4 font-bold text-slate-900">Prof. Peter Omwenga</td>
-                        <td class="py-3 px-4 font-mono text-slate-700">A007654321X</td>
-                        <td class="py-3 px-4 text-slate-700">Associate Professor, Electrical Eng.</td>
-                        <td class="py-3 px-4 text-center font-bold text-slate-800">2025</td>
-                        <td class="py-3 px-4 text-center">
-                            <a href="{{ route('smhr.p9-form', 'EMP-2026-035') }}" class="px-3 py-1 rounded bg-[#0A3E50] hover:bg-[#08303e] text-white font-bold text-xs inline-flex items-center gap-1 shadow-2xs" style="color:#ffffff !important;">
-                                <i data-lucide="eye" class="w-3.5 h-3.5 text-white"></i>
-                                <span>Generate P9 Form</span>
-                            </a>
-                        </td>
-                    </tr>
+                    @forelse(($p9StaffDirectory ?? []) as $member)
+                        <tr class="hover:bg-slate-50/70 transition-colors report-row">
+                            <td class="py-3 px-4 font-mono font-bold text-[#0A3E50]">{{ $member['staff_id'] }}</td>
+                            <td class="py-3 px-4 font-bold text-slate-900">{{ $member['name'] }}</td>
+                            <td class="py-3 px-4 font-mono text-slate-700">{{ $member['kra_pin'] }}</td>
+                            <td class="py-3 px-4 text-slate-700">{{ $member['designation'] }}</td>
+                            <td class="py-3 px-4 text-center font-bold text-slate-800">{{ $member['year'] }}</td>
+                            <td class="py-3 px-4 text-center">
+                                <a href="{{ route('smhr.p9-form', $member['staff_id']) }}" class="px-3 py-1 rounded bg-[#0A3E50] hover:bg-[#08303e] text-white font-bold text-xs inline-flex items-center gap-1 shadow-2xs" style="color:#ffffff !important;">
+                                    <i data-lucide="eye" class="w-3.5 h-3.5 text-white"></i>
+                                    <span>Generate P9 Form</span>
+                                </a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="py-6 px-4 text-center text-slate-500">No staff records in the database yet.</td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

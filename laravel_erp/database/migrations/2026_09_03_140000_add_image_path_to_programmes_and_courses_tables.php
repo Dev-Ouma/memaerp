@@ -13,13 +13,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (Schema::hasTable('academic_programmes') && !Schema::hasColumn('academic_programmes', 'image_path')) {
+        if (Schema::hasTable('academic_programmes') && ! Schema::hasColumn('academic_programmes', 'image_path')) {
             Schema::table('academic_programmes', function (Blueprint $table) {
                 $table->string('image_path')->nullable()->after('status');
             });
         }
 
-        if (Schema::hasTable('courses') && !Schema::hasColumn('courses', 'image_path')) {
+        if (Schema::hasTable('courses') && ! Schema::hasColumn('courses', 'image_path')) {
             Schema::table('courses', function (Blueprint $table) {
                 $table->string('image_path')->nullable()->after('next_student_serial');
             });

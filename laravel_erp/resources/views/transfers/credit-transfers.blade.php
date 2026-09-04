@@ -220,13 +220,13 @@
                                         Actions <i data-lucide="chevron-down" class="w-3 h-3 text-slate-500"></i>
                                     </summary>
                                     <div class="absolute right-0 mt-1 w-44 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-30">
-                                        <button type="button" class="w-full text-left px-3 py-1.5 text-xs text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 font-semibold" onclick="triggerActionAlert('success', 'Credit Transfer Approved', '{{ $row['course_code'] }} credit transfer validated for {{ $row['name'] }}.')">
+                                        <button type="button" class="w-full text-left px-3 py-1.5 text-xs text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 font-semibold" onclick="persistRecordStatus({{ $row['id'] ?? 'null' }}, 'Approved')">
                                             <i data-lucide="check" class="w-3.5 h-3.5"></i>Approve Credit
                                         </button>
-                                        <button type="button" class="w-full text-left px-3 py-1.5 text-xs text-amber-700 hover:bg-amber-50 flex items-center gap-2" onclick="triggerActionAlert('warning', 'Sent Back for Syllabus Review', 'Application returned for additional KNEC syllabus breakdown.')">
+                                        <button type="button" class="w-full text-left px-3 py-1.5 text-xs text-amber-700 hover:bg-amber-50 flex items-center gap-2" onclick="persistRecordStatus({{ $row['id'] ?? 'null' }}, 'Pending')">
                                             <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>Send Back
                                         </button>
-                                        <button type="button" class="w-full text-left px-3 py-1.5 text-xs text-red-700 hover:bg-red-50 flex items-center gap-2" onclick="triggerActionAlert('error', 'Credit Transfer Rejected', 'Transfer credit rejected due to low syllabus match (<80%).')">
+                                        <button type="button" class="w-full text-left px-3 py-1.5 text-xs text-red-700 hover:bg-red-50 flex items-center gap-2" onclick="persistRecordStatus({{ $row['id'] ?? 'null' }}, 'Rejected')">
                                             <i data-lucide="x" class="w-3.5 h-3.5"></i>Reject Transfer
                                         </button>
                                         <div class="border-t border-slate-100 my-1"></div>
@@ -403,7 +403,7 @@
                     </div>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-amber-100 text-amber-800">Department Evaluator</span>
-                        <strong class="text-slate-800">Dr. Daniel Otieno (Senior Lecturer, Economics)</strong>
+                        <strong class="text-slate-800">Course examiner (from case record)</strong>
                     </div>
                     <p class="text-slate-600 mt-1 p-2 bg-amber-50/60 border border-amber-200/60 rounded italic text-[11px]">
                         "Please attach certified course syllabus breakdown for Level 100 equivalence match."
@@ -419,7 +419,7 @@
                     </div>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-emerald-100 text-emerald-800">Dean of Faculty</span>
-                        <strong class="text-slate-800">Prof. James Mwangi (School of Business & Economics)</strong>
+                        <strong class="text-slate-800">School board chair (from case record)</strong>
                     </div>
                     <p class="text-slate-500 mt-1 leading-relaxed">Dean validated 86.4% syllabus match. Forwarded for Senate Registry ratification.</p>
                 </div>
@@ -443,6 +443,24 @@
             guide.classList.toggle('hidden', !isHidden);
             btnText.textContent = isHidden ? 'Hide Workflow Guide' : 'Show Workflow Guide';
         }
+    }
+
+    function persistRecordStatus(id, status) {
+        if (!id) {
+            triggerActionAlert('error', 'Missing record', 'Save the credit transfer to the database before changing status.');
+            return;
+        }
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = @json(url('/transfers/credit-transfers')) + '/' + id + '/status';
+        form.innerHTML = `
+            <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').content}">
+            <input type="hidden" name="_method" value="PATCH">
+            <input type="hidden" name="status" value="${status}">
+            <input type="hidden" name="status_type" value="${String(status).toLowerCase()}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
     }
 
     function triggerActionAlert(type, title, message) {

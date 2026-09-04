@@ -20,6 +20,7 @@ use App\Models\UserCalendarConnection;
 use App\Models\UserPreference;
 use App\Models\UserTrustedDevice;
 use App\Modules\Platform\Storage\DocumentStore;
+use App\Support\PasswordPolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -271,8 +272,12 @@ final class AccountController extends Controller
         return back()->with('success', 'Profile photo removed.');
     }
 
-    public function serveAvatar(User $user)
+    public function serveAvatar(Request $request, User $user)
     {
+        abort_unless(
+            $request->user()?->id === $user->id || $request->user()?->isAdmin() || $request->user()?->isCollegeAccount(),
+            403
+        );
         abort_unless($user->profile_photo && Storage::disk('documents')->exists($user->profile_photo), 404);
 
         return Storage::disk('documents')->response($user->profile_photo);
@@ -282,8 +287,8 @@ final class AccountController extends Controller
     {
         $request->validate([
             'current_password' => ['required', 'string'],
-            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
+            'new_password' => ['required', 'string', 'confirmed', PasswordPolicy::rules()],
+        ], PasswordPolicy::messages('new_password'));
 
         $user = $request->user();
 
@@ -292,42 +297,38 @@ final class AccountController extends Controller
         }
 
         $before = $user->toArray();
-        $user->password = Hash::make($request->new_password);
+        $user->password = $request->new_password;
         $user->password_changed_at = now();
         $user->save();
+        $user->bumpSessionVersion();
 
         AuditLog::record('security.password_changed', $user, ['password_changed_at' => $before['password_changed_at'] ?? null], ['password_changed_at' => $user->password_changed_at]);
 
-        if ($request->boolean('revoke_others')) {
-            DB::table('sessions')->where('user_id', $user->id)->where('id', '!=', $request->session()->getId())->delete();
-            AuditLog::record('security.other_sessions_revoked', $user, [], []);
-        }
+        $request->session()->put('auth_session_version', (int) $user->session_version);
+        DB::table('sessions')->where('user_id', $user->id)->where('id', '!=', $request->session()->getId())->delete();
+        AuditLog::record('security.other_sessions_revoked', $user, [], []);
 
-        return back()->with('success', 'Password changed successfully.');
+        return back()->with('success', 'Password changed successfully. Other sessions have been signed out.');
     }
 
     public function toggleMfa(Request $request): RedirectResponse
     {
         $user = $request->user();
-        $before = $user->toArray();
 
         if ($user->mfa_enabled_at) {
+            $before = $user->toArray();
             $user->mfa_enabled_at = null;
             $user->mfa_secret = null;
             $user->save();
-
             AuditLog::record('security.mfa_disabled', $user, $before, $user->fresh()->toArray());
 
             return back()->with('success', 'Multi-factor authentication disabled.');
-        } else {
-            $user->mfa_enabled_at = now();
-            $user->mfa_secret = 'MOCK_SECRET_TOTP_KEY';
-            $user->save();
-
-            AuditLog::record('security.mfa_enabled', $user, $before, $user->fresh()->toArray());
-
-            return back()->with('success', 'Multi-factor authentication enabled successfully.');
         }
+
+        // TOTP enrollment is not production-ready (MOD-01-01 §5.3). Refuse mock secrets.
+        return back()->withErrors([
+            'mfa' => 'Authenticator MFA is not available until RFC 6238 enrollment is configured. Contact ICT.',
+        ]);
     }
 
     public function registerSecurityKey(Request $request): RedirectResponse
@@ -368,8 +369,11 @@ final class AccountController extends Controller
 
     public function revokeOtherSessions(Request $request): RedirectResponse
     {
-        DB::table('sessions')->where('user_id', $request->user()->id)->where('id', '!=', $request->session()->getId())->delete();
-        AuditLog::record('security.other_sessions_revoked', $request->user(), [], []);
+        $user = $request->user();
+        $user->bumpSessionVersion();
+        $request->session()->put('auth_session_version', (int) $user->session_version);
+        DB::table('sessions')->where('user_id', $user->id)->where('id', '!=', $request->session()->getId())->delete();
+        AuditLog::record('security.other_sessions_revoked', $user, [], []);
 
         return back()->with('success', 'Other sessions revoked successfully.');
     }

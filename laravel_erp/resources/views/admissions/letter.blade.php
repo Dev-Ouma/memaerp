@@ -265,7 +265,7 @@
                 </tr>
                 <tr>
                     <th>School / Faculty</th>
-                    <td>{{ $application->offering->course->school->name ?? 'Faculty of Academic Studies' }}</td>
+                    <td>{{ 'MEMA University College' }}</td>
                 </tr>
                 <tr>
                     <th>Intake &amp; Academic Session</th>

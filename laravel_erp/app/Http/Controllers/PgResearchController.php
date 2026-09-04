@@ -9,10 +9,12 @@ use App\Models\PgResearch\PgAppealCategory;
 use App\Models\PgResearch\PgAppealPeriod;
 use App\Models\PgResearch\PgDefenceRequest;
 use App\Models\PgResearch\PgExaminer;
+use App\Models\PgResearch\PgExaminerReport;
 use App\Models\PgResearch\PgLegacyMigration;
 use App\Models\PgResearch\PgPlagiarismScan;
 use App\Models\PgResearch\PgProgressReport;
 use App\Models\PgResearch\PgProposal;
+use App\Models\PgResearch\PgProposalReview;
 use App\Models\PgResearch\PgPublication;
 use App\Models\PgResearch\PgResearchCandidate;
 use App\Models\PgResearch\PgSeminar;
@@ -20,9 +22,10 @@ use App\Models\PgResearch\PgSupervisor;
 use App\Models\PgResearch\PgThesisMark;
 use App\Models\PgResearch\PgThesisResubmission;
 use App\Models\PgResearch\PgVivaExamination;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -729,7 +732,7 @@ final class PgResearchController extends Controller
             'appeals' => $appeals,
             'search' => $search,
             'allCandidates' => $this->candidateOptions(),
-            'staff' => \App\Models\User::orderBy('name')->get(['id', 'name']),
+            'staff' => User::orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -750,7 +753,7 @@ final class PgResearchController extends Controller
     /** Mean days between a proposal reaching a reader and that reader's verdict. */
     private function readerTurnaround(): string
     {
-        $days = \App\Models\PgResearch\PgProposalReview::query()
+        $days = PgProposalReview::query()
             ->join('pg_proposals', 'pg_proposals.id', '=', 'pg_proposal_reviews.proposal_id')
             ->whereNotNull('pg_proposals.submitted_at')
             ->whereNotNull('pg_proposal_reviews.reviewed_at')
@@ -762,7 +765,7 @@ final class PgResearchController extends Controller
     /** Mean days between an examiner's appointment and their filed report. */
     private function examinerTurnaround(): string
     {
-        $days = \App\Models\PgResearch\PgExaminerReport::query()
+        $days = PgExaminerReport::query()
             ->join('pg_examiners', 'pg_examiners.id', '=', 'pg_examiner_reports.examiner_id')
             ->whereNotNull('pg_examiners.appointed_on')
             ->whereNotNull('pg_examiner_reports.submitted_at')

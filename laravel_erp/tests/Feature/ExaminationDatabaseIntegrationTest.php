@@ -84,4 +84,32 @@ final class ExaminationDatabaseIntegrationTest extends TestCase
         ])->assertForbidden();
         $this->assertDatabaseCount('student_results', 0);
     }
+
+    public function test_examination_report_screens_render_without_hardcoded_demo_names(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+        foreach ([
+            'examination.marks-submission',
+            'examination.marks-approval',
+            'examination.marks-publish',
+            'examination.scores-analysis',
+            'examination.summary-results',
+            'examination.pass-list',
+            'examination.progression-list',
+            'examination.fail-list',
+            'examination.provisional-transcript',
+            'examination.academic-transcript',
+            'examination.transcript-requests',
+            'examination.senate-reports',
+            'examination.consolidated-marksheets',
+        ] as $route) {
+            $this->actingAs($admin)->get(route($route))
+                ->assertOk()
+                ->assertDontSee('Brenda Chepkoech')
+                ->assertDontSee('Emmanuel Kiprono Mutai')
+                ->assertDontSee('14,850')
+                ->assertDontSee('Prof. Peter Ondieki');
+        }
+    }
 }

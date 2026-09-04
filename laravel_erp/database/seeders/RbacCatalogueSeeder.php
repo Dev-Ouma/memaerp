@@ -11,6 +11,26 @@ use Illuminate\Support\Str;
 
 final class RbacCatalogueSeeder extends Seeder
 {
+    /**
+     * Named desk accounts → catalogue roles. Keeps system_administrator free of
+     * admission decision authority while giving each environment working desks.
+     *
+     * @var array<string, string>
+     */
+    private const DESK_GRANTS = [
+        'registrar@mema.ac.ke' => 'registrar',
+        'admissions.officer@mema.ac.ke' => 'admissions_officer',
+        'finance.officer@mema.ac.ke' => 'finance_officer',
+        'bursar@mema.ac.ke' => 'finance_officer',
+        'curriculum.manager@mema.ac.ke' => 'curriculum_manager',
+        'hr.officer@mema.ac.ke' => 'hr_officer',
+        'dpo@mema.ac.ke' => 'data_protection_officer',
+        'registration.officer@mema.ac.ke' => 'registration_officer',
+        'transfers.officer@mema.ac.ke' => 'transfers_officer',
+        'lms.manager@mema.ac.ke' => 'lms_manager',
+        'graduation.officer@mema.ac.ke' => 'graduation_officer',
+    ];
+
     public function run(): void
     {
         $violations = PermissionCatalogue::violations();
@@ -76,6 +96,27 @@ final class RbacCatalogueSeeder extends Seeder
                         'created_at' => now(), 'updated_at' => now(),
                     ]);
                 }
+            }
+
+            foreach (self::DESK_GRANTS as $email => $roleCode) {
+                $user = DB::table('users')->whereRaw('lower(email) = ?', [mb_strtolower($email)])->first();
+                $roleId = DB::table('roles')->where('code', $roleCode)->value('id');
+                if ($user === null || $roleId === null) {
+                    continue;
+                }
+                // Do not pile segregated desk authority onto a system administrator (SoD).
+                if ($systemAdminRole && DB::table('user_roles')->where('user_id', $user->id)->where('role_id', $systemAdminRole)->exists()) {
+                    continue;
+                }
+                if (DB::table('user_roles')->where('user_id', $user->id)->where('role_id', $roleId)->exists()) {
+                    continue;
+                }
+                DB::table('user_roles')->insert([
+                    'id' => (string) Str::uuid(), 'user_id' => $user->id, 'role_id' => $roleId,
+                    'scope_type' => 'institution', 'scope_id' => null, 'granted_by' => null,
+                    'granted_at' => now(), 'grant_reason' => 'Controlled bootstrap for named desk account.',
+                    'created_at' => now(), 'updated_at' => now(),
+                ]);
             }
         });
     }

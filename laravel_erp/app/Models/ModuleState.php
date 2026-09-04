@@ -59,4 +59,13 @@ final class ModuleState extends Model
     {
         return self::all()->pluck('is_active', 'module_key')->map(fn ($v) => (bool) $v)->toArray();
     }
+
+    public static function visibleTo(?User $user, string $moduleKey): bool
+    {
+        if ($user?->isAdmin()) {
+            return true;
+        }
+
+        return self::isActive($moduleKey);
+    }
 }

@@ -33,7 +33,7 @@
         <div class="bg-white rounded-xl border border-slate-200/90 p-5 shadow-xs transition-all hover:border-[#0A3E50]">
             <div class="text-xs font-bold text-slate-800 uppercase tracking-wide">Academic Standing</div>
             <div class="text-2xl font-extrabold text-emerald-700 mt-2 mb-1.5 leading-none">{{ $stats['averageGpa'] }}</div>
-            <p class="text-xs text-slate-500 mb-3 leading-snug">Brenda Chepkoech CGPA.</p>
+            <p class="text-xs text-slate-500 mb-3 leading-snug">Selected student CGPA.</p>
             <div><span class="inline-block px-2 py-0.5 rounded text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200">Good Standing</span></div>
         </div>
 

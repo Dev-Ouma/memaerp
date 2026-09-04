@@ -79,6 +79,12 @@ return [
 
     'payments' => [
         'default_provider' => env('PAYMENT_DEFAULT_PROVIDER', 'mpesa_stk'),
+        // Test-only convenience. Defaults off everywhere except the PHPUnit
+        // env (phpunit.xml). Local/staging/production must opt in explicitly.
+        'sandbox_auto_confirm' => filter_var(
+            env('PAYMENT_SANDBOX_AUTO_CONFIRM', false),
+            FILTER_VALIDATE_BOOL,
+        ),
         'callback_tolerance_seconds' => (int) env('PAYMENT_CALLBACK_TOLERANCE', 300),
         'providers' => [
             'mpesa_stk' => [

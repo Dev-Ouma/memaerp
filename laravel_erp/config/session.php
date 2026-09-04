@@ -38,6 +38,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Role-based idle / absolute timeouts (minutes)
+    |--------------------------------------------------------------------------
+    |
+    | Enforced by EnforceSessionPolicy. Keys match users.role / activeRole().
+    | Defaults follow IAM: privileged desks shorter, applicants longer.
+    |
+    */
+
+    'idle_timeouts' => [
+        'admin' => (int) env('SESSION_IDLE_ADMIN', 15),
+        'staff' => (int) env('SESSION_IDLE_STAFF', 20),
+        'default' => (int) env('SESSION_IDLE_DEFAULT', 30),
+    ],
+
+    'absolute_timeouts' => [
+        'admin' => (int) env('SESSION_ABSOLUTE_ADMIN', 240),
+        'staff' => (int) env('SESSION_ABSOLUTE_STAFF', 480),
+        'default' => (int) env('SESSION_ABSOLUTE_DEFAULT', 720),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Session Encryption
     |--------------------------------------------------------------------------
     |
@@ -47,7 +69,7 @@ return [
     |
     */
 
-    'encrypt' => env('SESSION_ENCRYPT', false),
+    'encrypt' => env('SESSION_ENCRYPT', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -127,9 +149,13 @@ return [
     |
     */
 
+    // Production HTTPS default uses the __Host- prefix (requires Secure,
+    // Path=/, and Domain omitted). Override with SESSION_COOKIE when needed.
     'cookie' => env(
         'SESSION_COOKIE',
-        Str::slug((string) env('APP_NAME', 'laravel')).'-session'
+        env('APP_ENV') === 'production'
+            ? '__Host-ERPSESSION'
+            : Str::slug((string) env('APP_NAME', 'laravel')).'-session'
     ),
 
     /*
@@ -169,7 +195,7 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    'secure' => env('SESSION_SECURE_COOKIE', env('APP_ENV') === 'production'),
 
     /*
     |--------------------------------------------------------------------------

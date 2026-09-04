@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use ZipArchive;
 
@@ -52,6 +51,7 @@ final class DataExportService
                     if (strlen($str) > 0 && in_array($str[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
                         return "'".$str;
                     }
+
                     return $str;
                 }, $row);
 
@@ -68,7 +68,7 @@ final class DataExportService
     public function exportXlsx(string $filename, string $sheetTitle, array $headers, array $rows): StreamedResponse
     {
         $tempFile = tempnam(sys_get_temp_dir(), 'xlsx_export_');
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         $zip->open($tempFile, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
         // 1. [Content_Types].xml
@@ -200,10 +200,10 @@ final class DataExportService
                 $colLetter = $this->getColumnLetter($colIdx + 1);
                 $cellRef = $colLetter.$rowNum;
 
-                if (is_numeric($val) && !str_starts_with((string)$val, '0') && strlen((string)$val) < 12) {
+                if (is_numeric($val) && ! str_starts_with((string) $val, '0') && strlen((string) $val) < 12) {
                     $sheetXml .= '<c r="'.$cellRef.'" s="'.$styleId.'"><v>'.$val.'</v></c>';
                 } else {
-                    $strVal = is_null($val) ? '' : (is_bool($val) ? ($val ? 'Yes' : 'No') : (is_array($val) ? implode(', ', $val) : (string)$val));
+                    $strVal = is_null($val) ? '' : (is_bool($val) ? ($val ? 'Yes' : 'No') : (is_array($val) ? implode(', ', $val) : (string) $val));
                     $cleanVal = htmlspecialchars($strVal, ENT_XML1);
                     $sheetXml .= '<c r="'.$cellRef.'" t="inlineStr" s="'.$styleId.'"><is><t>'.$cleanVal.'</t></is></c>';
                 }
@@ -240,9 +240,10 @@ final class DataExportService
         $letter = '';
         while ($colIndex > 0) {
             $remainder = ($colIndex - 1) % 26;
-            $letter = chr(65 + $remainder) . $letter;
+            $letter = chr(65 + $remainder).$letter;
             $colIndex = (int) (($colIndex - $remainder) / 26);
         }
+
         return $letter;
     }
 }

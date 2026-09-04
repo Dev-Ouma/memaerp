@@ -3,75 +3,248 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Forgot Password | MEMA College</title>
+    <title>Forgot Password | MEMA College ERP</title>
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/system/favicons/favicon-32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/system/favicons/favicon-16.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
-        :root { --navy:#062f40; --navy-deep:#032635; --orange:#ff6845; --gold:#d7a84f; --cream:#fbfaf6; --ink:#092b3d; --muted:#68727f; --line:#d6d7d4; }
-        * { box-sizing:border-box; }
-        body { margin:0; min-height:100vh; color:var(--ink); background:var(--cream); font-family:var(--font-system,'Quicksand','Nunito','Book Antiqua',sans-serif); }
-        .auth-layout { min-height:100vh; display:grid; grid-template-columns:minmax(430px,.9fr) minmax(620px,1.1fr); }
-        .identity { position:relative; isolation:isolate; display:flex; align-items:center; overflow:hidden; padding:clamp(54px,8vw,112px); color:#fff; background:var(--navy-deep); }
-        .identity::before { content:""; position:absolute; inset:0; z-index:-2; background:linear-gradient(90deg,rgb(2 37 51 / 94%),rgb(2 45 61 / 79%)),url('https://images.unsplash.com/photo-1564981797816-1043664bf78d?auto=format&fit=crop&w=1600&q=86') center/cover; }
-        .identity-content { width:min(100%,550px); }
-        .crest { width:112px; height:112px; object-fit:contain; }
-        .identity h1 { margin:30px 0 22px; font:500 clamp(44px,5vw,66px)/1.08 var(--font-system,'Quicksand','Nunito','Book Antiqua',sans-serif); letter-spacing:.01em; }
-        .gold-rule { width:44px; height:2px; margin-bottom:24px; background:var(--gold); }
-        .identity p { margin:0; color:#e1b65f; font-size:20px; }
-        .auth-panel { display:grid; place-items:center; padding:64px clamp(34px,8vw,130px); background:radial-gradient(circle at 36% 18%,#fff 0,transparent 34%),linear-gradient(135deg,#fbfaf6,#f6f2e9); }
-        .auth-card { width:min(100%,620px); padding:52px 66px 46px; border:1px solid rgb(215 168 79 / 55%); border-radius:20px; background:rgb(255 255 255 / 62%); box-shadow:0 22px 58px rgb(37 47 53 / 10%); backdrop-filter:blur(10px); }
-        .card-accent { width:45px; height:2px; margin-bottom:20px; background:var(--gold); }
-        .auth-card h2 { margin:0; font:500 clamp(42px,4vw,58px)/1.05 var(--font-system,'Quicksand','Nunito','Book Antiqua',sans-serif); }
-        .subtitle { margin:14px 0 40px; color:var(--muted); font-size:19px; }
-        .field { margin-bottom:26px; }
-        .field label { display:block; margin-bottom:10px; font-size:15px; font-weight:650; }
-        .input-shell { position:relative; }
-        .input-shell input { width:100%; height:68px; padding:0 24px 0 70px; border:1px solid var(--line); border-radius:9px; outline:none; color:var(--ink); background:rgb(255 255 255 / 50%); font-family:inherit; font-size:18px; transition:border-color .18s,box-shadow .18s; }
-        .input-shell input:focus { border-color:#1a778b; background:#fff; box-shadow:0 0 0 3px rgb(26 119 139 / 12%); }
-        .field-icon { position:absolute; left:0; top:0; width:58px; height:68px; display:grid; place-items:center; border-right:1px solid #edf0ef; color:#7b838c; pointer-events:none; }
-        .field-icon svg { width:24px; height:24px; }
-        .login-button { width:100%; height:64px; display:flex; justify-content:center; align-items:center; gap:16px; border:0; border-radius:8px; color:#fff; background:linear-gradient(90deg,#ff714e,#fa593b); box-shadow:0 9px 22px rgb(255 104 69 / 20%); font:500 21px/1 var(--font-system,'Quicksand','Nunito','Book Antiqua',sans-serif); cursor:pointer; transition:transform .18s,box-shadow .18s; position:relative; }
-        .login-button:hover { transform:translateY(-1px); box-shadow:0 13px 28px rgb(255 104 69 / 28%); }
-        .back-link { display:block; text-align:center; margin-top:24px; color:#08758b; text-decoration:none; font-size:16px; }
-        .back-link:hover { text-decoration:underline; }
-        .alert { padding:16px 20px; border-radius:8px; font-size:15px; margin-bottom:24px; background:#e6f4ea; color:#137333; border:1px solid #c2e7cd; }
-        @media(max-width:980px) { .auth-layout { grid-template-columns:1fr; } .identity { min-height:250px; padding:46px 9vw; } .auth-panel { padding:48px 24px; } }
+        :root {
+            --navy: #0A3E50;
+            --navy-deep: #052633;
+            --amber: #E67E22;
+            --ink: #0f172a;
+            --muted: #64748b;
+            --line: #e2e8f0;
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow-x: hidden;
+            color: var(--ink);
+            background: #f1f5f9;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .auth-layout {
+            min-height: 100vh;
+            height: 100dvh;
+            display: grid;
+            grid-template-columns: minmax(360px, 0.85fr) minmax(460px, 1.15fr);
+            overflow: hidden;
+        }
+        .identity {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #ffffff;
+            background: linear-gradient(145deg, #052633 0%, #0A3E50 65%, #0e4c61 100%);
+            overflow: hidden;
+        }
+        .identity-content {
+            width: min(100%, 420px);
+            z-index: 1;
+        }
+        .crest {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.25));
+        }
+        .identity h1 {
+            margin: 18px 0 10px;
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+            line-height: 1.15;
+        }
+        .gold-rule {
+            width: 36px;
+            height: 3px;
+            background: var(--amber);
+            border-radius: 2px;
+            margin-bottom: 14px;
+        }
+        .identity p.motto {
+            margin: 0;
+            color: #f1f5f9;
+            font-size: 15px;
+            font-weight: 500;
+        }
+        .auth-panel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 32px;
+            background: #ffffff;
+            overflow-y: auto;
+        }
+        .auth-card {
+            width: min(100%, 440px);
+            padding: 10px 0;
+        }
+        .card-header {
+            margin-bottom: 22px;
+        }
+        .auth-card h2 {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.02em;
+        }
+        .subtitle {
+            margin: 6px 0 0;
+            color: #64748b;
+            font-size: 13.5px;
+            line-height: 1.4;
+        }
+        .field {
+            margin-bottom: 16px;
+        }
+        .field label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .input-shell {
+            position: relative;
+        }
+        .input-shell input {
+            width: 100%;
+            height: 44px;
+            padding: 0 16px 0 42px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            outline: none;
+            color: #0f172a;
+            background: #ffffff;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .input-shell input:focus {
+            border-color: #0A3E50;
+            box-shadow: 0 0 0 3px rgba(10, 62, 80, 0.12);
+        }
+        .field-icon {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 42px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            color: #94a3b8;
+            pointer-events: none;
+        }
+        .field-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+        .login-button {
+            width: 100%;
+            height: 46px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 0;
+            border-radius: 8px;
+            color: #ffffff;
+            background: #0A3E50;
+            font-size: 14.5px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(10, 62, 80, 0.2);
+            transition: background-color 0.15s;
+        }
+        .login-button:hover {
+            background: #083241;
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 18px;
+            color: #0A3E50;
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 600;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .alert {
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        @media (max-width: 900px) {
+            .auth-layout {
+                grid-template-columns: 1fr;
+                height: auto;
+                min-height: 100vh;
+                overflow: auto;
+            }
+            .identity {
+                padding: 32px 24px;
+            }
+            .auth-panel {
+                padding: 32px 20px;
+            }
+        }
     </style>
 </head>
 <body>
     <main class="auth-layout">
-        <section class="identity" aria-label="MEMA College">
+        <section class="identity" aria-label="MEMA College Overview">
             <div class="identity-content">
-                <img class="crest" src="{{ asset('images/system/logos/mema-college-mark-192.png') }}" alt="MEMA College emblem">
+                <img class="crest" src="{{ asset('images/system/logos/mema-college-mark-192.png') }}" alt="MEMA College Emblem">
                 <h1>MEMA College</h1>
                 <div class="gold-rule"></div>
-                <p>Learn. Lead. Transform.</p>
+                <p class="motto">Learn. Lead. Transform.</p>
             </div>
         </section>
 
         <section class="auth-panel">
-            <form class="auth-card" method="post" action="{{ route('password.email') }}">
-                @csrf
-                <div class="card-accent"></div>
-                <h2>Reset password</h2>
-                <p class="subtitle">Enter your registered email address to receive reset instructions</p>
+            <div class="auth-card">
+                <div class="card-header">
+                    <h2>Reset Password</h2>
+                    <p class="subtitle">Enter your registered email address to receive password reset instructions.</p>
+                </div>
 
                 @if (session('info'))
                     <div class="alert" role="alert">{{ session('info') }}</div>
                 @endif
 
-                <div class="field">
-                    <label for="email">MEMA Email</label>
-                    <div class="input-shell">
-                        <span class="field-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
-                        <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus placeholder="name@mema.ac.ke">
-                    </div>
-                </div>
+                <form method="post" action="{{ route('password.email') }}">
+                    @csrf
 
-                <button class="login-button" type="submit">Send Reset Link</button>
-                <a href="/" class="back-link">Return to login</a>
-            </form>
+                    <div class="field">
+                        <label for="email">Institutional Email</label>
+                        <div class="input-shell">
+                            <span class="field-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+                            </span>
+                            <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus placeholder="name@mema.ac.ke">
+                        </div>
+                    </div>
+
+                    <button class="login-button" type="submit">Send Reset Link</button>
+                    <a href="/" class="back-link">&larr; Return to Sign In</a>
+                </form>
+            </div>
         </section>
     </main>
 </body>

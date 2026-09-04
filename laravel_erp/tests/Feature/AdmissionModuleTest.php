@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Models\AdmissionApplication;
 use App\Models\AdmissionIntake;
+use App\Models\AdmissionOffer;
 use App\Models\ApplicantProfile;
 use App\Models\ApplicationDocument;
 use App\Models\ApplicationPaymentAttempt;
@@ -91,7 +92,7 @@ final class AdmissionModuleTest extends TestCase
         $response->assertRedirect(route('admissions.portal'));
         $this->assertAuthenticated();
 
-        $user = \App\Models\User::where('email', 'wanjiku.mwangi@example.test')->first();
+        $user = User::where('email', 'wanjiku.mwangi@example.test')->first();
         $this->assertNotNull($user);
         $this->assertEquals('applicant', $user->role);
         $this->assertNotNull($user->applicantProfile);
@@ -196,11 +197,11 @@ final class AdmissionModuleTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('lockVersion', $initialLockVersion + 1)
-            ->assertJsonPath('completionPercent', 80)
+            ->assertJsonPath('completionPercent', 67)
             ->assertJsonStructure(['savedAt']);
         $this->assertDatabaseHas('admission_applications', [
             'id' => $application->id,
-            'completion_percent' => 80,
+            'completion_percent' => 67,
             'lock_version' => $initialLockVersion + 1,
         ]);
         $this->assertDatabaseHas('applicant_profiles', [
@@ -240,7 +241,7 @@ final class AdmissionModuleTest extends TestCase
         $workflow->submit($application->refresh());
         $this->assertDatabaseCount('application_versions', 1);
 
-        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $admin = $this->admissionOfficer('registrar');
         $this->actingAs($admin);
         foreach (['UNDER_REVIEW', 'VERIFIED', 'SHORTLISTED', 'APPROVAL_PENDING', 'ADMITTED'] as $status) {
             $application = $workflow->move($application->refresh(), $status, 'uat_approved', 'Evidence checked.');
@@ -248,7 +249,7 @@ final class AdmissionModuleTest extends TestCase
 
         $offer = $application->offer()->firstOrFail();
         $this->get(route('admissions.verify', $offer->verification_token))->assertOk()->assertSee($offer->offer_number);
-        $this->actingAs($applicant)->post(route('admissions.application.respond', $application), ['response' => 'ACCEPTED'])->assertRedirect();
+        $this->actingAs($applicant)->post(route('admissions.application.respond', $application), ['response' => 'ACCEPTED', 'offer_declaration' => '1'])->assertRedirect();
         // Acceptance auto-advances through the staging state; enrolment is the applicant's next action.
         $this->assertDatabaseHas('admission_applications', ['id' => $application->id, 'status' => 'READY_TO_ENROL']);
         $this->assertDatabaseHas('admission_offers', ['id' => $offer->id, 'status' => 'ACCEPTED']);
@@ -264,7 +265,7 @@ final class AdmissionModuleTest extends TestCase
 
     public function test_admission_sidebar_destinations_are_available_to_staff(): void
     {
-        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $admin = $this->admissionOfficer('registrar');
         [, $application] = $this->application();
 
         $this->actingAs($admin)->get(route('admissions.index'))->assertOk()->assertSee('Admissions command centre');
@@ -292,7 +293,8 @@ final class AdmissionModuleTest extends TestCase
     public function test_document_verification_and_admission_letter_and_conversion(): void
     {
         [$applicant, $application] = $this->application();
-        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $officer = $this->admissionOfficer('admissions_officer');
+        $registrar = $this->admissionOfficer('registrar');
 
         $doc = ApplicationDocument::create([
             'admission_application_id' => $application->id,
@@ -305,18 +307,35 @@ final class AdmissionModuleTest extends TestCase
         ]);
 
         // Staff can verify document
-        $this->actingAs($admin)->post(route('admissions.document.verify', $doc), ['status' => 'VERIFIED'])->assertRedirect();
+        $this->actingAs($officer)->post(route('admissions.document.verify', $doc), ['status' => 'VERIFIED'])->assertRedirect();
         $this->assertSame('VERIFIED', $doc->refresh()->verification_status);
 
         // Applicant can download their own document
         $this->actingAs($applicant)->get(route('admissions.document.download', $doc))->assertOk();
 
-        // Staff can view official admission letter
-        $this->actingAs($admin)->get(route('admissions.application.letter', $application))->assertOk()->assertSee('Letter of Provisional Admission');
+        // Staff can view official admission letter once an offer exists
+        $application->update(['status' => 'ADMITTED', 'decision_at' => now()]);
+        AdmissionOffer::create([
+            'admission_application_id' => $application->id,
+            'offer_number' => 'MC/ADM/TEST/001',
+            'verification_token' => Str::random(48),
+            'status' => 'ISSUED',
+            'issued_at' => now(),
+            'expires_at' => now()->addDays(21),
+            'checksum' => hash('sha256', 'test-offer'),
+        ]);
+        $this->actingAs($officer)->get(route('admissions.application.letter', $application->refresh()))
+            ->assertOk()
+            ->assertSee('MEMA UNIVERSITY COLLEGE');
+
+        // Applicant can download their own admission letter
+        $this->actingAs($applicant)->get(route('admissions.application.letter', $application))
+            ->assertOk()
+            ->assertSee('MEMA UNIVERSITY COLLEGE')
+            ->assertSee('MC/ADM/TEST/001');
 
         // Staff can convert admitted applicant to student
-        $application->update(['status' => 'ADMITTED']);
-        $this->actingAs($admin)->post(route('admissions.application.convert', $application))->assertRedirect();
+        $this->actingAs($registrar)->post(route('admissions.application.convert', $application))->assertRedirect();
         $this->assertDatabaseHas('student_conversions', ['admission_application_id' => $application->id, 'status' => 'COMPLETED']);
     }
 

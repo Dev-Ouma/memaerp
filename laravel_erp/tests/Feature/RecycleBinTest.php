@@ -72,7 +72,7 @@ final class RecycleBinTest extends TestCase
         ]);
         $deletion = DeletionRecord::query()->where('record_id', (string) $department->id)->firstOrFail();
 
-        $this->actingAs($admin)->post(route('admin.setups.recycle-bin.restore', $deletion))->assertRedirect();
+        $this->actingAs($admin)->post(route('recycle-bin.restore', $deletion))->assertRedirect();
 
         $this->assertNotSoftDeleted('academic_departments', ['id' => $department->id]);
         $this->assertDatabaseHas('deletion_records', ['id' => $deletion->id, 'status' => 'restored', 'restored_by' => $admin->id]);
@@ -133,5 +133,34 @@ final class RecycleBinTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $this->grantRole($admin, 'data_protection_officer');
         $this->actingAs($admin)->delete(route('admin.setups.recycle-bin.empty'))->assertForbidden();
+    }
+
+    public function test_recycle_bin_all_records_and_displays_actor_ip_and_channel(): void
+    {
+        $admin = User::factory()->create(['name' => 'Forensic Auditor', 'role' => 'admin', 'first_name' => 'Forensic', 'last_name' => 'Auditor']);
+        $this->grantRole($admin, 'data_protection_officer');
+        $department = AcademicDepartment::create(['code' => 'DEPT-FORENSIC', 'name' => 'Forensic Department', 'status' => 'Active']);
+
+        $this->actingAs($admin)
+            ->withServerVariables(['REMOTE_ADDR' => '192.168.10.45', 'HTTP_USER_AGENT' => 'MEMA-Admin-Audit-Client/2.0'])
+            ->delete(route('curriculum.department.destroy', $department), [
+                'deletion_reason' => 'Audited compliance deletion test.',
+            ])->assertRedirect();
+
+        $this->assertDatabaseHas('deletion_records', [
+            'entity_type' => 'department',
+            'record_id' => (string) $department->id,
+            'deleted_by' => $admin->id,
+            'ip_address' => '192.168.10.45',
+            'channel' => 'Web',
+            'action_type' => 'SOFT_DELETE',
+        ]);
+
+        $this->actingAs($admin)->get(route('recycle-bin.index'))
+            ->assertOk()
+            ->assertSee('Forensic Auditor')
+            ->assertSee('192.168.10.45')
+            ->assertSee('Web Portal')
+            ->assertSee('SOFT_DELETE');
     }
 }

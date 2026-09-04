@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CheckModuleActive;
+use App\Http\Middleware\EnforceSessionPolicy;
 use App\Http\Middleware\EnforceSystemMaintenanceLockdown;
 use App\Http\Middleware\LoadBalancerMiddleware;
 use App\Modules\Platform\Api\ApiExceptionRenderer;
@@ -35,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['sidebar_collapsed']);
 
         $middleware->web(append: [
+            EnforceSessionPolicy::class,
             EnforceSystemMaintenanceLockdown::class,
             LoadBalancerMiddleware::class,
         ]);

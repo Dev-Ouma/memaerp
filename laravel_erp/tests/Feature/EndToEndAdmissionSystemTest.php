@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\AcademicProgramme;
 use App\Models\AcademicSession;
 use App\Models\AdmissionApplication;
 use App\Models\AdmissionIntake;
@@ -17,7 +16,9 @@ use App\Models\Course;
 use App\Models\ProgrammeOffering;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\AdmissionReportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -26,12 +27,19 @@ final class EndToEndAdmissionSystemTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $admissionsOfficer;
+
     private User $reviewer;
+
     private User $applicantUser;
+
     private Course $course;
+
     private AdmissionIntake $intake;
+
     private ProgrammeOffering $offering;
+
     private AcademicSession $session;
 
     protected function setUp(): void
@@ -42,6 +50,11 @@ final class EndToEndAdmissionSystemTest extends TestCase
         $this->admissionsOfficer = User::factory()->create(['role' => 'staff', 'name' => 'Faith Chebet']);
         $this->reviewer = User::factory()->create(['role' => 'staff', 'name' => 'Dr. Samuel Otieno']);
         $this->applicantUser = User::factory()->create(['role' => 'applicant', 'name' => 'Wanjiku Mwangi']);
+
+        $this->seedRbac();
+        $this->grantRole($this->admin, 'system_administrator');
+        $this->grantRole($this->admissionsOfficer, 'registrar');
+        $this->grantRole($this->reviewer, 'admissions_reviewer');
 
         $this->session = AcademicSession::firstOrCreate(['start_date' => '2026-09-01', 'end_date' => '2027-08-31']);
         $this->course = Course::create(['code' => 'BCS', 'name' => 'Bachelor of Science in Computer Science']);
@@ -85,7 +98,7 @@ final class EndToEndAdmissionSystemTest extends TestCase
         ];
 
         foreach ($reports as $reportKey) {
-            $response = $this->actingAs($this->admin)->get(route('reports.' . $reportKey));
+            $response = $this->actingAs($this->admin)->get(route('reports.'.$reportKey));
             $response->assertOk();
             $response->assertSee('Live Database');
             $response->assertSee('Export Report');
@@ -289,8 +302,8 @@ final class EndToEndAdmissionSystemTest extends TestCase
 
     public function test_programme_capacity_limits_and_availability_calculation(): void
     {
-        $service = app(\App\Services\AdmissionReportService::class);
-        $request = new \Illuminate\Http\Request();
+        $service = app(AdmissionReportService::class);
+        $request = new Request;
         $report = $service->getReportData('programme-capacity-conversion', $request);
 
         $this->assertEquals('Programme Capacity and Admission Conversion', $report['title']);

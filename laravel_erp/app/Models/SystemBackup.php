@@ -16,9 +16,16 @@ final class SystemBackup extends Model
 
     protected $fillable = [
         'filename',
+        'disk_path',
         'file_size',
         'created_by',
         'status',
+        'format',
+        'restored_at',
+    ];
+
+    protected $casts = [
+        'restored_at' => 'datetime',
     ];
 
     public function creator(): BelongsTo

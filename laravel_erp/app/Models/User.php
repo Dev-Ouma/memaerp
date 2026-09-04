@@ -48,7 +48,15 @@ class User extends Authenticatable
             'last_successful_login_at' => 'datetime',
             'password_changed_at' => 'datetime',
             'locked_until' => 'datetime',
+            'session_version' => 'integer',
         ];
+    }
+
+    /** Invalidate every other session by bumping the kill-switch counter. */
+    public function bumpSessionVersion(): void
+    {
+        $this->session_version = ((int) ($this->session_version ?? 1)) + 1;
+        $this->save();
     }
 
     public function student(): HasOne
@@ -131,6 +139,25 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function isCollegeAccount(): bool
+    {
+        return in_array($this->role, ['admin', 'staff'], true);
+    }
+
+    public function isCollegeUser(): bool
+    {
+        return in_array($this->activeRole(), ['admin', 'staff'], true);
+    }
+
+    public function landingRouteName(): string
+    {
+        return match ($this->activeRole()) {
+            'applicant' => 'admissions.portal',
+            'admin', 'staff' => 'task-management.index',
+            default => 'dashboard',
+        };
     }
 
     public function children(): BelongsToMany

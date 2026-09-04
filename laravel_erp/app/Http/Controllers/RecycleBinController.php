@@ -34,7 +34,7 @@ final class RecycleBinController extends Controller
         ]);
         $selectedType = $validated['type'] ?? null;
         $search = trim($validated['search'] ?? '');
-        $query = DeletionRecord::query()->where('status', 'deleted');
+        $query = DeletionRecord::query()->with(['deletedBy'])->where('status', 'deleted');
         if ($selectedType !== null) {
             $query->where('entity_type', $selectedType);
         }
@@ -43,6 +43,9 @@ final class RecycleBinController extends Controller
                 $builder->where('entity_type', 'like', "%{$search}%")
                     ->orWhere('record_id', 'like', "%{$search}%")
                     ->orWhere('reason', 'like', "%{$search}%")
+                    ->orWhere('ip_address', 'like', "%{$search}%")
+                    ->orWhere('channel', 'like', "%{$search}%")
+                    ->orWhere('user_agent', 'like', "%{$search}%")
                     ->orWhereRaw('CAST(snapshot AS TEXT) LIKE ?', ["%{$search}%"]);
             });
         }
@@ -54,13 +57,26 @@ final class RecycleBinController extends Controller
             $snapshot = $record->snapshot;
 
             return [
-                'id' => $record->id, 'type' => $record->entity_type, 'type_label' => $ui['label'],
-                'type_icon' => $ui['icon'], 'type_badge' => $ui['badge'],
+                'id' => $record->id,
+                'type' => $record->entity_type,
+                'type_label' => $ui['label'],
+                'type_icon' => $ui['icon'],
+                'type_badge' => $ui['badge'],
                 'title' => $snapshot['name'] ?? $snapshot['title'] ?? $snapshot['unit_title'] ?? 'Untitled Item',
                 'code' => $snapshot['code'] ?? $snapshot['unit_code'] ?? '#'.$record->record_id,
                 'deleted_at' => $record->deleted_at->format('d M Y, h:i A'),
                 'days_left' => $record->purge_after ? max(0, (int) now()->diffInDays($record->purge_after, false)) : null,
-                'snapshot' => $snapshot, 'reason' => $record->reason, 'deleted_by_role' => $record->deleted_by_role,
+                'snapshot' => $snapshot,
+                'reason' => $record->reason,
+                'deleted_by_role' => $record->deleted_by_role ?? $record->deletedBy?->role ?? 'admin',
+                'actor_name' => $record->deletedBy?->name ?? 'System Administrator',
+                'actor_email' => $record->deletedBy?->email ?? 'admin@mema.ac.ke',
+                'actor_id' => $record->deleted_by,
+                'ip_address' => $record->ip_address ?? '127.0.0.1',
+                'user_agent' => $record->user_agent ?? 'MEMA Web Client',
+                'channel' => $record->channel ?? 'Web',
+                'action_type' => $record->action_type ?? 'Soft Delete',
+                'original_location' => $record->original_location,
             ];
         });
 

@@ -8,22 +8,23 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: 'Quicksand', sans-serif; }
+        body { font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col font-quicksand">
 
     {{-- Navigation Bar --}}
     <header class="bg-[#0A3E50] text-white sticky top-0 z-50 shadow-md border-b border-white/10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <a class="flex items-center gap-3 no-underline" href="{{ route('admissions.catalogue') }}">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E67E22] to-[#d35400] text-white flex items-center justify-center font-extrabold text-lg shadow-sm">
-                    M
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
+            <a class="flex items-center gap-3.5 no-underline group" href="{{ route('admissions.catalogue') }}">
+                <div class="w-11 h-11 rounded-2xl bg-white p-1 text-[#0A3E50] flex items-center justify-center font-extrabold text-lg shadow-sm border border-white/20">
+                    <img src="{{ asset('images/system/logos/mema-college-mark-192.png') }}" alt="MEMA" class="w-full h-full object-contain" onerror="this.outerHTML='<span class=\'font-extrabold text-base text-[#0A3E50]\'>M</span>'">
                 </div>
                 <div>
                     <span class="block font-extrabold text-sm sm:text-base tracking-tight text-white uppercase leading-tight">MEMA UNIVERSITY COLLEGE</span>
-                    <span class="block text-[11px] text-teal-200 font-medium">Undergraduate & Postgraduate Admissions</span>
+                    <span class="block text-[11px] text-teal-200 font-medium">Undergraduate &amp; TVET Admissions</span>
                 </div>
             </a>
 
@@ -277,6 +278,10 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+
             const pwd = document.getElementById('password');
             const pwdConf = document.getElementById('password_confirmation');
             const matchBadge = document.getElementById('apply-match-badge');

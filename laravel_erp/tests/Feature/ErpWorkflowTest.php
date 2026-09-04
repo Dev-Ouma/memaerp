@@ -21,9 +21,10 @@ final class ErpWorkflowTest extends TestCase
     {
         $this->get('/')
             ->assertOk()
-            ->assertSee('Welcome back')
-            ->assertSee('MEMA Email')
+            ->assertSee('Sign In')
+            ->assertSee('Email or Username')
             ->assertSee('Forgot password?')
+            ->assertSee('Create Applicant Account / Sign Up')
             ->assertSee('data-processing-message="Signing you in securely…"', false);
         $user = User::factory()->create(['role' => 'admin', 'first_name' => 'Admin', 'is_active' => true]);
         $this->actingAs($user)->get('/dashboard')->assertOk()->assertSee('Application Overview');

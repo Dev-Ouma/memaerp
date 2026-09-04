@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Modules\Admission\Http\Controllers\AdminSetupApiController;
 use App\Modules\Admission\Http\Controllers\ApplicantApplicationController;
 use App\Modules\Admission\Http\Controllers\AuthController;
+use App\Modules\Admission\Http\Controllers\PaymentWebhookController;
 use App\Modules\Admission\Http\Controllers\PublicProgrammeController;
 use App\Modules\Platform\Api\ApiResponse;
 use Illuminate\Support\Facades\Route;
@@ -40,4 +41,16 @@ Route::prefix('admin/setups')->middleware(['api.token', 'permission:platform.sys
     Route::get('/{setup}', [AdminSetupApiController::class, 'show']);
     Route::post('/{setup}/versions', [AdminSetupApiController::class, 'store'])->middleware('idempotent');
     Route::post('/versions/{version}/publish', [AdminSetupApiController::class, 'publish'])->middleware('idempotent:required');
+});
+
+/*
+| Provider callbacks. Unauthenticated by design — the caller is a payment
+| provider, not a user — so each handler authenticates the request itself by
+| HMAC signature and source address before reading the body. Throttled well
+| above normal provider volume purely to bound an abusive caller.
+*/
+Route::middleware('throttle:300,1')->prefix('webhooks/payments')->group(function (): void {
+    Route::post('/mpesa/stk', [PaymentWebhookController::class, 'mpesaStk'])->name('webhooks.payments.mpesa.stk');
+    Route::post('/mpesa/c2b', [PaymentWebhookController::class, 'mpesaC2b'])->name('webhooks.payments.mpesa.c2b');
+    Route::post('/card', [PaymentWebhookController::class, 'card'])->name('webhooks.payments.card');
 });

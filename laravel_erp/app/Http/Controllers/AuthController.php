@@ -13,14 +13,16 @@ use App\Models\ProgrammeOffering;
 use App\Models\User;
 use App\Models\UserTrustedDevice;
 use App\Modules\Platform\Numbering\NumberGenerator;
+use App\Support\PasswordPolicy;
 use Carbon\Carbon;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 final class AuthController extends Controller
@@ -52,7 +54,7 @@ final class AuthController extends Controller
             'phone' => ['required', 'string', 'regex:/^(\+?254|0)[17]\d{8}$/'],
             'county' => ['nullable', 'string', 'max:100'],
             'programme_offering_id' => ['nullable', 'exists:programme_offerings,id'],
-            'password' => ['required', 'string', 'confirmed', Password::min(10)->mixedCase()->letters()->numbers()],
+            'password' => ['required', 'string', 'confirmed', PasswordPolicy::rules()],
             'terms' => ['accepted'],
             'website_trap' => ['nullable', 'max:0'],
         ], [
@@ -60,7 +62,7 @@ final class AuthController extends Controller
             'last_name.regex' => 'Last name may only contain letters, spaces, hyphens, and apostrophes.',
             'email.email' => 'Please provide a valid email address.',
             'phone.regex' => 'Please enter a valid Kenyan phone number (e.g. +254712345678, 0712345678, or 0113636154).',
-            'password.min' => 'Password must contain at least 10 characters.',
+            ...PasswordPolicy::messages(),
             'terms.accepted' => 'You must accept the Terms of Admission and Privacy Policy to proceed.',
             'website_trap.max' => 'Spam bot submission detected.',
         ]);
@@ -76,7 +78,7 @@ final class AuthController extends Controller
 
         [$user, $application] = DB::transaction(function () use ($data, $normalizedPhone, $numbers) {
             $user = User::create([
-                'name' => trim($data['first_name'] . ' ' . $data['last_name']),
+                'name' => trim($data['first_name'].' '.$data['last_name']),
                 'first_name' => trim($data['first_name']),
                 'last_name' => trim($data['last_name']),
                 'email' => strtolower(trim($data['email'])),
@@ -94,7 +96,7 @@ final class AuthController extends Controller
             ]);
 
             $application = null;
-            if (!empty($data['programme_offering_id'])) {
+            if (! empty($data['programme_offering_id'])) {
                 $offering = ProgrammeOffering::with('intake')->find($data['programme_offering_id']);
                 if ($offering) {
                     $intakeToken = strtoupper(str_replace('-', '', $offering->intake->code ?? 'SEP2026'));
@@ -118,6 +120,9 @@ final class AuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        $request->session()->put('auth_session_started_at', now()->getTimestamp());
+        $request->session()->put('auth_last_activity_at', now()->getTimestamp());
+        $request->session()->put('auth_session_version', (int) ($user->session_version ?? 1));
 
         return redirect()->route('admissions.portal')->with('success', "Welcome to MEMA College & University. Your applicant account ({$user->applicantProfile->applicant_number}) has been created successfully. Proceed to complete your application below.");
     }
@@ -245,8 +250,11 @@ final class AuthController extends Controller
         }
 
         $request->session()->regenerate();
+        $request->session()->put('auth_session_started_at', now()->getTimestamp());
+        $request->session()->put('auth_last_activity_at', now()->getTimestamp());
+        $request->session()->put('auth_session_version', (int) ($user->session_version ?? 1));
 
-        return redirect()->intended($user->role === 'applicant' ? route('admissions.portal') : route('dashboard'));
+        return redirect()->intended(route($user->landingRouteName()));
     }
 
     public function destroy(Request $request): RedirectResponse
@@ -258,47 +266,46 @@ final class AuthController extends Controller
         return redirect()->route('login');
     }
 
-    // --- Forgot Password Flow (Generic response to prevent enumeration) ---
+    // --- Forgot Password Flow (Laravel broker; generic response to prevent enumeration) ---
 
     public function forgotPassword(Request $request): RedirectResponse
     {
         $request->validate(['email' => ['required', 'email']]);
 
-        $user = User::where('email', $request->email)->first();
-        if ($user) {
-            $token = Str::random(60);
-            $user->email_verification_token = $token;
-            $user->save();
+        Password::sendResetLink($request->only('email'));
 
-            // Simulating sending password reset email
-            session()->flash('info', 'If the email exists in our records, a secure password reset link has been dispatched.');
-        } else {
-            session()->flash('info', 'If the email exists in our records, a secure password reset link has been dispatched.');
-        }
-
-        return back();
+        return back()->with('info', 'If the email exists in our records, a secure password reset link has been dispatched.');
     }
 
     public function resetPassword(Request $request): RedirectResponse
     {
         $request->validate([
             'token' => ['required', 'string'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string', 'confirmed', PasswordPolicy::rules()],
+        ], PasswordPolicy::messages());
 
-        $user = User::where('email_verification_token', $request->token)->first();
-        if (! $user) {
-            return back()->withErrors(['email' => 'This password reset token is invalid or has expired.']);
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            static function (User $user, string $password): void {
+                $user->forceFill([
+                    'password' => $password,
+                    'password_changed_at' => now(),
+                    'remember_token' => Str::random(60),
+                    'email_verification_token' => null,
+                ])->save();
+
+                $user->bumpSessionVersion();
+
+                event(new PasswordReset($user));
+            }
+        );
+
+        if ($status !== Password::PASSWORD_RESET) {
+            return back()->withErrors(['email' => __($status)]);
         }
 
-        $user->password = Hash::make($request->password);
-        $user->email_verification_token = null;
-        $user->password_changed_at = now();
-        $user->save();
-
-        session()->flash('success', 'Your password has been successfully reset. Please log in.');
-
-        return redirect()->route('login');
+        return redirect()->route('login')->with('success', 'Your password has been successfully reset. Please log in.');
     }
 
     // --- Helper User Agent Parser ---

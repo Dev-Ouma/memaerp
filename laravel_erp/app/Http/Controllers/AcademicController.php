@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AuthorizesCataloguePermission;
 use App\Models\Course;
 use App\Models\Student;
 use App\Models\StudentResult;
@@ -15,6 +16,8 @@ use Illuminate\View\View;
 
 final class AcademicController extends Controller
 {
+    use AuthorizesCataloguePermission;
+
     public function __construct(private readonly StudentRegistrationService $registrations) {}
 
     public function students(): View
@@ -30,14 +33,16 @@ final class AcademicController extends Controller
 
     public function storeStudent(Request $request): RedirectResponse
     {
+        $this->authorizePermission($request, 'curriculum.manage', 'platform.user.manage');
         $data = $request->validate(['first_name' => ['required', 'string', 'max:100'], 'last_name' => ['required', 'string', 'max:100'], 'course_id' => ['required', 'exists:courses,id'], 'gender' => ['nullable', 'in:M,F'], 'address' => ['nullable', 'string']]);
         $student = $this->registrations->register($data);
 
         return back()->with('success', "Student created as {$student->admission_number}. Login: {$student->user->email}");
     }
 
-    public function destroyStudent(Student $student): RedirectResponse
+    public function destroyStudent(Request $request, Student $student): RedirectResponse
     {
+        $this->authorizePermission($request, 'curriculum.manage', 'platform.user.manage');
         $student->user()->delete();
 
         return back()->with('success', 'Student removed.');
@@ -50,6 +55,7 @@ final class AcademicController extends Controller
 
     public function storeCourse(Request $request): RedirectResponse
     {
+        $this->authorizePermission($request, 'curriculum.manage');
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'code' => ['required', 'string', 'max:20', 'unique:courses,code'],
@@ -62,9 +68,9 @@ final class AcademicController extends Controller
         if ($request->hasFile('image_file')) {
             $file = $request->file('image_file');
             $cleanCode = strtolower(str_replace(['-', ' '], ['_', '_'], trim($validated['code'])));
-            $filename = 'course_' . $cleanCode . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $filename = 'course_'.$cleanCode.'_'.time().'.'.$file->getClientOriginalExtension();
             $file->move(public_path('images/courses'), $filename);
-            $imagePath = 'images/courses/' . $filename;
+            $imagePath = 'images/courses/'.$filename;
         }
 
         Course::create([
@@ -77,8 +83,9 @@ final class AcademicController extends Controller
         return back()->with('success', 'Course created.');
     }
 
-    public function destroyCourse(Course $course): RedirectResponse
+    public function destroyCourse(Request $request, Course $course): RedirectResponse
     {
+        $this->authorizePermission($request, 'curriculum.manage');
         $course->delete();
 
         return back()->with('success', 'Course removed.');
@@ -86,6 +93,7 @@ final class AcademicController extends Controller
 
     public function updateCourseSequence(Request $request, Course $course): RedirectResponse
     {
+        $this->authorizePermission($request, 'curriculum.manage');
         $data = $request->validate(['next_student_serial' => ['required', 'integer', 'min:1', 'max:999999']]);
         $course->update($data);
 

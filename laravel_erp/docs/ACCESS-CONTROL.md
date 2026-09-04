@@ -28,3 +28,78 @@ Controls:
 ## Bootstrap and recovery
 
 The canonical seeder is the bootstrap mechanism. If every System Administrator grant is lost, use an audited database recovery procedure to insert one institution-scoped `user_roles` row for the reviewed System Administrator role and an active named user. Record the incident and immediately verify the audit trail and all privileged assignments.
+
+Named desk accounts (created by `StakeholderSeeder` / institutional data seeders) receive catalogue roles from `RbacCatalogueSeeder` when present:
+
+| Email | Role |
+|---|---|
+| `registrar@mema.ac.ke` | `registrar` |
+| `admissions.officer@mema.ac.ke` | `admissions_officer` |
+| `finance.officer@mema.ac.ke` / `bursar@mema.ac.ke` | `finance_officer` |
+| `curriculum.manager@mema.ac.ke` | `curriculum_manager` |
+| `hr.officer@mema.ac.ke` | `hr_officer` |
+| `dpo@mema.ac.ke` | `data_protection_officer` |
+| `registration.officer@mema.ac.ke` | `registration_officer` |
+| `transfers.officer@mema.ac.ke` | `transfers_officer` |
+| `lms.manager@mema.ac.ke` | `lms_manager` |
+| `graduation.officer@mema.ac.ke` | `graduation_officer` |
+
+Desk grants are skipped when the user already holds `system_administrator` (segregation of duties). System administrators may manage curriculum, SMHR and operational module records, but not admission decisions.
+
+Operational `POST /operational/{module}/{kind}` writes require the module write permission from `ModuleWritePermission` (for example `fees.manage`, `transfers.manage`).
+
+Registration → Fees domain (not `module_records`):
+
+| Action | Route | Permission |
+|---|---|---|
+| Open registration period | `POST registration/course-registration-periods` | `registration.manage` |
+| Enrol student in period | `POST registration/course-enrolments` | `registration.manage` |
+| Create fee structure | `POST fees/fee-setup` | `fees.manage` |
+| Add collection account | `POST fees/payment-accounts` | `fees.manage` |
+| Add payment type | `POST fees/payment-types` | `fees.manage` |
+| Add funding source | `POST fees/payment-source` | `fees.manage` |
+| Record tuition payment | `POST fees/fee-payments` | `fees.manage` |
+| Confirm pending payment | `POST fees/fee-payments/{payment}/confirm` | `fees.manage` |
+
+Enrolment with financial gating auto-issues a `fee_invoices` row from the matching active `fee_structures` for the student’s programme.
+
+Registration desk domain writes (`registration.manage`):
+
+| Action | Route |
+|---|---|
+| KUCCPS placement | `POST registration/kuccps-registration` |
+| Promotion decision | `POST registration/promotions` |
+| CPD enrolment | `POST registration/professional-development-users` |
+| Moodle sync log | `POST registration/moodle-sync` |
+| Student info update | `POST registration/student-info-update` |
+| Reminder campaign | `POST registration/reminders` |
+
+Transfers desk domain (not `module_records`; requires `transfers.manage`):
+
+| Action | Route |
+|---|---|
+| Transfer window | `POST transfers/dates-setup` |
+| Faculty transfer | `POST transfers/inter-intra` |
+| Faculty status | `PATCH transfers/inter-intra/{transfer}/status` |
+| Credit transfer | `POST transfers/credit-transfers` |
+| Credit status | `PATCH transfers/credit-transfers/{credit}/status` |
+| Exemption | `POST transfers/exemptions` |
+| Exemption status | `PATCH transfers/exemptions/{exemption}/status` |
+
+Graduation desk domain (not `module_records`; requires `graduation.manage`):
+
+| Action | Route |
+|---|---|
+| Criteria | `POST graduation/criteria` |
+| Clearance node | `POST graduation/clearance-checklist` |
+| Finance clearance | `POST graduation/finance-clearance` |
+| Grade list entry | `POST graduation/grade-list` |
+| Generate list batch | `POST graduation/generate-list` |
+| Validate list | `POST graduation/validate-list` |
+| Publish list | `POST graduation/publish-list` |
+| List report | `POST graduation/list-report` |
+| Summary | `POST graduation/summary-list` |
+| Certificate template | `POST graduation/certification-setup` |
+| Alumni | `POST graduation/alumni-list` |
+| Ceremony | `POST graduation/ceremony` |
+| Ceremony report | `POST graduation/ceremony-report` |

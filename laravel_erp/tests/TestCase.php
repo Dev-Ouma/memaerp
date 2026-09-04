@@ -30,4 +30,14 @@ abstract class TestCase extends BaseTestCase
 
         return $id;
     }
+
+    /** Staff actor with a catalogue role for admission mutations (not legacy admin alone). */
+    protected function admissionOfficer(string $rbacRole = 'registrar'): User
+    {
+        $this->seedRbac();
+        $user = User::factory()->create(['role' => 'staff', 'is_active' => true]);
+        $this->grantRole($user, $rbacRole);
+
+        return $user;
+    }
 }

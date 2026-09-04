@@ -19,10 +19,12 @@ final class SystemVersion extends Model
         'changelog',
         'installed_at',
         'rolled_back_at',
+        'is_current',
     ];
 
     protected $casts = [
         'installed_at' => 'datetime',
         'rolled_back_at' => 'datetime',
+        'is_current' => 'boolean',
     ];
 }

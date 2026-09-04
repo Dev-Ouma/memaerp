@@ -57,4 +57,29 @@ final class AdminSetupTest extends TestCase
         $this->expectException(ApiException::class);
         $manager->changeStatus($active, 'ARCHIVED', $admin->id);
     }
+
+    public function test_admin_can_toggle_enable_all_and_audit_module_integrity(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+        // Toggle module with force
+        $this->actingAs($admin)
+            ->patchJson(route('admin.setups.module-manager.toggle'), [
+                'module_key' => 'recycle-bin',
+                'is_active' => false,
+            ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('is_active', false);
+
+        // Audit integrity
+        $this->getJson(route('admin.setups.module-manager.audit-integrity'))
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        // Enable all modules in batch
+        $this->postJson(route('admin.setups.module-manager.enable-all'))
+            ->assertOk()
+            ->assertJsonPath('success', true);
+    }
 }

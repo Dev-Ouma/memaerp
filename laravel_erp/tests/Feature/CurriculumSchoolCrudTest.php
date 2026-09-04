@@ -13,11 +13,18 @@ final class CurriculumSchoolCrudTest extends TestCase
 {
     use RefreshDatabase;
 
+    private User $admin;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $this->seedRbac();
+    }
+
     public function test_authenticated_user_can_view_schools_page(): void
     {
-        $user = User::factory()->create(['role' => 'admin']);
-
-        $response = $this->actingAs($user)->get(route('curriculum.school'));
+        $response = $this->actingAs($this->admin)->get(route('curriculum.school'));
 
         $response->assertOk();
         $response->assertSee('Academic School & Faculty Setup', false);
@@ -26,9 +33,7 @@ final class CurriculumSchoolCrudTest extends TestCase
 
     public function test_admin_can_create_school(): void
     {
-        $user = User::factory()->create(['role' => 'admin']);
-
-        $response = $this->actingAs($user)->post(route('curriculum.school.store'), [
+        $response = $this->actingAs($this->admin)->post(route('curriculum.school.store'), [
             'code' => 'SCH-LAW',
             'name' => 'School of Law and Legal Studies',
             'dean' => 'Prof. Githu Muigai',
@@ -52,9 +57,45 @@ final class CurriculumSchoolCrudTest extends TestCase
             ->assertSee('School of Law and Legal Studies');
     }
 
+    public function test_admin_can_create_school_without_optional_contact_fields(): void
+    {
+        $response = $this->actingAs($this->admin)->post(route('curriculum.school.store'), [
+            'code' => 'SCH-MIN',
+            'name' => 'Minimal School',
+            'status' => 'Active',
+        ]);
+
+        $response->assertRedirect(route('curriculum.school'));
+        $this->assertDatabaseHas('schools', [
+            'code' => 'SCH-MIN',
+            'name' => 'Minimal School',
+            'email' => null,
+            'phone' => null,
+            'building' => null,
+            'description' => null,
+        ]);
+    }
+
+    public function test_admin_can_create_academic_year_without_description(): void
+    {
+        $response = $this->actingAs($this->admin)->post(route('cohort.academic-year.store'), [
+            'name' => '2027/2028',
+            'code' => 'AY2728',
+            'start_date' => '2027-09-01',
+            'end_date' => '2028-08-31',
+            'status' => 'Upcoming',
+        ]);
+
+        $response->assertRedirect(route('cohort.academic-year'));
+        $this->assertDatabaseHas('cohort_academic_years', [
+            'code' => 'AY2728',
+            'name' => '2027/2028',
+            'description' => null,
+        ]);
+    }
+
     public function test_admin_can_update_school(): void
     {
-        $user = User::factory()->create(['role' => 'admin']);
         $school = School::create([
             'code' => 'SCH-TMP',
             'name' => 'Temporary School',
@@ -62,7 +103,7 @@ final class CurriculumSchoolCrudTest extends TestCase
             'status' => 'Active',
         ]);
 
-        $response = $this->actingAs($user)->put(route('curriculum.school.update', $school), [
+        $response = $this->actingAs($this->admin)->put(route('curriculum.school.update', $school), [
             'code' => 'SCH-TMP-UPD',
             'name' => 'Updated School Name',
             'dean' => 'Prof. Updated Dean',
@@ -86,14 +127,13 @@ final class CurriculumSchoolCrudTest extends TestCase
 
     public function test_admin_can_delete_school(): void
     {
-        $user = User::factory()->create(['role' => 'admin']);
         $school = School::create([
             'code' => 'SCH-DEL',
             'name' => 'School to Delete',
             'status' => 'Active',
         ]);
 
-        $response = $this->actingAs($user)->delete(route('curriculum.school.destroy', $school), [
+        $response = $this->actingAs($this->admin)->delete(route('curriculum.school.destroy', $school), [
             'deletion_reason' => 'School was created for an integration test.',
         ]);
 
@@ -104,7 +144,7 @@ final class CurriculumSchoolCrudTest extends TestCase
         $this->assertDatabaseHas('deletion_records', [
             'entity_type' => 'school',
             'record_id' => (string) $school->id,
-            'deleted_by' => $user->id,
+            'deleted_by' => $this->admin->id,
             'status' => 'deleted',
         ]);
     }

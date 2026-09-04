@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\SystemBackup;
 use App\Models\SystemMaintenanceConfig;
 use App\Models\SystemVersion;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 final class SystemMaintenanceTest extends TestCase
@@ -43,6 +45,8 @@ final class SystemMaintenanceTest extends TestCase
         $response->assertOk();
         $response->assertSee('MEMA <span class="text-[#00f2fe]">OpsCenter</span>', false);
         $response->assertSee('Database-backed maintenance message');
+        $response->assertDontSee('20.42');
+        $response->assertDontSee('teamDriveFileLimitExceeded');
     }
 
     public function test_admin_can_update_lockdown_configurations(): void
@@ -137,6 +141,52 @@ final class SystemMaintenanceTest extends TestCase
 
         $response->assertRedirect();
         $this->assertDatabaseCount('system_backups', 1);
+
+        $backup = SystemBackup::first();
+        $this->assertNotNull($backup);
+        $this->assertTrue(Storage::disk('local')->exists($backup->disk_path));
+        $this->assertGreaterThan(0, $backup->file_size);
+
+        $downloadResponse = $this->actingAs($user)
+            ->get(route('admin.setups.system-maintenance.backup.download', $backup));
+        $downloadResponse->assertOk();
+        $downloadResponse->assertDownload($backup->filename);
+
+        $this->actingAs($user)
+            ->postJson(route('admin.setups.system-maintenance.backup.restore', $backup), [
+                'confirm' => true,
+            ])
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertNotNull($backup->fresh()->restored_at);
+    }
+
+    public function test_admin_can_execute_system_upgrade(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($user)->postJson(route('admin.setups.system-maintenance.upgrade'), [
+            'type' => 'minor',
+            'changelog' => 'Platform wide upgrade verification test.',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseHas('system_versions', [
+            'type' => 'minor',
+        ]);
+    }
+
+    public function test_admin_can_force_cron(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($user)->postJson(route('admin.setups.system-maintenance.cron'));
+
+        $response->assertOk()
+            ->assertJsonPath('success', true);
     }
 
     public function test_admin_can_rollback_version(): void

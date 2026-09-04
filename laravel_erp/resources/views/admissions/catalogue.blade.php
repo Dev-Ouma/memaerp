@@ -3,32 +3,32 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Academic Programmes & Admissions Portal | MEMA College & University</title>
-    <meta name="description" content="Explore Certificate, Diploma, Higher Diploma and Bachelor Degree programmes at MEMA College & University. Apply online for the 2026/2027 academic intake.">
+    <title>Academic Programmes & Online Admissions Portal | MEMA College & University</title>
+    <meta name="description" content="Explore Certificate, Diploma, Higher Diploma and Bachelor Degree programmes at MEMA College & University. Apply online for the 2026/2027 academic intake with instant admission letters.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: 'Quicksand', sans-serif; }
+        body { font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         .gradient-teal { background: linear-gradient(135deg, #0A3E50 0%, #0d546d 50%, #007A8C 100%); }
-        .glass-header { background: rgba(10, 62, 80, 0.96); backdrop-filter: blur(12px); }
-        .card-shadow { box-shadow: 0 4px 20px -2px rgba(10, 62, 80, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04); }
-        .card-shadow-hover:hover { box-shadow: 0 16px 32px -4px rgba(10, 62, 80, 0.16), 0 4px 12px -2px rgba(0, 0, 0, 0.06); }
+        .card-shadow { box-shadow: 0 4px 20px -2px rgba(10, 62, 80, 0.07), 0 2px 6px -1px rgba(0, 0, 0, 0.04); }
+        .card-shadow-hover:hover { box-shadow: 0 20px 35px -4px rgba(10, 62, 80, 0.16), 0 6px 16px -2px rgba(0, 0, 0, 0.06); transform: translateY(-3px); }
         .tier-cert { background: #FEF3C7; color: #92400E; border-color: #FDE68A; }
         .tier-dip { background: #D1FAE5; color: #065F46; border-color: #A7F3D0; }
         .tier-hdip { background: #E0E7FF; color: #3730A3; border-color: #C7D2FE; }
         .tier-deg { background: #E0F2FE; color: #075985; border-color: #BAE6FD; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col font-quicksand selection:bg-[#E67E22] selection:text-white">
+<body class="bg-[#F8FAFC] text-slate-800 antialiased min-h-screen flex flex-col font-quicksand selection:bg-[#E67E22] selection:text-white">
 
     {{-- Top Announcement Bar --}}
     <div class="bg-[#072B38] text-white text-xs py-2.5 px-4 border-b border-white/10">
         <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
             <div class="flex items-center gap-2.5 flex-wrap text-center sm:text-left">
-                <span class="px-2.5 py-0.5 rounded-full bg-[#E67E22] text-white font-extrabold text-[10.5px] tracking-wide uppercase shadow-2xs">Sep 2026 Intake</span>
-                <span class="text-slate-100 font-medium">Admissions ongoing for <strong>Certificates (KCSE D+)</strong>, <strong>Diplomas (KCSE C-)</strong>, <strong>Higher Diplomas</strong> &amp; <strong>Degrees</strong>.</span>
+                <span class="px-2.5 py-0.5 rounded-full bg-[#E67E22] text-white font-extrabold text-[10.5px] tracking-wide uppercase shadow-2xs">2026/2027 Admissions</span>
+                <span class="text-slate-100 font-medium">Admissions ongoing for <strong>Certificates (D+)</strong>, <strong>Diplomas (C-)</strong>, <strong>Higher Diplomas</strong> &amp; <strong>Degrees</strong>.</span>
             </div>
             <div class="flex items-center gap-4 text-xs font-semibold">
                 <a href="tel:0113636154" class="text-amber-300 hover:text-white transition-colors flex items-center gap-1.5">
@@ -46,18 +46,18 @@
     <header class="bg-[#0A3E50] text-white sticky top-0 z-50 shadow-md border-b border-white/10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
             <a class="flex items-center gap-3.5 no-underline group" href="{{ route('admissions.catalogue') }}">
-                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#E67E22] via-[#d35400] to-[#b94a00] text-white flex items-center justify-center font-extrabold text-xl shadow-md border border-white/20 group-hover:scale-105 transition-transform flex-shrink-0">
-                    M
+                <div class="w-11 h-11 rounded-2xl bg-white p-1 text-[#0A3E50] flex items-center justify-center font-extrabold text-xl shadow-md border border-white/20 group-hover:scale-105 transition-transform flex-shrink-0">
+                    <img src="{{ asset('images/system/logos/mema-college-mark-192.png') }}" alt="MEMA" class="w-full h-full object-contain" onerror="this.outerHTML='<span class=\'font-extrabold text-lg text-[#0A3E50]\'>M</span>'">
                 </div>
                 <div>
-                    <span class="block font-extrabold text-base sm:text-lg tracking-tight text-white uppercase leading-tight">MEMA COLLEGE &amp; UNIVERSITY</span>
-                    <span class="block text-[11px] text-teal-200 font-semibold tracking-wide">TVET Centre of Excellence • Higher Learning • Career Pathways</span>
+                    <span class="block font-extrabold text-base sm:text-lg tracking-tight text-white uppercase leading-tight">MEMA UNIVERSITY COLLEGE</span>
+                    <span class="block text-[11px] text-teal-200 font-semibold tracking-wide">TVET Centre of Excellence • Higher Education • Career Pathways</span>
                 </div>
             </a>
 
             <nav class="hidden md:flex items-center gap-6 text-xs font-bold text-teal-100">
                 <a href="#programmes" class="hover:text-white transition-colors">Programmes</a>
-                <a href="#eligibility" class="hover:text-white transition-colors">Eligibility Checker</a>
+                <a href="#eligibility" class="hover:text-white transition-colors">Grade Matcher</a>
                 <a href="#steps" class="hover:text-white transition-colors">How to Apply</a>
                 <a href="#faqs" class="hover:text-white transition-colors">FAQs</a>
             </nav>
@@ -66,7 +66,7 @@
                 @auth
                     @if(auth()->user()->role === 'applicant')
                         <a href="{{ route('admissions.portal') }}" class="px-4 py-2 rounded-xl bg-[#1E8449] hover:bg-[#196f3d] text-white text-xs font-bold transition-all border border-white/20 flex items-center gap-1.5 shadow-2xs">
-                            <i data-lucide="file-check" class="w-4 h-4 text-amber-300"></i> My Application
+                            <i data-lucide="file-check" class="w-4 h-4 text-amber-300"></i> My Portal
                         </a>
                     @else
                         <a href="{{ route('dashboard') }}" class="px-4 py-2 rounded-xl bg-teal-800/90 hover:bg-teal-700 text-white text-xs font-bold transition-all border border-white/20 flex items-center gap-1.5 shadow-2xs">
@@ -77,12 +77,9 @@
                     <a href="{{ route('login') }}" class="px-3 py-2 text-xs font-bold text-teal-100 hover:text-white transition-colors flex items-center gap-1">
                         <i data-lucide="log-in" class="w-3.5 h-3.5"></i> Sign In
                     </a>
-                    <a href="{{ route('register') }}" class="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs transition-all border border-white/20 flex items-center gap-1.5 shadow-2xs">
-                        <i data-lucide="user-plus" class="w-3.5 h-3.5 text-amber-300"></i> Sign Up
-                    </a>
                 @endauth
                 <a class="px-4 py-2 rounded-xl bg-[#E67E22] hover:bg-[#d35400] text-white font-extrabold text-xs transition-all shadow-sm hover:shadow flex items-center gap-1.5" href="#programmes">
-                    <i data-lucide="compass" class="w-4 h-4"></i> Catalog
+                    <i data-lucide="compass" class="w-4 h-4"></i> Browse Catalog
                 </a>
             </div>
         </div>
@@ -101,7 +98,7 @@
                 <div class="flex-1 space-y-4">
                     <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 text-teal-100 font-bold text-xs uppercase tracking-wider backdrop-blur-md border border-white/20">
                         <span class="w-2.5 h-2.5 rounded-full bg-[#E67E22] animate-ping"></span> 
-                        <span>Academic Year 2026/2027 Admissions Open</span>
+                        <span>September 2026 / 2027 Academic Intake</span>
                     </div>
 
                     <h1 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-[1.15]">
@@ -110,16 +107,16 @@
                     </h1>
 
                     <p class="text-xs sm:text-sm text-teal-100 max-w-2xl leading-relaxed font-medium">
-                        MEMA College &amp; University offers market-driven <strong>Certificates</strong>, <strong>Diplomas</strong>, <strong>Higher Diplomas</strong>, and selected <strong>Bachelor Degrees</strong> with full-time, evening, weekend, and virtual e-learning study modes.
+                        MEMA College &amp; University offers industry-aligned <strong>Certificates</strong>, <strong>Diplomas</strong>, <strong>Higher Diplomas</strong>, and selected <strong>Bachelor Degrees</strong> with full-time, evening, weekend, and virtual e-learning study modes.
                     </p>
 
                     <div class="pt-2 flex items-center gap-3.5 flex-wrap">
                         <a href="#programmes" class="px-6 py-3 rounded-xl bg-[#E67E22] hover:bg-[#d35400] text-white font-extrabold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 group">
-                            <span>Browse All 15 Programmes</span>
+                            <span>Browse All {{ count($offerings) }} Programmes</span>
                             <i data-lucide="arrow-down" class="w-4 h-4 group-hover:translate-y-0.5 transition-transform"></i>
                         </a>
                         <a href="{{ route('admissions.brochure') }}" target="_blank" class="px-5 py-3 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs sm:text-sm backdrop-blur-md transition-all flex items-center gap-2 border border-white/20 shadow-xs">
-                            <i data-lucide="file-text" class="w-4 h-4 text-amber-300"></i> Download Programmes Brochure / Flier (PDF)
+                            <i data-lucide="file-text" class="w-4 h-4 text-amber-300"></i> Download Brochure (PDF)
                         </a>
                     </div>
 
@@ -144,11 +141,11 @@
                     </div>
                 </div>
 
-                {{-- Right Intake Summary Card (Fixed Width Box) --}}
+                {{-- Right Intake Summary Card --}}
                 <div class="w-full lg:w-96 flex-shrink-0 bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-7 border border-white/25 space-y-4 shadow-xl text-white flex flex-col justify-between">
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-extrabold text-amber-300 uppercase tracking-wider">Upcoming Cohort</span>
+                            <span class="text-xs font-extrabold text-amber-300 uppercase tracking-wider">Current Intake</span>
                             <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/90 text-white text-[10.5px] font-bold">Fast-Track</span>
                         </div>
                         <div>
@@ -188,15 +185,17 @@
                         <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Interactive Course Matcher
                     </div>
                     <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight mt-0.5">
-                        What is your highest academic qualification?
+                        What is your KCSE Grade or Qualification?
                     </h2>
-                    <p class="text-xs text-slate-500">Select your grade below to instantly highlight the programmes you qualify for:</p>
+                    <p class="text-xs text-slate-500">Select your grade below to instantly highlight and filter the programmes you qualify for:</p>
                 </div>
-                <div class="text-xs text-slate-400 font-semibold" id="matching-count">Showing all 15 courses</div>
+                <div class="text-xs text-slate-500 font-bold px-3 py-1 bg-slate-100 rounded-lg border border-slate-200" id="matching-count">
+                    Showing all {{ count($offerings) }} courses
+                </div>
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                <button type="button" onclick="selectGrade('d_plus')" class="grade-btn text-left p-3.5 rounded-xl border border-amber-200 bg-amber-50/60 hover:bg-amber-100/80 transition-all cursor-pointer group">
+                <button type="button" onclick="selectGrade('d_plus')" class="grade-btn text-left p-3.5 rounded-xl border border-amber-200 bg-amber-50/70 hover:bg-amber-100 transition-all cursor-pointer group">
                     <div class="flex justify-between items-center">
                         <span class="font-extrabold text-sm text-amber-900">KCSE D+ or D</span>
                         <i data-lucide="award" class="w-4 h-4 text-amber-600"></i>
@@ -204,7 +203,7 @@
                     <p class="text-[11px] text-amber-800 font-medium mt-1">Direct Entry into <strong>Certificate Courses</strong></p>
                 </button>
 
-                <button type="button" onclick="selectGrade('c_minus')" class="grade-btn text-left p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100/80 transition-all cursor-pointer group">
+                <button type="button" onclick="selectGrade('c_minus')" class="grade-btn text-left p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 transition-all cursor-pointer group">
                     <div class="flex justify-between items-center">
                         <span class="font-extrabold text-sm text-emerald-900">KCSE C- or C</span>
                         <i data-lucide="book-check" class="w-4 h-4 text-emerald-600"></i>
@@ -212,17 +211,17 @@
                     <p class="text-[11px] text-emerald-800 font-medium mt-1">Direct Entry into <strong>Diploma Courses</strong></p>
                 </button>
 
-                <button type="button" onclick="selectGrade('diploma')" class="grade-btn text-left p-3.5 rounded-xl border border-indigo-200 bg-indigo-50/60 hover:bg-indigo-100/80 transition-all cursor-pointer group">
+                <button type="button" onclick="selectGrade('diploma')" class="grade-btn text-left p-3.5 rounded-xl border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 transition-all cursor-pointer group">
                     <div class="flex justify-between items-center">
                         <span class="font-extrabold text-sm text-indigo-900">Completed Diploma</span>
                         <i data-lucide="graduation-cap" class="w-4 h-4 text-indigo-600"></i>
                     </div>
-                    <p class="text-[11px] text-indigo-800 font-medium mt-1">Advance to <strong>Higher Diploma & Degrees</strong></p>
+                    <p class="text-[11px] text-indigo-800 font-medium mt-1">Advance to <strong>Higher Diploma &amp; Degrees</strong></p>
                 </button>
 
-                <button type="button" onclick="selectGrade('c_plus')" class="grade-btn text-left p-3.5 rounded-xl border border-blue-200 bg-blue-50/60 hover:bg-blue-100/80 transition-all cursor-pointer group">
+                <button type="button" onclick="selectGrade('c_plus')" class="grade-btn text-left p-3.5 rounded-xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100 transition-all cursor-pointer group">
                     <div class="flex justify-between items-center">
-                        <span class="font-extrabold text-sm text-blue-900">KCSE C+ & Above</span>
+                        <span class="font-extrabold text-sm text-blue-900">KCSE C+ &amp; Above</span>
                         <i data-lucide="landmark" class="w-4 h-4 text-blue-600"></i>
                     </div>
                     <p class="text-[11px] text-blue-800 font-medium mt-1">Direct Entry into <strong>Bachelor's Degrees</strong></p>
@@ -240,7 +239,7 @@
                     <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
                         Programmes Directory
                     </h2>
-                    <p class="text-xs text-slate-500 mt-0.5">Explore available courses, view detailed curriculum specifications, fees, and apply online.</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Explore available courses, view detailed entry criteria, tuition fees, and apply online.</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="text-xs font-extrabold text-[#0A3E50] bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-2xs" id="active-courses-count">
@@ -251,19 +250,19 @@
 
             {{-- Category Tier Filter Tabs --}}
             <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none" id="tier-filter-tabs">
-                <button type="button" data-tier="all" class="tier-tab-btn active px-4.5 py-2.5 rounded-xl text-xs font-extrabold transition-all bg-[#0A3E50] text-white shadow-xs flex items-center gap-2 flex-shrink-0">
+                <button type="button" data-tier="all" class="tier-tab-btn active px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all bg-[#0A3E50] text-white shadow-xs flex items-center gap-2 flex-shrink-0 cursor-pointer">
                     <i data-lucide="layers" class="w-3.5 h-3.5"></i> All Courses ({{ count($offerings) }})
                 </button>
-                <button type="button" data-tier="cert" class="tier-tab-btn px-4.5 py-2.5 rounded-xl text-xs font-extrabold transition-all bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs flex items-center gap-2 flex-shrink-0">
-                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Certificates (KNQA Level 5 • D+)
+                <button type="button" data-tier="cert" class="tier-tab-btn px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs flex items-center gap-2 flex-shrink-0 cursor-pointer">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Certificates (KNQA 5 • D+)
                 </button>
-                <button type="button" data-tier="dip" class="tier-tab-btn px-4.5 py-2.5 rounded-xl text-xs font-extrabold transition-all bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs flex items-center gap-2 flex-shrink-0">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Diplomas (KNQA Level 6 • C-)
+                <button type="button" data-tier="dip" class="tier-tab-btn px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs flex items-center gap-2 flex-shrink-0 cursor-pointer">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Diplomas (KNQA 6 • C-)
                 </button>
-                <button type="button" data-tier="hdip" class="tier-tab-btn px-4.5 py-2.5 rounded-xl text-xs font-extrabold transition-all bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs flex items-center gap-2 flex-shrink-0">
-                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Higher Diplomas (KNQA Level 7)
+                <button type="button" data-tier="hdip" class="tier-tab-btn px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs flex items-center gap-2 flex-shrink-0 cursor-pointer">
+                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Higher Diplomas (KNQA 7)
                 </button>
-                <button type="button" data-tier="deg" class="tier-tab-btn px-4.5 py-2.5 rounded-xl text-xs font-extrabold transition-all bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs flex items-center gap-2 flex-shrink-0">
+                <button type="button" data-tier="deg" class="tier-tab-btn px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs flex items-center gap-2 flex-shrink-0 cursor-pointer">
                     <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Bachelor's Degrees (C+)
                 </button>
             </div>
@@ -271,7 +270,7 @@
             {{-- Search & Filter Toolbar --}}
             <div class="bg-white p-4.5 rounded-2xl border border-slate-200 card-shadow grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3.5">
                 <div class="lg:col-span-6 relative">
-                    <input type="text" id="catalogue-search-input" placeholder="Search by programme name (e.g. Information Technology, Business, Procurement, Nursing)..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0A3E50] shadow-2xs font-semibold pl-10">
+                    <input type="text" id="catalogue-search-input" placeholder="Search by programme name (e.g. Computer Science, Business, IT, Nursing)..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0A3E50] focus:ring-1 focus:ring-[#0A3E50] shadow-2xs font-semibold pl-10">
                     <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
                 </div>
                 <div class="lg:col-span-3">
@@ -349,7 +348,7 @@
                         <div>
                             {{-- Course Image Header --}}
                             <div class="relative h-48 w-full overflow-hidden bg-slate-100">
-                                <img src="{{ $offering->course->image_url ?? asset('images/courses/course_bcs.jpg') }}" alt="{{ $courseName }}" class="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out">
+                                <img src="{{ $offering->course->image_url ?? asset('images/courses/course_bcs.jpg') }}" alt="{{ $courseName }}" class="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out" onerror="this.src='{{ asset('images/courses/course_bcs.jpg') }}'">
                                 <div class="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/30 to-transparent"></div>
                                 
                                 {{-- Top Floating Badges --}}
@@ -389,7 +388,7 @@
                                         <i data-lucide="check" class="w-3.5 h-3.5"></i>
                                     </div>
                                     <div class="flex-1">
-                                        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Minimum Entry Grade</span>
+                                        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Minimum Entry Requirement</span>
                                         <strong class="text-slate-900 text-xs leading-snug block font-bold">{{ $reqText }}</strong>
                                     </div>
                                 </div>
@@ -425,12 +424,12 @@
                             <div class="flex items-center gap-2">
                                 <button type="button" 
                                         onclick="openCardQuickView(this)"
-                                        class="px-3 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-extrabold text-xs transition-colors shadow-2xs"
+                                        class="px-3 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-extrabold text-xs transition-colors shadow-2xs cursor-pointer"
                                         title="View course specifications">
                                     Details
                                 </button>
                                 <a class="px-4.5 py-2 rounded-xl bg-[#0A3E50] hover:bg-[#E67E22] text-white font-extrabold text-xs transition-all shadow-sm hover:shadow flex items-center gap-1.5" href="{{ route('admissions.apply', $offering) }}">
-                                    <span>Apply</span>
+                                    <span>Apply Now</span>
                                     <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
                                 </a>
                             </div>
@@ -441,7 +440,7 @@
                         <i data-lucide="book-open" class="w-12 h-12 mx-auto text-slate-300"></i>
                         <h3 class="text-base font-extrabold text-slate-700">No matching programmes found</h3>
                         <p class="text-xs text-slate-500 max-w-md mx-auto">Try clearing your search query or selecting a different qualification tier above.</p>
-                        <button type="button" onclick="resetFilters()" class="px-4 py-2 rounded-xl bg-[#0A3E50] text-white font-bold text-xs">Reset All Filters</button>
+                        <button type="button" onclick="resetFilters()" class="px-4 py-2 rounded-xl bg-[#0A3E50] text-white font-bold text-xs cursor-pointer">Reset All Filters</button>
                     </div>
                 @endforelse
             </div>
@@ -450,9 +449,9 @@
         {{-- 4-Step How to Apply Stepper Section --}}
         <section id="steps" class="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 card-shadow space-y-8">
             <div class="text-center max-w-2xl mx-auto space-y-2">
-                <div class="text-xs font-bold text-[#E67E22] uppercase tracking-wider">Simple 4-Step Process</div>
+                <div class="text-xs font-bold text-[#E67E22] uppercase tracking-wider">Fast &amp; Simple Process</div>
                 <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">How to Submit Your Application</h2>
-                <p class="text-xs text-slate-500">Fast, streamlined online application with instantaneous verification and official offer letters.</p>
+                <p class="text-xs text-slate-500">Streamlined 4-step online admissions process with instant mobile fee verification and immediate offer issuance.</p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -540,12 +539,12 @@
             <div class="relative h-44 w-full overflow-hidden bg-slate-100">
                 <img id="qv-image" src="" alt="Course Preview" class="w-full h-full object-cover">
                 <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/30 to-transparent"></div>
-                <button type="button" onclick="closeQuickViewModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors">
+                <button type="button" onclick="closeQuickViewModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors cursor-pointer">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
-                <div class="absolute bottom-3 left-4 right-4">
+                <div class="absolute bottom-3 left-4 right-4 flex items-center gap-2">
                     <span id="qv-code" class="font-mono text-xs font-extrabold text-white bg-[#0A3E50]/95 px-2.5 py-0.5 rounded-md border border-white/20"></span>
-                    <span id="qv-tier" class="ml-2 text-[11px] font-bold text-amber-300"></span>
+                    <span id="qv-tier" class="text-[11px] font-bold text-amber-300"></span>
                 </div>
             </div>
 
@@ -556,7 +555,7 @@
                 </div>
 
                 <div class="bg-slate-50 rounded-2xl p-3.5 border border-slate-200 space-y-1.5">
-                    <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Entry Requirements</span>
+                    <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Minimum Entry Requirement</span>
                     <p id="qv-req" class="text-slate-800 font-bold text-xs"></p>
                 </div>
 
@@ -568,7 +567,7 @@
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
-                    <button type="button" onclick="closeQuickViewModal()" class="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-xs hover:bg-slate-50">Close</button>
+                    <button type="button" onclick="closeQuickViewModal()" class="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-xs hover:bg-slate-50 cursor-pointer">Close</button>
                     <a id="qv-apply-btn" href="#" class="px-5 py-2 rounded-xl bg-[#0A3E50] hover:bg-[#E67E22] text-white font-extrabold text-xs transition-colors flex items-center gap-1.5 shadow-sm">
                         <span>Proceed to Apply</span>
                         <i data-lucide="arrow-right" class="w-4 h-4"></i>
@@ -583,15 +582,17 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
             <div class="space-y-3">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-[#E67E22] text-white flex items-center justify-center font-extrabold text-base">M</div>
+                    <div class="w-9 h-9 rounded-xl bg-white p-1 text-[#0A3E50] flex items-center justify-center font-extrabold text-base">
+                        <img src="{{ asset('images/system/logos/mema-college-mark-192.png') }}" alt="MEMA" class="w-full h-full object-contain" onerror="this.outerHTML='<span class=\'font-extrabold text-base text-[#0A3E50]\'>M</span>'">
+                    </div>
                     <span class="font-extrabold text-sm uppercase tracking-wider text-white">MEMA UNIVERSITY COLLEGE</span>
                 </div>
                 <p class="text-slate-400 text-xs leading-relaxed">
-                    Accredited Centre of Excellence for Technical, Vocational & Higher Education in East Africa.
+                    Accredited Centre of Excellence for Technical, Vocational &amp; Higher Education in East Africa.
                 </p>
                 <div class="text-slate-400 text-[11.5px] space-y-1">
                     <div>P.O. Box 2490-00100, Nairobi, Kenya</div>
-                    <div>Helpline: <strong class="text-white">0113636154</strong></div>
+                    <div>Admissions Helpline: <strong class="text-white">0113636154</strong></div>
                 </div>
             </div>
 
@@ -606,10 +607,10 @@
             </div>
 
             <div>
-                <h4 class="font-bold text-sm text-white uppercase tracking-wider mb-3">Admissions & Fees</h4>
+                <h4 class="font-bold text-sm text-white uppercase tracking-wider mb-3">Admissions &amp; Fees</h4>
                 <ul class="space-y-2 text-slate-400 text-xs">
-                    <li><a href="#eligibility" class="hover:text-amber-300 transition-colors">Eligibility Calculator</a></li>
-                    <li><a href="{{ route('admissions.brochure') }}" target="_blank" class="hover:text-amber-300 transition-colors font-bold text-teal-200">Download Programmes Brochure / Flier (PDF)</a></li>
+                    <li><a href="#eligibility" class="hover:text-amber-300 transition-colors">Grade Matcher</a></li>
+                    <li><a href="{{ route('admissions.brochure') }}" target="_blank" class="hover:text-amber-300 transition-colors font-bold text-teal-200">Download Brochure (PDF)</a></li>
                     <li><a href="{{ route('login') }}" class="hover:text-amber-300 transition-colors">Applicant Login Portal</a></li>
                     <li><a href="{{ route('dashboard') }}" class="hover:text-amber-300 transition-colors">Staff ERP Access</a></li>
                 </ul>
@@ -627,11 +628,11 @@
         </div>
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 mt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-3 text-slate-400 text-[11.5px]">
-            <div>© {{ date('Y') }} MEMA College & University. All rights reserved. • ISO 9001:2015 Certified System</div>
+            <div>© {{ date('Y') }} MEMA College &amp; University. All rights reserved. • ISO 9001:2015 Certified System</div>
             <div class="flex items-center gap-4">
                 <a href="/privacy" class="hover:text-white transition-colors">Privacy Notice</a>
                 <a href="/terms" class="hover:text-white transition-colors">Terms of Admission</a>
-                <a href="#" class="hover:text-white transition-colors">Cookies Policy</a>
+                <a href="/cookies" class="hover:text-white transition-colors">Cookies Policy</a>
             </div>
         </div>
     </footer>
@@ -639,12 +640,17 @@
     {{-- Interactive Client Scripts --}}
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+
             const searchInput = document.getElementById('catalogue-search-input');
             const campusSelect = document.getElementById('campus-filter');
             const modeSelect = document.getElementById('mode-filter');
             const tabButtons = document.querySelectorAll('.tier-tab-btn');
             const cards = document.querySelectorAll('.catalogue-card');
             const matchingCount = document.getElementById('matching-count');
+            const activeCoursesCount = document.getElementById('active-courses-count');
             let currentTier = 'all';
 
             function filterCards() {
@@ -674,6 +680,9 @@
 
                 if (matchingCount) {
                     matchingCount.textContent = `Showing ${visibleCount} matching programmes`;
+                }
+                if (activeCoursesCount) {
+                    activeCoursesCount.textContent = `${visibleCount} Programmes Displayed`;
                 }
             }
 
@@ -744,6 +753,7 @@
             const modal = document.getElementById('quick-view-modal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+            if (window.lucide) window.lucide.createIcons();
         }
 
         function closeQuickViewModal() {

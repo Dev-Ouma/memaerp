@@ -4,395 +4,547 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AuthorizesCataloguePermission;
+use App\Models\GraduationAlumnus;
+use App\Models\GraduationCeremony;
+use App\Models\GraduationCeremonyReport;
+use App\Models\GraduationCertificateTemplate;
+use App\Models\GraduationClearanceNode;
+use App\Models\GraduationCriterion;
+use App\Models\GraduationFinanceClearance;
+use App\Models\GraduationGradeEntry;
+use App\Models\GraduationListBatch;
+use App\Models\GraduationListReport;
+use App\Models\GraduationListValidation;
+use App\Models\GraduationPublication;
+use App\Models\GraduationSummary;
+use App\Models\Student;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 final class GraduationController extends Controller
 {
-    /**
-     * 1. Graduation Criteria
-     */
+    use AuthorizesCataloguePermission;
+
     public function criteria(Request $request): View
     {
-        $stats = [
-            'activeRules' => 14,
-            'undergradCreditMin' => 120,
-            'mastersCreditMin' => 60,
-            'phdThesisRequirement' => '1 Published Peer-Reviewed Journal',
-        ];
+        $criteria = GraduationCriterion::query()->latest()->get()->map(fn (GraduationCriterion $row): array => [
+            'programme' => $row->programme,
+            'min_credits' => $row->min_credits ?? '—',
+            'min_cgpa' => $row->min_cgpa ?? '—',
+            'thesis_required' => $row->thesis_required ?? '—',
+            'clearance_nodes' => $row->clearance_nodes ?? '—',
+            'status' => $row->status,
+        ])->all();
 
-        $criteria = [
-            [
-                'id' => 1,
-                'programme' => 'Bachelor of Science in Computer Science',
-                'min_credits' => '120 Credit Hours',
-                'min_cgpa' => '2.00 (Pass Division)',
-                'thesis_required' => 'No (Senior Project Required)',
-                'clearance_nodes' => 'Finance, Library, Registrar, Department',
-                'status' => 'Active Policy',
-            ],
-            [
-                'id' => 2,
-                'programme' => 'PhD in Computer Science',
-                'min_credits' => '72 Credit Hours',
-                'min_cgpa' => '3.00 (B Grade Average)',
-                'thesis_required' => 'Yes (Senate Moderated Defense)',
-                'clearance_nodes' => 'SST Dean, Library, Finance, Registrar',
-                'status' => 'Active Policy',
-            ],
-        ];
-
-        return view('graduation.criteria', compact('stats', 'criteria'));
+        return view('graduation.criteria', compact('criteria'))->with(
+            'operationalCreate',
+            $this->createForm('Add graduation criteria', 'Persists to graduation_criteria.', 'graduation.criteria.store', [
+                ['name' => 'programme', 'label' => 'Programme', 'required' => true],
+                ['name' => 'min_credits', 'label' => 'Min credits'],
+                ['name' => 'min_cgpa', 'label' => 'Min CGPA'],
+                ['name' => 'thesis_required', 'label' => 'Thesis required'],
+                ['name' => 'clearance_nodes', 'label' => 'Clearance nodes'],
+                ['name' => 'status', 'label' => 'Status'],
+            ]),
+        );
     }
 
-    /**
-     * 2. Clearance Checklist
-     */
+    public function storeCriteria(Request $request): RedirectResponse
+    {
+        return $this->store($request, GraduationCriterion::class, [
+            'programme' => ['required', 'string', 'max:190'],
+            'min_credits' => ['nullable', 'string', 'max:40'],
+            'min_cgpa' => ['nullable', 'string', 'max:40'],
+            'thesis_required' => ['nullable', 'string', 'max:40'],
+            'clearance_nodes' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ], ['status' => 'Active'], 'Graduation criteria saved.');
+    }
+
     public function clearanceChecklist(Request $request): View
     {
-        $stats = [
-            'totalClearanceNodes' => 5,
-            'autoCheckNodes' => 3,
-            'manualSignatureNodes' => 2,
-            'slaTargetDays' => '2 Business Days',
-        ];
+        $checklists = GraduationClearanceNode::query()->latest()->get()->map(fn (GraduationClearanceNode $row): array => [
+            'node_name' => $row->node_name,
+            'check_type' => $row->check_type ?? '—',
+            'assigned_role' => $row->assigned_role ?? '—',
+            'requires_approval' => $row->requires_approval ?? '—',
+            'status' => $row->status,
+        ])->all();
 
-        $checklists = [
-            [
-                'id' => 1,
-                'node_name' => 'Finance & Student Accounts Department',
-                'check_type' => 'Automated Ledger Zero-Balance Check',
-                'assigned_role' => 'Finance Officer Group',
-                'requires_approval' => 'Auto-Bypass if Balance <= 0',
-                'status' => 'Operational',
-            ],
-            [
-                'id' => 2,
-                'node_name' => 'University Library Registry',
-                'check_type' => 'Manual Book Return Check',
-                'assigned_role' => 'Chief Librarian',
-                'requires_approval' => 'Manual Clearance Stamp Required',
-                'status' => 'Operational',
-            ],
-        ];
-
-        return view('graduation.clearance-checklist', compact('stats', 'checklists'));
+        return view('graduation.clearance-checklist', compact('checklists'))->with(
+            'operationalCreate',
+            $this->createForm('Add clearance node', 'Persists to graduation_clearance_nodes.', 'graduation.clearance-checklist.store', [
+                ['name' => 'node_name', 'label' => 'Node name', 'required' => true],
+                ['name' => 'check_type', 'label' => 'Check type'],
+                ['name' => 'assigned_role', 'label' => 'Assigned role'],
+                ['name' => 'requires_approval', 'label' => 'Approval rule'],
+                ['name' => 'status', 'label' => 'Status'],
+            ]),
+        );
     }
 
-    /**
-     * 3. Finance Clearance
-     */
+    public function storeClearanceChecklist(Request $request): RedirectResponse
+    {
+        return $this->store($request, GraduationClearanceNode::class, [
+            'node_name' => ['required', 'string', 'max:190'],
+            'check_type' => ['nullable', 'string', 'max:80'],
+            'assigned_role' => ['nullable', 'string', 'max:120'],
+            'requires_approval' => ['nullable', 'string', 'max:120'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ], ['status' => 'Active'], 'Clearance node saved.');
+    }
+
     public function financeClearance(Request $request): View
     {
-        $stats = [
-            'graduatingCandidates' => 1340,
-            'financiallyCleared' => 1210,
-            'unclearedBalances' => 130,
-            'totalBalanceOwed' => 'KES 1,420,000',
-        ];
+        $clearances = GraduationFinanceClearance::query()->latest()->get()->map(fn (GraduationFinanceClearance $row): array => [
+            'student_name' => $row->student_name,
+            'reg_no' => $row->reg_no ?? '—',
+            'programme' => $row->programme ?? '—',
+            'ledger_balance' => $row->ledger_balance ?? '—',
+            'last_payment_date' => $row->last_payment_date ?? '—',
+            'status' => $row->status,
+        ])->all();
 
-        $clearances = [
-            [
-                'id' => 1,
-                'student_name' => 'Brenda Chepkoech',
-                'reg_no' => 'MEMA/BCS/2024/0912',
-                'programme' => 'BSc. Computer Science',
-                'ledger_balance' => 'KES 0 (Cleared)',
-                'last_payment_date' => '28 Aug 2026',
-                'status' => 'Finance Cleared',
-            ],
-            [
-                'id' => 2,
-                'student_name' => 'Emmanuel Kiprono Mutai',
-                'reg_no' => 'MEMA/BIT/2023/1104',
-                'programme' => 'BSc. Information Technology',
-                'ledger_balance' => 'KES 8,005 (Arrears)',
-                'last_payment_date' => '15 Jun 2026',
-                'status' => 'Uncleared Balance',
-            ],
-        ];
-
-        return view('graduation.finance-clearance', compact('stats', 'clearances'));
+        return view('graduation.finance-clearance', compact('clearances'))->with(
+            'operationalCreate',
+            $this->createForm('Add finance clearance', 'Persists to graduation_finance_clearances.', 'graduation.finance-clearance.store', [
+                ['name' => 'student_name', 'label' => 'Student', 'required' => true],
+                ['name' => 'reg_no', 'label' => 'Registration number'],
+                ['name' => 'programme', 'label' => 'Programme'],
+                ['name' => 'ledger_balance', 'label' => 'Ledger balance'],
+                ['name' => 'last_payment_date', 'label' => 'Last payment date'],
+                ['name' => 'status', 'label' => 'Status'],
+            ]),
+        );
     }
 
-    /**
-     * 4. Graduation Grade List
-     */
+    public function storeFinanceClearance(Request $request): RedirectResponse
+    {
+        return $this->store($request, GraduationFinanceClearance::class, [
+            'student_name' => ['required', 'string', 'max:190'],
+            'reg_no' => ['nullable', 'string', 'max:40'],
+            'programme' => ['nullable', 'string', 'max:190'],
+            'ledger_balance' => ['nullable', 'string', 'max:80'],
+            'last_payment_date' => ['nullable', 'string', 'max:40'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ], ['status' => 'Pending'], 'Finance clearance saved.', resolveStudent: true);
+    }
+
     public function gradeList(Request $request): View
     {
-        $stats = [
-            'firstClassHonours' => 126,
-            'secondClassUpper' => 740,
-            'secondClassLower' => 420,
-            'passDivision' => 54,
-        ];
+        $grades = GraduationGradeEntry::query()->latest()->get()->map(fn (GraduationGradeEntry $row): array => [
+            'student_name' => $row->student_name,
+            'reg_no' => $row->reg_no ?? '—',
+            'cgpa' => $row->cgpa ?? '—',
+            'classification' => $row->classification ?? '—',
+            'grades_distribution' => $row->grades_distribution ?? '—',
+            'status' => $row->status,
+        ])->all();
 
-        $grades = [
-            [
-                'id' => 1,
-                'student_name' => 'Brenda Chepkoech',
-                'reg_no' => 'MEMA/BCS/2024/0912',
-                'cgpa' => '3.45',
-                'classification' => 'Second Class Honours (Upper Division)',
-                'grades_distribution' => 'A: 18, B: 24, C: 6, D: 0, F: 0',
-                'status' => 'Senate Moderated',
-            ],
-            [
-                'id' => 2,
-                'student_name' => 'Emmanuel Kiprono Mutai',
-                'reg_no' => 'MEMA/BIT/2023/1104',
-                'cgpa' => '3.20',
-                'classification' => 'Second Class Honours (Upper Division)',
-                'grades_distribution' => 'A: 14, B: 28, C: 6, D: 0, F: 0',
-                'status' => 'Senate Moderated',
-            ],
-        ];
-
-        return view('graduation.grade-list', compact('stats', 'grades'));
+        return view('graduation.grade-list', compact('grades'))->with(
+            'operationalCreate',
+            $this->createForm('Add grade list entry', 'Persists to graduation_grade_entries.', 'graduation.grade-list.store', [
+                ['name' => 'student_name', 'label' => 'Student', 'required' => true],
+                ['name' => 'reg_no', 'label' => 'Registration number'],
+                ['name' => 'cgpa', 'label' => 'CGPA'],
+                ['name' => 'classification', 'label' => 'Class of degree'],
+                ['name' => 'grades_distribution', 'label' => 'Grades distribution'],
+                ['name' => 'status', 'label' => 'Status'],
+            ]),
+        );
     }
 
-    /**
-     * 5. Graduation List Generation
-     */
+    public function storeGradeList(Request $request): RedirectResponse
+    {
+        return $this->store($request, GraduationGradeEntry::class, [
+            'student_name' => ['required', 'string', 'max:190'],
+            'reg_no' => ['nullable', 'string', 'max:40'],
+            'cgpa' => ['nullable', 'string', 'max:40'],
+            'classification' => ['nullable', 'string', 'max:80'],
+            'grades_distribution' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ], ['status' => 'Eligible'], 'Grade list entry saved.', resolveStudent: true);
+    }
+
     public function generateList(Request $request): View
     {
-        $stats = [
-            'candidatesProcessed' => 14850,
-            'criteriaCleared' => 1340,
-            'academicDeficits' => 1320,
-            'financialDeficits' => 190,
-        ];
+        $generators = GraduationListBatch::query()->latest()->get()->map(fn (GraduationListBatch $row): array => [
+            'generation_run' => $row->generation_run,
+            'school' => $row->school ?? '—',
+            'cohort' => $row->cohort ?? '—',
+            'run_date' => $row->run_date ?? '—',
+            'total_qualified' => (string) $row->total_qualified,
+            'status' => $row->status,
+        ])->all();
 
-        $generators = [
-            [
-                'id' => 1,
-                'generation_run' => 'GEN-RUN-2027-01',
-                'run_date' => '28 Feb 2027',
-                'school' => 'School of Science & Technology',
-                'cohort' => 'COH-2024-SEP-MAIN',
-                'total_qualified' => '450 qualified',
-                'status' => 'List Compiled',
-            ],
-        ];
-
-        return view('graduation.generate-list', compact('stats', 'generators'));
+        return view('graduation.generate-list', compact('generators'))->with(
+            'operationalCreate',
+            $this->createForm('Generate graduands batch', 'Persists to graduation_list_batches.', 'graduation.generate-list.store', [
+                ['name' => 'generation_run', 'label' => 'Generation run', 'required' => true],
+                ['name' => 'school', 'label' => 'School'],
+                ['name' => 'cohort', 'label' => 'Cohort'],
+                ['name' => 'run_date', 'label' => 'Run date'],
+                ['name' => 'total_qualified', 'label' => 'Total qualified', 'type' => 'number'],
+                ['name' => 'status', 'label' => 'Status'],
+            ]),
+        );
     }
 
-    /**
-     * 6. Validate Graduation List
-     */
+    public function storeGenerateList(Request $request): RedirectResponse
+    {
+        return $this->store($request, GraduationListBatch::class, [
+            'generation_run' => ['required', 'string', 'max:80', 'unique:graduation_list_batches,generation_run'],
+            'school' => ['nullable', 'string', 'max:190'],
+            'cohort' => ['nullable', 'string', 'max:80'],
+            'run_date' => ['nullable', 'string', 'max:40'],
+            'total_qualified' => ['nullable', 'integer', 'min:0'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ], ['status' => 'Pending', 'total_qualified' => 0], 'Graduation list batch saved.');
+    }
+
     public function validateList(Request $request): View
     {
-        $stats = [
-            'awaitingValidation' => 3,
-            'validatedByDean' => 15,
-            'ratifiedBySenate' => 12,
-            'totalPendingSignoff' => 2,
-        ];
+        $validations = GraduationListValidation::query()->latest()->get()->map(fn (GraduationListValidation $row): array => [
+            'validation_code' => $row->validation_code,
+            'school' => $row->school ?? '—',
+            'total_candidates' => (string) $row->total_candidates,
+            'dean_signoff' => $row->dean_signoff ?? '—',
+            'registrar_audit' => $row->registrar_audit ?? '—',
+            'status' => $row->status,
+        ])->all();
 
-        $validations = [
-            [
-                'id' => 1,
-                'validation_code' => 'VAL-2027-SST',
-                'school' => 'School of Science & Technology',
-                'total_candidates' => 450,
-                'dean_signoff' => 'Dr. Amina Hassan (Dean Signed)',
-                'registrar_audit' => 'Academic Audit Completed',
-                'status' => 'Validated & Signed',
-            ],
-        ];
-
-        return view('graduation.validate-list', compact('stats', 'validations'));
+        return view('graduation.validate-list', compact('validations'))->with(
+            'operationalCreate',
+            $this->createForm('Add list validation', 'Persists to graduation_list_validations.', 'graduation.validate-list.store', [
+                ['name' => 'validation_code', 'label' => 'Validation code', 'required' => true],
+                ['name' => 'school', 'label' => 'School'],
+                ['name' => 'total_candidates', 'label' => 'Candidates', 'type' => 'number'],
+                ['name' => 'dean_signoff', 'label' => 'Dean sign-off'],
+                ['name' => 'registrar_audit', 'label' => 'Registrar audit'],
+                ['name' => 'status', 'label' => 'Status'],
+            ]),
+        );
     }
 
-    /**
-     * 7. Publish Graduation List
-     */
+    public function storeValidateList(Request $request): RedirectResponse
+    {
+        return $this->store($request, GraduationListValidation::class, [
+            'validation_code' => ['required', 'string', 'max:80', 'unique:graduation_list_validations,validation_code'],
+            'school' => ['nullable', 'string', 'max:190'],
+            'total_candidates' => ['nullable', 'integer', 'min:0'],
+            'dean_signoff' => ['nullable', 'string', 'max:120'],
+            'registrar_audit' => ['nullable', 'string', 'max:120'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ], ['status' => 'Pending', 'total_candidates' => 0], 'List validation saved.');
+    }
+
     public function publishList(Request $request): View
     {
-        $stats = [
-            'publishedPortalsCount' => 1210,
-            'lastPublishTimestamp' => '29-08-2026 08:00',
-            'portalAudience' => 'Public & Student Portal',
-            'securityVerification' => 'Enabled (Verifiable QR)',
-        ];
+        $publications = GraduationPublication::query()->latest()->get()->map(fn (GraduationPublication $row): array => [
+            'publication_code' => $row->publication_code,
+            'list_title' => $row->list_title,
+            'date_published' => $row->date_published ?? '—',
+            'published_by' => $row->published_by ?? '—',
+            'total_graduands' => (string) $row->total_graduands,
+            'status' => $row->status,
+        ])->all();
 
-        $publications = [
-            [
-                'id' => 1,
-                'publication_code' => 'PUB-GRAD-2027',
-                'list_title' => 'Official 5th Graduation Congregation Pass List',
-                'total_graduands' => 1340,
-                'date_published' => '15 Mar 2027',
-                'published_by' => 'Office of Registrar Academic',
-                'status' => 'Published & Portal Active',
-            ],
-        ];
-
-        return view('graduation.publish-list', compact('stats', 'publications'));
+        return view('graduation.publish-list', compact('publications'))->with(
+            'operationalCreate',
+            $this->createForm('Publish graduation list', 'Persists to graduation_publications.', 'graduation.publish-list.store', [
+                ['name' => 'publication_code', 'label' => 'Publication code', 'required' => true],
+                ['name' => 'list_title', 'label' => 'List title', 'required' => true],
+                ['name' => 'date_published', 'label' => 'Date published'],
+                ['name' => 'published_by', 'label' => 'Published by'],
+                ['name' => 'total_graduands', 'label' => 'Total graduands', 'type' => 'number'],
+                ['name' => 'status', 'label' => 'Status'],
+            ]),
+        );
     }
 
-    /**
-     * 8. Graduation List Report
-     */
+    public function storePublishList(Request $request): RedirectResponse
+    {
+        return $this->store($request, GraduationPublication::class, [
+            'publication_code' => ['required', 'string', 'max:80', 'unique:graduation_publications,publication_code'],
+            'list_title' => ['required', 'string', 'max:190'],
+            'date_published' => ['nullable', 'string', 'max:40'],
+            'published_by' => ['nullable', 'string', 'max:120'],
+            'total_graduands' => ['nullable', 'integer', 'min:0'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ], ['status' => 'Draft', 'total_graduands' => 0], 'Publication saved.');
+    }
+
     public function listReport(Request $request): View
     {
-        $stats = [
-            'totalReportPrints' => 142,
-            'schoolWiseSlices' => 4,
-            'departmentWiseSlices' => 12,
-            'accuracyVerdict' => '100% Certified Correct',
-        ];
+        $reports = GraduationListReport::query()->latest()->get()->map(fn (GraduationListReport $row): array => [
+            'report_ref' => $row->report_ref,
+            'school' => $row->school ?? '—',
+            'department' => $row->department ?? '—',
+            'total_candidates' => (string) $row->total_candidates,
+            'file_format' => $row->file_format ?? '—',
+            'status' => $row->status,
+        ])->all();
 
-        $reports = [
-            [
-                'id' => 1,
-                'report_ref' => 'REP-GRAD-CS-Y3',
-                'school' => 'School of Science & Technology',
-                'department' => 'Department of Computer Science',
-                'total_candidates' => 240,
-                'file_format' => 'PDF / Excel Portfolio',
-                'status' => 'Report Ready',
-            ],
-        ];
-
-        return view('graduation.list-report', compact('stats', 'reports'));
+        return view('graduation.list-report', compact('reports'))->with(
+            'operationalCreate',
+            $this->createForm('Add list report', 'Persists to graduation_list_reports.', 'graduation.list-report.store', [
+                ['name' => 'report_ref', 'label' => 'Report ref', 'required' => true],
+                ['name' => 'school', 'label' => 'School'],
+                ['name' => 'department', 'label' => 'Department'],
+                ['name' => 'total_candidates', 'label' => 'Candidates', 'type' => 'number'],
+                ['name' => 'file_format', 'label' => 'File format'],
+                ['name' => 'status', 'label' => 'Status'],
+            ]),
+        );
     }
 
-    /**
-     * 9. Graduation Summary List
-     */
+    public function storeListReport(Request $request): RedirectResponse
+    {
+        return $this->store($request, GraduationListReport::class, [
+            'report_ref' => ['required', 'string', 'max:80', 'unique:graduation_list_reports,report_ref'],
+            'school' => ['nullable', 'string', 'max:190'],
+            'department' => ['nullable', 'string', 'max:190'],
+            'total_candidates' => ['nullable', 'integer', 'min:0'],
+            'file_format' => ['nullable', 'string', 'max:40'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ], ['status' => 'Pending', 'total_candidates' => 0], 'List report saved.');
+    }
+
     public function summaryList(Request $request): View
     {
-        $stats = [
-            'senateSummaryCode' => 'SEN-SUM-2027',
-            'totalGraduands' => 1340,
-            'mscPhdGraduands' => 110,
-            'ugGraduands' => 1230,
-        ];
+        $summaries = GraduationSummary::query()->latest()->get()->map(fn (GraduationSummary $row): array => [
+            'school' => $row->school,
+            'degree_count' => (string) $row->degree_count,
+            'diploma_count' => (string) $row->diploma_count,
+            'masters_count' => (string) $row->masters_count,
+            'phd_count' => (string) $row->phd_count,
+            'total' => (string) $row->total,
+            'status' => $row->status,
+        ])->all();
 
-        $summaries = [
-            [
-                'id' => 1,
-                'school' => 'School of Science & Technology',
-                'phd_count' => 12,
-                'masters_count' => 38,
-                'degree_count' => 400,
-                'diploma_count' => 0,
-                'total' => 450,
-                'status' => 'Senate Ratified',
-            ],
-        ];
-
-        return view('graduation.summary-list', compact('stats', 'summaries'));
+        return view('graduation.summary-list', compact('summaries'))->with(
+            'operationalCreate',
+            $this->createForm('Add graduation summary', 'Persists to graduation_summaries.', 'graduation.summary-list.store', [
+                ['name' => 'school', 'label' => 'School', 'required' => true],
+                ['name' => 'degree_count', 'label' => 'Degree count', 'type' => 'number'],
+                ['name' => 'diploma_count', 'label' => 'Diploma count', 'type' => 'number'],
+                ['name' => 'masters_count', 'label' => 'Masters count', 'type' => 'number'],
+                ['name' => 'phd_count', 'label' => 'PhD count', 'type' => 'number'],
+                ['name' => 'total', 'label' => 'Total', 'type' => 'number'],
+                ['name' => 'status', 'label' => 'Status'],
+            ]),
+        );
     }
 
-    /**
-     * 10. Progressive Certification Setup
-     */
+    public function storeSummaryList(Request $request): RedirectResponse
+    {
+        return $this->store($request, GraduationSummary::class, [
+            'school' => ['required', 'string', 'max:190'],
+            'degree_count' => ['nullable', 'integer', 'min:0'],
+            'diploma_count' => ['nullable', 'integer', 'min:0'],
+            'masters_count' => ['nullable', 'integer', 'min:0'],
+            'phd_count' => ['nullable', 'integer', 'min:0'],
+            'total' => ['nullable', 'integer', 'min:0'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ], [
+            'status' => 'Active',
+            'degree_count' => 0,
+            'diploma_count' => 0,
+            'masters_count' => 0,
+            'phd_count' => 0,
+            'total' => 0,
+        ], 'Summary saved.');
+    }
+
     public function certificationSetup(Request $request): View
     {
-        $stats = [
-            'activeCertificateTemplates' => 4,
-            'blockchainRegistries' => 1,
-            'issuedDigitalCredentials' => 840,
-            'validationSuccessRate' => '100.0%',
-        ];
+        $templates = GraduationCertificateTemplate::query()->latest()->get()->map(fn (GraduationCertificateTemplate $row): array => [
+            'template_code' => $row->template_code,
+            'name' => $row->name,
+            'dimensions' => $row->dimensions ?? '—',
+            'security_features' => $row->security_features ?? '—',
+            'signatories' => $row->signatories ?? '—',
+            'status' => $row->status,
+        ])->all();
 
-        $templates = [
-            [
-                'id' => 1,
-                'template_code' => 'TMP-UG-DEGREE',
-                'name' => 'Undergraduate Degree Certificate Template',
-                'dimensions' => 'A4 Landscape',
-                'security_features' => 'UV Pattern, Verifiable QR Code, Blockchain IPFS Hash',
-                'signatories' => 'Vice Chancellor & Registrar Academic',
-                'status' => 'Active System Template',
-            ],
-        ];
-
-        return view('graduation.certification-setup', compact('stats', 'templates'));
+        return view('graduation.certification-setup', compact('templates'))->with(
+            'operationalCreate',
+            $this->createForm('Add certificate template', 'Persists to graduation_certificate_templates.', 'graduation.certification-setup.store', [
+                ['name' => 'template_code', 'label' => 'Template code', 'required' => true],
+                ['name' => 'name', 'label' => 'Name', 'required' => true],
+                ['name' => 'dimensions', 'label' => 'Dimensions'],
+                ['name' => 'security_features', 'label' => 'Security features'],
+                ['name' => 'signatories', 'label' => 'Signatories'],
+                ['name' => 'status', 'label' => 'Status'],
+            ]),
+        );
     }
 
-    /**
-     * 11. Alumni Student List
-     */
+    public function storeCertificationSetup(Request $request): RedirectResponse
+    {
+        return $this->store($request, GraduationCertificateTemplate::class, [
+            'template_code' => ['required', 'string', 'max:80', 'unique:graduation_certificate_templates,template_code'],
+            'name' => ['required', 'string', 'max:190'],
+            'dimensions' => ['nullable', 'string', 'max:80'],
+            'security_features' => ['nullable', 'string', 'max:255'],
+            'signatories' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ], ['status' => 'Active'], 'Certificate template saved.');
+    }
+
     public function alumniList(Request $request): View
     {
-        $stats = [
-            'totalAlumniRecords' => 4820,
-            'promotedFromThisSession' => 1210,
-            'activeAlumniPortals' => 3450,
-            'donationsReconciliation' => 'Operational',
-        ];
+        $alumni = GraduationAlumnus::query()->latest()->get()->map(fn (GraduationAlumnus $row): array => [
+            'alumni_code' => $row->alumni_code,
+            'student_name' => $row->student_name,
+            'reg_no' => $row->reg_no ?? '—',
+            'programme' => $row->programme ?? '—',
+            'contact' => $row->contact ?? '—',
+            'grad_year' => $row->grad_year ?? '—',
+            'status' => $row->status,
+        ])->all();
 
-        $alumni = [
-            [
-                'id' => 1,
-                'student_name' => 'Brenda Chepkoech',
-                'reg_no' => 'MEMA/BCS/2024/0912',
-                'programme' => 'BSc. Computer Science',
-                'grad_year' => '2026/2027',
-                'alumni_code' => 'MEMA-ALM-2027-0912',
-                'contact' => 'brenda.c@alumni.mema.ac.ke',
-                'status' => 'Alumni Activated',
-            ],
-        ];
-
-        return view('graduation.alumni-list', compact('stats', 'alumni'));
+        return view('graduation.alumni-list', compact('alumni'))->with(
+            'operationalCreate',
+            $this->createForm('Add alumni record', 'Persists to graduation_alumni.', 'graduation.alumni-list.store', [
+                ['name' => 'alumni_code', 'label' => 'Alumni code', 'required' => true],
+                ['name' => 'student_name', 'label' => 'Alumni name', 'required' => true],
+                ['name' => 'reg_no', 'label' => 'Former registration number'],
+                ['name' => 'programme', 'label' => 'Programme'],
+                ['name' => 'contact', 'label' => 'Contact'],
+                ['name' => 'grad_year', 'label' => 'Graduation year'],
+                ['name' => 'status', 'label' => 'Status'],
+            ]),
+        );
     }
 
-    /**
-     * 12. Graduation Ceremony
-     */
+    public function storeAlumniList(Request $request): RedirectResponse
+    {
+        return $this->store($request, GraduationAlumnus::class, [
+            'alumni_code' => ['required', 'string', 'max:80', 'unique:graduation_alumni,alumni_code'],
+            'student_name' => ['required', 'string', 'max:190'],
+            'reg_no' => ['nullable', 'string', 'max:40'],
+            'programme' => ['nullable', 'string', 'max:190'],
+            'contact' => ['nullable', 'string', 'max:190'],
+            'grad_year' => ['nullable', 'string', 'max:20'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ], ['status' => 'Active'], 'Alumni record saved.');
+    }
+
     public function ceremony(Request $request): View
     {
-        $stats = [
-            'ceremonyDate' => '18 Jun 2027',
-            'venue' => 'MEMA University Sports Pavilion',
-            'reservedGowns' => 1120,
-            'expectedGuests' => 4500,
-        ];
+        $ceremonies = GraduationCeremony::query()->latest()->get()->map(fn (GraduationCeremony $row): array => [
+            'congregation_number' => $row->congregation_number,
+            'date' => $row->date ?? '—',
+            'chief_guest' => $row->chief_guest ?? '—',
+            'gown_return_deadline' => $row->gown_return_deadline ?? '—',
+            'gown_fine_rate' => $row->gown_fine_rate ?? '—',
+            'status' => $row->status,
+        ])->all();
 
-        $ceremonies = [
-            [
-                'id' => 1,
-                'congregation_number' => '5th Graduation Ceremony',
-                'date' => '18 Jun 2027',
-                'chief_guest' => 'Cabinet Secretary, Ministry of Education',
-                'gown_return_deadline' => '02 Jul 2027',
-                'gown_fine_rate' => 'KES 500 per Day late',
-                'status' => 'Logistics Configured',
-            ],
-        ];
+        return view('graduation.ceremony', compact('ceremonies'))->with(
+            'operationalCreate',
+            $this->createForm('Add ceremony', 'Persists to graduation_ceremonies.', 'graduation.ceremony.store', [
+                ['name' => 'congregation_number', 'label' => 'Congregation number', 'required' => true],
+                ['name' => 'date', 'label' => 'Date'],
+                ['name' => 'chief_guest', 'label' => 'Chief guest'],
+                ['name' => 'gown_return_deadline', 'label' => 'Gown return deadline'],
+                ['name' => 'gown_fine_rate', 'label' => 'Gown fine rate'],
+                ['name' => 'status', 'label' => 'Status'],
+            ]),
+        );
+    }
 
-        return view('graduation.ceremony', compact('stats', 'ceremonies'));
+    public function storeCeremony(Request $request): RedirectResponse
+    {
+        return $this->store($request, GraduationCeremony::class, [
+            'congregation_number' => ['required', 'string', 'max:80', 'unique:graduation_ceremonies,congregation_number'],
+            'date' => ['nullable', 'string', 'max:40'],
+            'chief_guest' => ['nullable', 'string', 'max:190'],
+            'gown_return_deadline' => ['nullable', 'string', 'max:40'],
+            'gown_fine_rate' => ['nullable', 'string', 'max:80'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ], ['status' => 'Upcoming'], 'Ceremony saved.');
+    }
+
+    public function ceremonyReport(Request $request): View
+    {
+        $reports = GraduationCeremonyReport::query()->latest()->get()->map(fn (GraduationCeremonyReport $row): array => [
+            'report_ref' => $row->report_ref,
+            'title' => $row->title,
+            'audit_date' => $row->audit_date ?? '—',
+            'compiled_by' => $row->compiled_by ?? '—',
+            'senate_submission' => $row->senate_submission ?? '—',
+            'status' => $row->status,
+        ])->all();
+
+        return view('graduation.ceremony-report', compact('reports'))->with(
+            'operationalCreate',
+            $this->createForm('Add ceremony report', 'Persists to graduation_ceremony_reports.', 'graduation.ceremony-report.store', [
+                ['name' => 'report_ref', 'label' => 'Report ref', 'required' => true],
+                ['name' => 'title', 'label' => 'Title', 'required' => true],
+                ['name' => 'audit_date', 'label' => 'Audit date'],
+                ['name' => 'compiled_by', 'label' => 'Compiled by'],
+                ['name' => 'senate_submission', 'label' => 'Senate submission'],
+                ['name' => 'status', 'label' => 'Status'],
+            ]),
+        );
+    }
+
+    public function storeCeremonyReport(Request $request): RedirectResponse
+    {
+        return $this->store($request, GraduationCeremonyReport::class, [
+            'report_ref' => ['required', 'string', 'max:80', 'unique:graduation_ceremony_reports,report_ref'],
+            'title' => ['required', 'string', 'max:190'],
+            'audit_date' => ['nullable', 'string', 'max:40'],
+            'compiled_by' => ['nullable', 'string', 'max:120'],
+            'senate_submission' => ['nullable', 'string', 'max:120'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ], ['status' => 'Draft'], 'Ceremony report saved.');
     }
 
     /**
-     * 13. Graduation Ceremony Report
+     * @param  class-string<Model>  $model
+     * @param  array<string, list<mixed>>  $rules
+     * @param  array<string, mixed>  $defaults
      */
-    public function ceremonyReport(Request $request): View
+    private function store(
+        Request $request,
+        string $model,
+        array $rules,
+        array $defaults,
+        string $message,
+        bool $resolveStudent = false,
+    ): RedirectResponse {
+        $this->authorizePermission($request, 'graduation.manage');
+        $data = $request->validate($rules);
+        foreach ($defaults as $key => $value) {
+            if (! array_key_exists($key, $data) || $data[$key] === null || $data[$key] === '') {
+                $data[$key] = $value;
+            }
+        }
+        if ($resolveStudent) {
+            $data['student_id'] = Student::query()->where('admission_number', $data['reg_no'] ?? '')->value('id');
+        }
+        $model::query()->create($data);
+
+        return back()->with('success', $message);
+    }
+
+    /**
+     * @param  list<array{name: string, label: string, type?: string, required?: bool}>  $fields
+     * @return array{title: string, hint: string, action: string, fields: list<array{name: string, label: string, type?: string, required?: bool}>}
+     */
+    private function createForm(string $title, string $hint, string $route, array $fields): array
     {
-        $stats = [
-            'totalExpenseAudited' => 'KES 4,850,000',
-            'gownRevenueCollected' => 'KES 1,200,000',
-            'invitationCardsDispatched' => 2680,
-            'reportVerdict' => 'Approved & Filed in Archives',
+        return [
+            'title' => $title,
+            'hint' => $hint,
+            'action' => route($route),
+            'fields' => $fields,
         ];
-
-        $reports = [
-            [
-                'id' => 1,
-                'report_ref' => 'REP-GRAD-CER-05',
-                'title' => 'Post-Ceremony Administrative & Financial Report - 5th Congregation',
-                'audit_date' => '12 Jul 2027',
-                'compiled_by' => 'Chairman, Graduation Committee',
-                'senate_submission' => 'Ratified in Senate Minute 412/2027',
-                'status' => 'Report Filed',
-            ],
-        ];
-
-        return view('graduation.ceremony-report', compact('stats', 'reports'));
     }
 }

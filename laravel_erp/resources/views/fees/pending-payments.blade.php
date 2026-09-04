@@ -82,7 +82,14 @@
                                 <span class="inline-block px-2 py-0.5 rounded text-[10.5px] font-bold bg-amber-100 text-amber-800">{{ $pnd['status'] }}</span>
                             </td>
                             <td class="py-3.5 px-4 text-center">
-                                <button type="button" class="px-3 py-1 rounded border border-orange-400 text-orange-600 hover:bg-orange-50 font-semibold text-xs transition-colors">Audit</button>
+                                @if(! empty($pnd['id']))
+                                    <form method="POST" action="{{ route('fees.payments.confirm', $pnd['id']) }}" class="inline">
+                                        @csrf
+                                        <button type="submit" class="px-3 py-1 rounded border border-emerald-500 text-emerald-700 hover:bg-emerald-50 font-semibold text-xs transition-colors">
+                                            Confirm
+                                        </button>
+                                    </form>
+                                @endif
                             </td>
                         </tr>
                     @endforeach

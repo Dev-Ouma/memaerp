@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\PgResearch\PgAppeal;
+use App\Models\PgResearch\PgAppealCategory;
+use App\Models\PgResearch\PgAppealPeriod;
 use App\Models\PgResearch\PgDefenceRequest;
 use App\Models\PgResearch\PgEligibilityWaiver;
 use App\Models\PgResearch\PgExaminer;
@@ -768,10 +770,10 @@ final class PgResearchWorkflow
         string $grounds,
         ?string $evidencePath = null,
     ): PgAppeal {
-        $category = \App\Models\PgResearch\PgAppealCategory::findOrFail($categoryId);
+        $category = PgAppealCategory::findOrFail($categoryId);
         $this->guard($category->is_active, 'This appeal category is not currently active.');
 
-        $period = \App\Models\PgResearch\PgAppealPeriod::query()
+        $period = PgAppealPeriod::query()
             ->where('status', 'OPEN')
             ->where(fn ($q) => $q->where('category_id', $category->id)->orWhereNull('category_id'))
             ->whereDate('opens_on', '<=', now())
@@ -832,7 +834,7 @@ final class PgResearchWorkflow
         return $appeal;
     }
 
-    public function openAppealPeriod(\App\Models\PgResearch\PgAppealPeriod $period): \App\Models\PgResearch\PgAppealPeriod
+    public function openAppealPeriod(PgAppealPeriod $period): PgAppealPeriod
     {
         $this->guard($period->status === 'DRAFT', 'Only a draft window can be opened.');
 
@@ -842,7 +844,7 @@ final class PgResearchWorkflow
         return $period;
     }
 
-    public function closeAppealPeriod(\App\Models\PgResearch\PgAppealPeriod $period): \App\Models\PgResearch\PgAppealPeriod
+    public function closeAppealPeriod(PgAppealPeriod $period): PgAppealPeriod
     {
         $this->guard($period->status === 'OPEN', 'Only an open window can be closed.');
 

@@ -38,12 +38,23 @@ final readonly class RecycleBinService
 
             $record->delete();
 
+            $isHttpRequest = app()->has('request') && request()?->route() !== null;
+            $ipAddress = request()?->ip() ?? '127.0.0.1';
+            $userAgent = request()?->userAgent() ?? ($isHttpRequest ? 'MEMA ERP Web Client' : 'Artisan CLI');
+            $channel = $isHttpRequest
+                ? (request()?->is('api/*') || (request()?->wantsJson() && ! request()?->isMethod('GET')) ? 'API' : 'Web')
+                : 'CLI';
+
             $deletion = DeletionRecord::create([
                 'entity_type' => $entityType,
                 'model_type' => $record::class,
                 'record_id' => (string) $record->getKey(),
                 'deleted_by' => $actor->id,
                 'deleted_by_role' => $actor->activeRole(),
+                'ip_address' => $ipAddress,
+                'user_agent' => $userAgent,
+                'channel' => $channel,
+                'action_type' => 'SOFT_DELETE',
                 'reason' => trim($reason),
                 'original_location' => $location,
                 'snapshot' => $snapshot,

@@ -9,9 +9,13 @@ use App\Models\Student;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use RuntimeException;
 
 final class StudentRegistrationService
 {
+    /** Ceiling on the search for a free serial, so a bad index cannot hang enrolment. */
+    private const MAX_SERIAL_PROBES = 5000;
+
     public function __construct(private readonly AcademicYearService $academicYears) {}
 
     /**
@@ -68,6 +72,12 @@ final class StudentRegistrationService
     /**
      * Allocate the next registration number for a course. The caller must hold
      * the course row lock: the serial is read and incremented non-atomically.
+     *
+     * The counter alone is not trustworthy. Students imported, seeded or created
+     * before the counter existed hold numbers it has never issued, so allocating
+     * straight from it collides on the unique index and takes down the enrolment
+     * that triggered it. The serial is therefore advanced past every number the
+     * course has actually issued before one is handed out.
      */
     private function nextRegistrationNumber(Course $course): string
     {
@@ -75,10 +85,25 @@ final class StudentRegistrationService
         if ($token === '') {
             $token = 'CRS'.str_pad((string) $course->id, 3, '0', STR_PAD_LEFT);
         }
-        $registrationNumber = sprintf('%s/%03d/%s', $token, $course->next_student_serial, now()->format('Y'));
-        $course->increment('next_student_serial');
 
-        return $registrationNumber;
+        $year = now()->format('Y');
+        $serial = max((int) $course->next_student_serial, 1);
+
+        // Bounded so a corrupt index can never spin here forever; the ceiling is
+        // far above any plausible cohort size for a single course and year.
+        for ($attempt = 0; $attempt < self::MAX_SERIAL_PROBES; $attempt++) {
+            $candidate = sprintf('%s/%03d/%s', $token, $serial, $year);
+            if (! Student::query()->where('admission_number', $candidate)->exists()) {
+                $course->forceFill(['next_student_serial' => $serial + 1])->save();
+
+                return $candidate;
+            }
+            $serial++;
+        }
+
+        throw new RuntimeException(
+            "Could not allocate a free registration number for {$token} in {$year} after ".self::MAX_SERIAL_PROBES.' attempts.',
+        );
     }
 
     private function createStudentRecord(User $user, Course $course, string $registrationNumber): Student

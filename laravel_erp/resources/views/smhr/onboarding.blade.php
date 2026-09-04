@@ -91,7 +91,7 @@
 
                 {{-- 5 Step Verification Checklist --}}
                 <div class="grid grid-cols-1 sm:grid-cols-5 gap-2 text-xs">
-                    @foreach($cand['checklist'] as $task => $done)
+                    @foreach(($cand['checklist'] ?? []) as $task => $done)
                         <div class="p-2.5 rounded-lg border @if($done) bg-emerald-50/60 border-emerald-200 text-emerald-950 @else bg-slate-50 border-slate-200 text-slate-600 @endif flex items-center gap-2">
                             <i data-lucide="{{ $done ? 'check-circle-2' : 'clock' }}" class="w-4 h-4 @if($done) text-emerald-600 @else text-slate-400 @endif shrink-0"></i>
                             <span class="font-medium text-[11px] leading-tight">{{ $task }}</span>

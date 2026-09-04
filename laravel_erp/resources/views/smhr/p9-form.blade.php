@@ -133,7 +133,7 @@
                 I/We certify that the summary above gives the true and complete particulars of the employee's emoluments and tax deducted under P.A.Y.E rules during the year <strong>{{ $year }}</strong> in accordance with Section 37 of the Income Tax Act (Cap. 470).
             </p>
             <div class="mt-4 flex justify-between items-center pt-2 border-t border-slate-200">
-                <span>Authorized Signatory: <strong>Faith Muthoni (Head of HR)</strong></span>
+                <span>Authorized Signatory: <strong>{{ auth()->user()?->name ?? 'Head of HR' }}</strong></span>
                 <span class="font-mono">Date: <strong>{{ date('d M Y') }}</strong></span>
             </div>
         </div>

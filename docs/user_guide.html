@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MEMA ERP — User Guide: Applicant-to-Student Lifecycle</title>
+<style>
+    @page {
+        size: A4 portrait;
+        margin: 18mm 14mm 18mm 14mm;
+        @top-left {
+            content: "MEMA ERP — Academic Lifecycle User Guide";
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 8pt;
+            color: #64748b;
+            font-weight: 600;
+        }
+        @top-right {
+            content: "Document ID: MEMA-UG-ADM-001";
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 8pt;
+            color: #64748b;
+        }
+        @bottom-left {
+            content: "Confidential • Enterprise Higher Education Platform";
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 7.5pt;
+            color: #94a3b8;
+        }
+        @bottom-right {
+            content: "Page " counter(page) " of " counter(pages);
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 8pt;
+            color: #0A3E50;
+            font-weight: 700;
+        }
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: #1e293b;
+        line-height: 1.5;
+        font-size: 9pt;
+    }
+
+    /* Cover / Header Banner */
+    .header-banner {
+        background: linear-gradient(135deg, #0A3E50 0%, #062632 100%);
+        color: #ffffff;
+        padding: 20px 24px;
+        border-radius: 8px;
+        margin-bottom: 18px;
+        border-left: 6px solid #1E8449;
+    }
+    .header-banner h1 {
+        margin: 0 0 4px 0;
+        font-size: 18pt;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        color: #ffffff;
+    }
+    .header-banner .subtitle {
+        font-size: 10pt;
+        color: #cbd5e1;
+        margin-bottom: 12px;
+        font-weight: 400;
+    }
+    .meta-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 7.5pt;
+    }
+    .meta-item strong {
+        color: #93c5fd;
+        display: block;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 1px;
+    }
+
+    h2 {
+        color: #0A3E50;
+        font-size: 12pt;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 3px;
+        margin-top: 16px;
+        margin-bottom: 8px;
+        page-break-after: avoid;
+    }
+    h3 {
+        color: #1E8449;
+        font-size: 10pt;
+        margin-top: 12px;
+        margin-bottom: 4px;
+        page-break-after: avoid;
+    }
+
+    p {
+        margin-top: 0;
+        margin-bottom: 6px;
+        text-align: justify;
+    }
+
+    ul, ol {
+        margin-top: 0;
+        margin-bottom: 8px;
+        padding-left: 16px;
+    }
+    li {
+        margin-bottom: 3px;
+    }
+
+    /* Tables */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10px 0;
+        font-size: 8pt;
+        page-break-inside: avoid;
+    }
+    th {
+        background-color: #0A3E50;
+        color: #ffffff;
+        text-align: left;
+        padding: 5px 8px;
+        font-weight: 600;
+        border: 1px solid #0A3E50;
+    }
+    td {
+        padding: 5px 8px;
+        border: 1px solid #cbd5e1;
+        vertical-align: top;
+    }
+    tr:nth-child(even) td {
+        background-color: #f8fafc;
+    }
+
+    /* Badges */
+    .badge {
+        display: inline-block;
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: 7pt;
+        font-weight: 700;
+        font-family: monospace;
+    }
+    .badge-primary { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .badge-success { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .badge-warning { background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .badge-danger  { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+
+    /* Callout Boxes */
+    .callout {
+        background-color: #f0fdf4;
+        border-left: 4px solid #1E8449;
+        padding: 8px 12px;
+        margin: 10px 0;
+        border-radius: 0 6px 6px 0;
+        page-break-inside: avoid;
+    }
+    .callout-title {
+        font-weight: bold;
+        color: #166534;
+        margin-bottom: 2px;
+        font-size: 8pt;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .callout-body {
+        font-size: 8pt;
+        color: #14532d;
+    }
+
+    .callout-info {
+        background-color: #f0f9ff;
+        border-left: 4px solid #0284c7;
+    }
+    .callout-info .callout-title { color: #0369a1; }
+    .callout-info .callout-body { color: #0c4a6e; }
+
+    /* Diagrams & Code */
+    .diagram-box {
+        background-color: #0f172a;
+        color: #f1f5f9;
+        padding: 10px 14px;
+        border-radius: 6px;
+        font-family: "SF Mono", Consolas, Monaco, monospace;
+        font-size: 7pt;
+        line-height: 1.3;
+        margin: 10px 0;
+        page-break-inside: avoid;
+    }
+
+    .step-header {
+        display: flex;
+        align-items: center;
+        margin-top: 12px;
+        margin-bottom: 4px;
+        page-break-after: avoid;
+    }
+    .step-number {
+        background: #0A3E50;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 8pt;
+        padding: 2px 6px;
+        border-radius: 3px;
+        margin-right: 6px;
+    }
+    .step-title {
+        font-size: 10pt;
+        font-weight: 700;
+        color: #0A3E50;
+    }
+
+    .page-break {
+        page-break-before: always;
+    }
+</style>
+</head>
+<body>
+
+<div class="header-banner">
+    <h1>MEMA ERP USER GUIDE</h1>
+    <div class="subtitle">Complete Operational Guide: Transforming an Applicant into an Enrolled Student in Class</div>
+    <div class="meta-grid">
+        <div class="meta-item">
+            <strong>Document ID</strong>
+            MEMA-UG-ADM-001
+        </div>
+        <div class="meta-item">
+            <strong>System Version</strong>
+            Enterprise v2.4.0
+        </div>
+        <div class="meta-item">
+            <strong>Database & Integrity</strong>
+            PostgreSQL • SHA-256 Ledger
+        </div>
+        <div class="meta-item">
+            <strong>Key Stakeholders</strong>
+            Admissions, Registrar, Finance, Faculty
+        </div>
+        <div class="meta-item">
+            <strong>Base Access URL</strong>
+            http://127.0.0.1:8000
+        </div>
+        <div class="meta-item">
+            <strong>Lifecycle Stages</strong>
+            9 End-to-End Milestones
+        </div>
+    </div>
+</div>
+
+<h2>1. Executive Summary & Core Architecture</h2>
+<p>
+    The <strong>MEMA ERP Academic Management Suite</strong> executes the applicant-to-student journey through a zero-data-loss, cryptographically verifiable funnel. Unlike legacy systems that duplicate records or drop context upon enrollment, MEMA ERP maintains single-identity continuity: the user who drafts the application retains their audit history, login credentials, and stakeholder permissions when elevated to an official student.
+</p>
+
+<div class="callout callout-info">
+    <div class="callout-title">Key Architectural Pillars</div>
+    <div class="callout-body">
+        <strong>1. Single Identity Continuity:</strong> An applicant account is directly promoted into a student account without creating duplicate login profiles.<br>
+        <strong>2. Cryptographic Tamper-Evidence:</strong> Every submission snapshot and offer acceptance is sealed with a SHA-256 evidence hash.<br>
+        <strong>3. Atomic Idempotent Conversion:</strong> Database row locks prevent dual student number allocations during concurrent registration surges.
+    </div>
+</div>
+
+<div class="diagram-box">
+┌─────────────────┐       ┌─────────────────┐       ┌──────────────────┐
+│   PROSPECTIVE   │       │   ADMISSIONS    │       │   DEPARTMENTAL   │
+│    APPLICANT    │──────▶│     TRIAGE      │──────▶│      REVIEW      │
+│  (Draft & Pay)  │       │ (Doc Verify)    │       │ (Scoring Rubric) │
+└─────────────────┘       └─────────────────┘       └──────────────────┘
+                                                              │
+                                                              ▼
+┌─────────────────┐       ┌─────────────────┐       ┌──────────────────┐
+│     STUDENT     │       │     OFFER &     │       │   SENATE/DEAN    │
+│   CONVERSION    │◀──────│   ACCEPTANCE    │◀──────│    APPROVALS     │
+│ (Reg. Number)   │       │ (Legal Evidence)│       │ (Formal Offer)   │
+└─────────────────┘       └─────────────────┘       └──────────────────┘
+        │
+        ▼
+┌─────────────────┐       ┌─────────────────┐       ┌──────────────────┐
+│ COHORT / STREAM │       │   COURSE UNIT   │       │    CLASSROOM     │
+│   ALLOCATION    │──────▶│  REGISTRATION   │──────▶│   LMS & TIMETABLE│
+│(Academic Session│       │(Academic Records│       │ (Attendance/Exam)│
+└─────────────────┘       └─────────────────┘       └──────────────────┘
+</div>
+
+<h2>2. Actor Roles & Operational Matrix</h2>
+<table>
+    <thead>
+        <tr>
+            <th style="width: 20%;">Role Key</th>
+            <th style="width: 32%;">Portal / Workspace URL</th>
+            <th style="width: 48%;">Key Responsibilities</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Applicant</strong></td>
+            <td><code>/admissions/my-application</code><br><code>/applicant/dashboard</code></td>
+            <td>Completes application biodata, uploads certificates, pays KES 1,000 application fee, signs offer letter.</td>
+        </tr>
+        <tr>
+            <td><strong>Admissions Officer</strong></td>
+            <td><code>/admissions/work-queues</code><br><code>/admissions/document-verification</code></td>
+            <td>Performs intake triage, checks documents for authenticity, requests corrections or marks verified.</td>
+        </tr>
+        <tr>
+            <td><strong>Department Reviewer</strong></td>
+            <td><code>/admissions/reviews</code><br><code>/admissions/shortlists</code></td>
+            <td>Evaluates KCSE/qualification clusters against rubric scoring criteria; shortlists or waitlists applicants.</td>
+        </tr>
+        <tr>
+            <td><strong>Dean / Registrar</strong></td>
+            <td><code>/admissions/approvals</code><br><code>/admissions/offers</code></td>
+            <td>Authorizes admission batches, signs off letters, sets acceptance deadlines, issues QR verification tokens.</td>
+        </tr>
+        <tr>
+            <td><strong>Finance Officer</strong></td>
+            <td><code>/fees/payment-receipt</code><br><code>/admissions/payments</code></td>
+            <td>Reconciles bank/MPESA transactions, confirms tuition fee clearance, applies scholarship waivers.</td>
+        </tr>
+        <tr>
+            <td><strong>Academic Registrar</strong></td>
+            <td><code>/admissions/student-conversions</code><br><code>/registration/student-registrations</code></td>
+            <td>Executes the student conversion pipeline, assigns registration numbers, maps cohorts and streams.</td>
+        </tr>
+        <tr>
+            <td><strong>Lecturer / Faculty</strong></td>
+            <td><code>/curriculum/instructor-mapping</code><br><code>/lms/live-lectures</code></td>
+            <td>Teaches assigned units, tracks lecture attendance, captures continuous assessment and examination marks.</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="page-break"></div>
+
+<h2>3. Step-by-Step Lifecycle Guide</h2>
+
+<div class="step-header">
+    <span class="step-number">STAGE 1</span>
+    <span class="step-title">Public Intake & Application Submission</span>
+</div>
+<p>
+    The prospective student accesses <code>/admissions/my-application</code>, creates an account, and selects an active intake (e.g. <em>September 2026 Intake</em>).
+</p>
+<ul>
+    <li><strong>Biodata & Academic History:</strong> Candidate completes primary, secondary (KCSE), and tertiary educational records.</li>
+    <li><strong>Document Uploads:</strong> National ID, KCSE result slips, passport photos, and leaving certificates are uploaded to <code>ApplicationDocument</code>.</li>
+    <li><strong>Application Fee Payment:</strong> KES 1,000 application fee is validated via MPESA / bank integration (<code>ApplicationPaymentAttempt</code>).</li>
+    <li><strong>Cryptographic Sealing:</strong> Upon submission, the system generates a SHA-256 hashed snapshot (<code>ApplicationVersion</code>), issues receipt <code>MC-REC-YYYY-XXXXX</code>, and transitions status: <span class="badge badge-primary">DRAFT</span> &rarr; <span class="badge badge-primary">SUBMITTED</span>.</li>
+</ul>
+
+<div class="step-header">
+    <span class="step-number">STAGE 2</span>
+    <span class="step-title">Admissions Office Triage & Document Verification</span>
+</div>
+<p>
+    Admissions clerks operate from the live work queues at <code>/admissions/document-verification</code>.
+</p>
+<ul>
+    <li><strong>Desk Locking:</strong> Clicking <em>Claim File</em> assigns the dossier to the officer, preventing dual-processing.</li>
+    <li><strong>Verification Checks:</strong> Officer cross-checks certificates against national databases and minimum course requirements.</li>
+    <li><strong>Correction Requests:</strong> If a document is defective, the officer triggers <code>RETURNED_FOR_CORRECTION</code> or <code>INFO_REQUESTED</code> with specific feedback.</li>
+    <li><strong>Advancement:</strong> Satisfactory applications are marked verified: <span class="badge badge-primary">SUBMITTED</span> &rarr; <span class="badge badge-success">VERIFIED</span>.</li>
+</ul>
+
+<div class="step-header">
+    <span class="step-number">STAGE 3</span>
+    <span class="step-title">Departmental Scoring, Review & Shortlisting</span>
+</div>
+<p>
+    Academic departments evaluate candidates at <code>/admissions/reviews</code> and <code>/admissions/shortlists</code>.
+</p>
+<ul>
+    <li><strong>Scoring Rubric:</strong> Evaluation based on Mean Grade (0–50 pts), Cluster Subjects (0–30 pts), and Affirmative Action/Talents (0–20 pts).</li>
+    <li><strong>Shortlisting:</strong> Applicants meeting cutoff points advance to <span class="badge badge-success">SHORTLISTED</span>.</li>
+    <li><strong>Waitlist Management:</strong> Qualified candidates exceeding current intake quotas are placed on <span class="badge badge-warning">WAITLISTED</span> with automatic queue promotion.</li>
+</ul>
+
+<div class="step-header">
+    <span class="step-number">STAGE 4</span>
+    <span class="step-title">Institutional Approvals & Offer Letter Issuance</span>
+</div>
+<p>
+    The Faculty Dean and Registrar review approval batches at <code>/admissions/approvals</code>.
+</p>
+<ul>
+    <li><strong>Formal Sign-Off:</strong> Batch approval transitions candidates to <span class="badge badge-success">ADMITTED</span>.</li>
+    <li><strong>Automated Offer Generation:</strong> System allocates unique Offer Number (e.g., <code>MC/ADM/202609/A8F19B20</code>) and generates a 48-character QR verification token.</li>
+    <li><strong>Admission Letter PDF:</strong> Generates official university admission package containing reporting dates, campus guidelines, and fee requirements.</li>
+</ul>
+
+<div class="step-header">
+    <span class="step-number">STAGE 5</span>
+    <span class="step-title">Offer Response, Acceptance & Legal Commitment</span>
+</div>
+<p>
+    The applicant logs into <code>/applicant/applications/{id}/offer</code> to review and accept their offer.
+</p>
+<ul>
+    <li><strong>Forensic Non-Repudiation:</strong> Acceptance captures legal proof: client IP address, browser User-Agent, UTC timestamp, and SHA-256 evidence hash.</li>
+    <li><strong>Status Progression:</strong> Automatic advancement: <span class="badge badge-success">ADMITTED</span> &rarr; <span class="badge badge-success">ACCEPTED</span> &rarr; <span class="badge badge-primary">READY_TO_ENROL</span>.</li>
+</ul>
+
+<div class="step-header">
+    <span class="step-number">STAGE 6</span>
+    <span class="step-title">Finance Clearance & Fee Reconciliation</span>
+</div>
+<p>
+    The Finance Office validates tuition payments at <code>/fees/pending-payments</code> and <code>/admissions/payments</code>.
+</p>
+<ul>
+    <li><strong>Semester Invoicing:</strong> Invoices for Year 1 Semester 1 tuition, caution fees, library levy, and student ID are generated.</li>
+    <li><strong>Payment Verification:</strong> Bank slips / Paybill transactions are matched and confirmed, granting financial clearance.</li>
+</ul>
+
+<div class="page-break"></div>
+
+<div class="step-header">
+    <span class="step-number">STAGE 7</span>
+    <span class="step-title">Student Conversion & Permanent Identity Materialization</span>
+</div>
+<p>
+    Executed via <code>/admissions/student-conversions</code> or action <code>/admissions/applications/{id}/convert</code> by the Registrar.
+</p>
+
+<div class="callout callout-info">
+    <div class="callout-title">Mechanics of StudentConversionService</div>
+    <div class="callout-body">
+        <code>StudentConversionService</code> performs an atomic database transaction:<br>
+        1. Obtains a pessimistic lock on the application and course records.<br>
+        2. Increments <code>courses.next_student_serial</code> non-atomically within the lock.<br>
+        3. Formats permanent Admission Number: <code>BCS/042/2026</code> (Course / Serial / Year).<br>
+        4. Inserts permanent row in <code>students</code> linked to <code>academic_sessions</code>.<br>
+        5. Upgrades <code>User.role = 'student'</code> and adds stakeholder permission.<br>
+        6. Updates application status to <span class="badge badge-success">ENROLLED</span>.
+    </div>
+</div>
+
+<div class="step-header">
+    <span class="step-number">STAGE 8</span>
+    <span class="step-title">Cohort Mapping, Stream Allocation & Unit Enrollment</span>
+</div>
+<p>
+    Academic Affairs links the student to classes and curriculum modules.
+</p>
+<ul>
+    <li><strong>Cohort Assignment:</strong> Student is linked to Cohort <code>2026/2027</code>, Stage <code>Year 1 Semester 1</code>, and Stream <code>A</code> (<code>/cohort/programme-cohort-mapping</code>).</li>
+    <li><strong>Course Unit Registration:</strong> Student is registered for standard curriculum units (e.g. <em>Introduction to Programming</em>, <em>Discrete Mathematics</em>, <em>Computer Architecture</em>) via <code>/registration/student-registrations</code>.</li>
+</ul>
+
+<div class="step-header">
+    <span class="step-number">STAGE 9</span>
+    <span class="step-title">Classroom Readiness, LMS Sync & Academic Attendance</span>
+</div>
+<p>
+    The student enters the active learning environment.
+</p>
+<ul>
+    <li><strong>LMS / Moodle Provisioning:</strong> Automated sync provisions course shells, syllabi, and assignment portals (<code>/lms/course-shells</code>).</li>
+    <li><strong>Timetable & Attendance:</strong> Classes appear on the student timetable. Lecturers capture live attendance (<code>AttendanceRecord</code>).</li>
+    <li><strong>Examinations & Progression:</strong> Student sits continuous assessments, semester exams (<code>/examination/exam-schedule</code>), and receives Senate-approved transcripts.</li>
+</ul>
+
+<h2>4. Exception Handling & Troubleshooting Directory</h2>
+<table>
+    <thead>
+        <tr>
+            <th style="width: 25%;">Condition / Issue</th>
+            <th style="width: 35%;">Root Cause</th>
+            <th style="width: 40%;">Resolution Procedure</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Application submission disabled</strong></td>
+            <td>Application fee unpaid or required documents missing.</td>
+            <td>Verify KES 1,000 transaction on <code>/admissions/payments</code>. Ensure all required upload fields are satisfied.</td>
+        </tr>
+        <tr>
+            <td><strong>Expired admission offer</strong></td>
+            <td>Candidate failed to accept before deadline.</td>
+            <td>Admissions Officer opens <code>/admissions/offers</code>, edits <code>expires_at</code> timestamp, and re-notifies applicant.</td>
+        </tr>
+        <tr>
+            <td><strong>Conversion FAILED in table</strong></td>
+            <td>Programme offering missing linked <code>course_id</code>.</td>
+            <td>Navigate to <code>/admissions/student-conversions</code>. Fix course association, then click <strong>Retry Conversion</strong>.</td>
+        </tr>
+        <tr>
+            <td><strong>Course units missing in portal</strong></td>
+            <td>Programme cohort mapping not published.</td>
+            <td>Navigate to <code>/cohort/programme-cohort-mapping</code> and assign active curriculum units to the cohort.</td>
+        </tr>
+        <tr>
+            <td><strong>LMS courses not accessible</strong></td>
+            <td>Moodle synchronization job queued.</td>
+            <td>Open <code>/registration/moodle-sync</code> and trigger manual sync to immediately push registered student shells.</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="callout" style="margin-top: 20px;">
+    <div class="callout-title">Enterprise Governance & Audit Assurance</div>
+    <div class="callout-body">
+        All state transitions, IP addresses, execution channels, and staff decisions are permanently recorded in the live PostgreSQL audit ledger. Access the real-time compliance dashboard at <code>/reports/audit-trail-user</code>.
+    </div>
+</div>
+
+</body>
+</html>

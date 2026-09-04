@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Models\AcademicProgramme;
 use App\Models\AdmissionApplication;
 use App\Models\ApplicantProfile;
 use App\Models\ApplicationPaymentAttempt;
@@ -12,11 +11,10 @@ use App\Models\BudgetProposal;
 use App\Models\Course;
 use App\Models\Staff;
 use App\Models\Student;
-use App\Models\User;
 use App\Services\DataExportService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -31,7 +29,7 @@ final class DashboardExportController extends Controller
         $dataset = $request->query('dataset', 'applications');
         $format = strtolower($request->query('format', 'csv'));
 
-        [$headers, $rows, $reportTitle, $summaryStats] = $this->fetchDataset($dataset);
+        [$headers, $rows, $reportTitle, $summaryStats] = $this->fetchDataset($dataset, $request);
 
         $dateSlug = now()->format('Ymd_His');
         $baseFilename = "mema_{$dataset}_{$dateSlug}";
@@ -62,10 +60,10 @@ final class DashboardExportController extends Controller
         );
     }
 
-    public function preview(Request $request): \Illuminate\Http\JsonResponse
+    public function preview(Request $request): JsonResponse
     {
         $dataset = $request->query('dataset', 'applications');
-        [$headers, $rows, $reportTitle, $summaryStats] = $this->fetchDataset($dataset);
+        [$headers, $rows, $reportTitle, $summaryStats] = $this->fetchDataset($dataset, $request);
 
         return response()->json([
             'dataset' => $dataset,
@@ -77,25 +75,25 @@ final class DashboardExportController extends Controller
         ]);
     }
 
-    private function fetchDataset(string $dataset): array
+    private function fetchDataset(string $dataset, ?Request $request = null): array
     {
         return match ($dataset) {
-            'admissions' => $this->admissionsData(),
-            'enrolments' => $this->enrolmentsData(),
-            'graduated' => $this->graduatedData(),
-            'programmes' => $this->programmesData(),
-            'financials' => $this->financialsData(),
-            'demographics' => $this->demographicsData(),
-            'staff' => $this->staffData(),
-            'executive_kpis' => $this->kpiData(),
-            'in_progress' => $this->inProgressData(),
-            'interested' => $this->interestedData(),
-            'reverify' => $this->reverifyData(),
-            'l2_rejected' => $this->l2RejectedData(),
-            'offer_rejected' => $this->offerRejectedData(),
-            'accepted' => $this->acceptedData(),
-            'initiated' => $this->initiatedData(),
-            default => $this->applicationsData(),
+            'admissions' => $this->admissionsData($request),
+            'enrolments' => $this->enrolmentsData($request),
+            'graduated' => $this->graduatedData($request),
+            'programmes' => $this->programmesData($request),
+            'financials' => $this->financialsData($request),
+            'demographics' => $this->demographicsData($request),
+            'staff' => $this->staffData($request),
+            'executive_kpis' => $this->kpiData($request),
+            'in_progress' => $this->inProgressData($request),
+            'interested' => $this->interestedData($request),
+            'reverify' => $this->reverifyData($request),
+            'l2_rejected' => $this->l2RejectedData($request),
+            'offer_rejected' => $this->offerRejectedData($request),
+            'accepted' => $this->acceptedData($request),
+            'initiated' => $this->initiatedData($request),
+            default => $this->applicationsData($request),
         };
     }
 
@@ -167,6 +165,7 @@ final class DashboardExportController extends Controller
 
         $rows = $applications->map(function ($app) {
             $user = $app->applicant?->user;
+
             return [
                 $app->application_number ?? 'ADM-'.$app->id,
                 $user?->name ?? 'N/A',
@@ -319,7 +318,7 @@ final class DashboardExportController extends Controller
                 $p->transaction_reference ?? 'TXN-'.$p->id,
                 $p->channel ?? 'M-Pesa Daraja 2.0',
                 $p->payer_phone ?? 'N/A',
-                number_format((float)$p->amount, 2),
+                number_format((float) $p->amount, 2),
                 $p->status ?? 'PAID',
                 $p->gateway_receipt ?? 'MP-'.$p->id,
                 $p->created_at?->format('d-M-Y H:i:s') ?? 'N/A',
@@ -363,6 +362,7 @@ final class DashboardExportController extends Controller
 
         $rows = $counties->map(function ($c) use ($totalProfiles) {
             $share = round(($c['total'] / $totalProfiles) * 100, 1);
+
             return [
                 $c['county'],
                 $c['total'],
@@ -434,9 +434,9 @@ final class DashboardExportController extends Controller
         $budget = (float) BudgetProposal::query()->sum('approved_amount');
 
         $rows = [
-            ['Student Enrolment', 'Total Admitted & Active Students', (string)$students, '5,000 Target', 'Optimal Growth'],
-            ['Admission Pipeline', 'Total Processed Applications', (string)$apps, '10,000 Annual Intake', 'On Track'],
-            ['Academic Faculty', 'Student to Faculty Ratio', '1 : '.($staff > 0 ? (int)ceil($students / $staff) : 0), '1 : 25 Standard', 'Compliant'],
+            ['Student Enrolment', 'Total Admitted & Active Students', (string) $students, '5,000 Target', 'Optimal Growth'],
+            ['Admission Pipeline', 'Total Processed Applications', (string) $apps, '10,000 Annual Intake', 'On Track'],
+            ['Academic Faculty', 'Student to Faculty Ratio', '1 : '.($staff > 0 ? (int) ceil($students / $staff) : 0), '1 : 25 Standard', 'Compliant'],
             ['Financial Health', 'Total Fees & Revenue Collected', 'KES '.number_format($paid, 2), 'KES 50,000,000 Budget', 'Healthy Cashflow'],
             ['Budgetary Governance', 'Total Approved Resource Allocations', 'KES '.number_format($budget, 2), 'KES 100,000,000 Ceiling', 'Disciplined'],
             ['Quality Assurance', 'CUE Regulatory Compliance Rate', '100%', '100% Mandatory', 'Fully Accredited'],

@@ -272,16 +272,16 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center text-xs mb-4">
                 <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
                     <div class="text-[10px] text-slate-500 font-bold uppercase">Prepared &amp; Verified By:</div>
-                    <div class="mt-2 font-black text-slate-800">Faith Muthoni</div>
-                    <div class="text-[10px] text-slate-500">Senior Payroll Officer &middot; HR</div>
+                    <div class="mt-2 font-black text-slate-800">{{ auth()->user()?->name ?? 'Payroll Officer' }}</div>
+                    <div class="text-[10px] text-slate-500">Payroll Section &middot; HR</div>
                     <div class="text-[9.5px] text-emerald-700 font-bold mt-1">&check; Verified on {{ $payslipData['pay_date'] }}</div>
                 </div>
 
                 <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
                     <div class="text-[10px] text-slate-500 font-bold uppercase">Authorised For Payment:</div>
-                    <div class="mt-2 font-black text-slate-800">Prof. Allan Wabwire</div>
-                    <div class="text-[10px] text-slate-500">Deputy Vice Chancellor &middot; Finance</div>
-                    <div class="text-[9.5px] text-emerald-700 font-bold mt-1">&check; Digital Senate Authorisation</div>
+                    <div class="mt-2 font-black text-slate-800">Finance Authorising Officer</div>
+                    <div class="text-[10px] text-slate-500">Office of the DVC Finance</div>
+                    <div class="text-[9.5px] text-emerald-700 font-bold mt-1">&check; Pending payroll run data</div>
                 </div>
 
                 <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex flex-col justify-center items-center">

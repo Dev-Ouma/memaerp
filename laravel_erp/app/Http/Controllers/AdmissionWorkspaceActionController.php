@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AuthorizesAdmissionAccess;
 use App\Models\Admission\ApprovalStep;
 use App\Models\Admission\PaymentReconciliation;
 use App\Models\Admission\PaymentReconciliationException;
@@ -12,6 +13,7 @@ use App\Models\AdmissionApplication;
 use App\Models\ApplicationPaymentAttempt;
 use App\Models\AuditLog;
 use App\Modules\Admission\Services\AdmissionPipeline;
+use App\Modules\Admission\Services\PaymentConfirmationService;
 use App\Modules\Admission\Workspaces\AdmissionRollWorkspace;
 use App\Modules\Admission\Workspaces\ApprovalWorkspace;
 use App\Services\AdmissionWorkflow;
@@ -20,6 +22,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * The write side of the admissions staff workspaces. Read queries live in
@@ -27,12 +30,14 @@ use Illuminate\Support\Facades\DB;
  */
 final class AdmissionWorkspaceActionController extends Controller
 {
+    use AuthorizesAdmissionAccess;
+
     public function __construct(private readonly AdmissionPipeline $pipeline) {}
 
     /** Work queues — sweep unassigned submissions onto reviewer desks. */
     public function autoAssign(Request $request): RedirectResponse
     {
-        $this->authorizeStaff($request);
+        $this->authorizeAdmission($request, 'admission.review.assign');
         $count = $this->pipeline->autoAssign($request->user()->id);
 
         return back()->with(
@@ -46,7 +51,7 @@ final class AdmissionWorkspaceActionController extends Controller
     /** Reviews — open departmental scoring for every verified application. */
     public function assignReviewers(Request $request): RedirectResponse
     {
-        $this->authorizeStaff($request);
+        $this->authorizeAdmission($request, 'admission.review.assign');
 
         $assigned = 0;
         AdmissionApplication::query()
@@ -72,7 +77,7 @@ final class AdmissionWorkspaceActionController extends Controller
     /** Shortlists — move one ranked applicant onto the approval ladder. */
     public function advanceShortlist(Request $request, AdmissionApplication $application, AdmissionWorkflow $workflow): RedirectResponse
     {
-        $this->authorizeStaff($request);
+        $this->authorizeAdmission($request, 'admission.shortlist.manage');
         $workflow->move($application, 'APPROVAL_PENDING', 'shortlist_advanced', 'Advanced from the merit shortlist.');
 
         return back()->with('success', "{$application->application_number} sent to the approval ladder.");
@@ -81,7 +86,7 @@ final class AdmissionWorkspaceActionController extends Controller
     /** Shortlists — submit the whole shortlist to the board in one action. */
     public function submitShortlistToBoard(Request $request, AdmissionWorkflow $workflow): RedirectResponse
     {
-        $this->authorizeStaff($request);
+        $this->authorizeAdmission($request, 'admission.shortlist.manage');
 
         $moved = 0;
         AdmissionApplication::query()
@@ -100,7 +105,6 @@ final class AdmissionWorkspaceActionController extends Controller
     /** Approvals — sign, or refuse, the next open rung of the ladder. */
     public function signOff(Request $request, AdmissionApplication $application): RedirectResponse
     {
-        $this->authorizeStaff($request);
         $data = $request->validate([
             'verdict' => ['required', 'in:APPROVED,REJECTED'],
             'comment' => ['nullable', 'string', 'max:500'],
@@ -116,6 +120,8 @@ final class AdmissionWorkspaceActionController extends Controller
             return back()->with('info', 'Every rung of this approval ladder has already been signed.');
         }
 
+        $this->authorizeApprovalStep($request, $step);
+
         $this->pipeline->actOnApproval($step, $data['verdict'], $request->user()->id, $data['comment'] ?? null);
 
         return back()->with('success', "{$step->role_code} verdict recorded for {$application->application_number}.");
@@ -124,7 +130,7 @@ final class AdmissionWorkspaceActionController extends Controller
     /** Approvals — admit everyone whose ladder is fully signed. */
     public function authorizeOffers(Request $request, AdmissionWorkflow $workflow): RedirectResponse
     {
-        $this->authorizeStaff($request);
+        $this->authorizeAdmission($request, 'admission.offer.issue', 'admission.decision.final');
 
         $ready = AdmissionApplication::query()
             ->where('status', 'APPROVAL_PENDING')
@@ -146,7 +152,7 @@ final class AdmissionWorkspaceActionController extends Controller
     /** Waitlists — promote one holder back onto the shortlist. */
     public function promoteWaitlisted(Request $request, AdmissionApplication $application, AdmissionWorkflow $workflow): RedirectResponse
     {
-        $this->authorizeStaff($request);
+        $this->authorizeAdmission($request, 'admission.shortlist.manage');
         $workflow->move($application, 'SHORTLISTED', 'waitlist_promoted', 'Promoted from the waitlist against a released place.');
 
         return back()->with('success', "{$application->application_number} promoted from the waitlist.");
@@ -159,7 +165,7 @@ final class AdmissionWorkspaceActionController extends Controller
      */
     public function autoPromoteWaitlist(Request $request, AdmissionWorkflow $workflow): RedirectResponse
     {
-        $this->authorizeStaff($request);
+        $this->authorizeAdmission($request, 'admission.shortlist.manage');
 
         $promoted = 0;
         $offerings = DB::table('programme_offerings')
@@ -191,7 +197,7 @@ final class AdmissionWorkspaceActionController extends Controller
     /** Admission rolls — the official register as a CSV staff can print or file. */
     public function exportRoll(Request $request, AdmissionRollWorkspace $workspace): Response
     {
-        $this->authorizeStaff($request);
+        $this->authorizeAdmission($request, 'admission.roll.manage', 'admission.application.export');
 
         $rows = $workspace->rows($request->only(['cohort', 'status', 'q']));
         $handle = fopen('php://temp', 'r+');
@@ -214,10 +220,55 @@ final class AdmissionWorkspaceActionController extends Controller
         ]);
     }
 
+    /**
+     * Payments — a Finance Officer settles an attempt the provider could not
+     * confirm automatically: a paybill, till, Pochi or bank transfer whose code
+     * the officer has matched against the institution's statement.
+     *
+     * This is deliberately a staff action with a named actor. Nothing an
+     * applicant can do reaches it.
+     */
+    public function confirmPayment(Request $request, ApplicationPaymentAttempt $attempt, PaymentConfirmationService $payments): RedirectResponse
+    {
+        $this->authorizeAdmission($request, 'admission.payment.record_manual');
+        $data = $request->validate([
+            'provider_reference' => ['required', 'string', 'max:60'],
+            'amount' => ['nullable', 'numeric', 'min:0'],
+            'note' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $attempt = $payments->confirm(
+            $attempt,
+            PaymentConfirmationService::SOURCE_FINANCE,
+            $request->user()->id,
+            $data['provider_reference'],
+            isset($data['amount']) ? (float) $data['amount'] : null,
+            ['note' => $data['note'] ?? null, 'verified_by' => $request->user()->name],
+        );
+
+        return back()->with('success', $attempt->status === 'PAID'
+            ? "Payment confirmed. Receipt {$attempt->receipt_number} issued."
+            : 'The amount did not match the expected fee, so the attempt is held for review.');
+    }
+
+    /** Payments — reject an attempt that cannot be matched to a real receipt. */
+    public function rejectPayment(Request $request, ApplicationPaymentAttempt $attempt, PaymentConfirmationService $payments): RedirectResponse
+    {
+        $this->authorizeAdmission($request, 'admission.payment.record_manual');
+        $data = $request->validate([
+            'reason_code' => ['required', 'string', 'max:80'],
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        $payments->fail($attempt, $data['reason_code'], $data['reason'], PaymentConfirmationService::SOURCE_FINANCE, $request->user()->id);
+
+        return back()->with('success', 'Payment attempt rejected and the applicant notified to try again.');
+    }
+
     /** Payments — an authorised fee waiver, recorded against the application. */
     public function waiveFee(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->role === 'admin', 403, 'Only an administrator may authorise a fee waiver.');
+        $this->authorizeAdmission($request, 'admission.payment.waive');
         $data = $request->validate([
             'application_number' => ['required', 'string', 'max:60'],
             'reason_code' => ['required', 'string', 'max:80'],
@@ -239,9 +290,35 @@ final class AdmissionWorkspaceActionController extends Controller
             'status' => 'ACTIVE',
         ]);
 
-        $application->forceFill(['payment_status' => 'WAIVED'])->save();
+        $attempt = ApplicationPaymentAttempt::create([
+            'admission_application_id' => $application->id,
+            'institution_id' => $application->institution_id ?? null,
+            'amount' => $application->fee_amount_expected ?? 1000,
+            'currency' => $application->fee_currency ?? 'KES',
+            'expected_amount' => $application->fee_amount_expected ?? 1000,
+            'status' => 'WAIVED',
+            'channel' => 'cashier',
+            'provider' => 'WAIVER',
+            'reference' => 'WAIVE-'.strtoupper(Str::random(10)),
+            'receipt_number' => 'MEMA-WAIVE-'.now()->format('Ymd').'-'.strtoupper(Str::random(4)),
+            'paid_at' => now(),
+            'idempotency_key' => (string) Str::uuid(),
+            'correlation_id' => (string) Str::uuid(),
+            'created_by' => $request->user()->id,
+            'provider_payload' => ['mode' => 'waiver', 'reason' => $data['reason_code']],
+        ]);
+
+        $application->forceFill([
+            'payment_status' => 'WAIVED',
+            'fee_amount_expected' => $attempt->amount,
+            'fee_currency' => $attempt->currency,
+        ])->save();
+
+        $this->pipeline->recordPayment($application->refresh(), $attempt, $request->user()->id);
+
         AuditLog::record('admission.fee_waived', $application, null, [
             'waiver_id' => $waiver->id,
+            'attempt_id' => $attempt->id,
             'amount' => $waiver->amount_waived,
             'reason' => $data['reason_code'],
         ]);
@@ -252,7 +329,7 @@ final class AdmissionWorkspaceActionController extends Controller
     /** Payments — the receipt behind one settled attempt. */
     public function receipt(Request $request, ApplicationPaymentAttempt $attempt): JsonResponse
     {
-        $this->authorizeStaff($request);
+        $this->authorizeAdmission($request, 'admission.payment.view');
         abort_unless(in_array($attempt->status, ['PAID', 'WAIVED'], true), 404, 'No receipt exists for an unsettled payment.');
 
         $receipt = DB::table('payment_receipts as r')
@@ -283,7 +360,7 @@ final class AdmissionWorkspaceActionController extends Controller
      */
     public function runReconciliation(Request $request): RedirectResponse
     {
-        $this->authorizeStaff($request);
+        $this->authorizeAdmission($request, 'admission.payment.reconcile');
 
         $periodStart = now()->startOfMonth();
         $periodEnd = now()->endOfMonth();
@@ -363,7 +440,7 @@ final class AdmissionWorkspaceActionController extends Controller
      */
     public function verifyAuditIntegrity(Request $request): RedirectResponse
     {
-        $this->authorizeStaff($request);
+        $this->authorizeAdmission($request, 'platform.audit.view');
 
         $triggers = DB::table('pg_trigger as t')
             ->join('pg_class as c', 'c.oid', '=', 't.tgrelid')
@@ -382,10 +459,5 @@ final class AdmissionWorkspaceActionController extends Controller
                 ? 'Append-only enforcement verified on audit_logs: '.$triggers->implode(', ').'.'
                 : 'Append-only triggers are missing from audit_logs. Escalate to the database administrator.',
         );
-    }
-
-    private function authorizeStaff(Request $request): void
-    {
-        abort_unless(in_array($request->user()->role, ['admin', 'staff'], true), 403);
     }
 }

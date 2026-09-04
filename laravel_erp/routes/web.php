@@ -11,6 +11,8 @@ use App\Http\Controllers\BudgetingController;
 use App\Http\Controllers\CohortController;
 use App\Http\Controllers\CurriculumController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DashboardExportController;
+use App\Http\Controllers\DocumentTemplateController;
 use App\Http\Controllers\ExaminationController;
 use App\Http\Controllers\FeesController;
 use App\Http\Controllers\GovernanceAdminController;
@@ -20,6 +22,7 @@ use App\Http\Controllers\ImprestController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\LmsController;
 use App\Http\Controllers\LoadBalancerController;
+use App\Http\Controllers\OperationalRecordController;
 use App\Http\Controllers\PgResearchActionController;
 use App\Http\Controllers\PgResearchController;
 use App\Http\Controllers\PublicAdmissionController;
@@ -33,6 +36,7 @@ use App\Http\Controllers\StudentTransferController;
 use App\Http\Controllers\SystemMaintenanceController;
 use App\Http\Controllers\TaskManagementController;
 use App\Http\Controllers\WorkStudyController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/docs/api/admission-openapi.yaml', static fn () => response()->file(
@@ -49,12 +53,14 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 });
-Route::get('/programmes/apply', [PublicAdmissionController::class, 'catalogue'])->name('admissions.catalogue');
-Route::get('/programmes/brochure', [PublicAdmissionController::class, 'brochure'])->name('admissions.brochure');
-Route::get('/programmes/flier', [PublicAdmissionController::class, 'brochure'])->name('admissions.flier');
-Route::get('/programmes', [PublicAdmissionController::class, 'catalogue']);
-Route::get('/programmes/{offering}', [PublicAdmissionController::class, 'apply']);
-Route::get('/apply', [PublicAdmissionController::class, 'catalogue']);
+Route::middleware('module:admissions')->group(function (): void {
+    Route::get('/programmes/apply', [PublicAdmissionController::class, 'catalogue'])->name('admissions.catalogue');
+    Route::get('/programmes/brochure', [PublicAdmissionController::class, 'brochure'])->name('admissions.brochure');
+    Route::get('/programmes/flier', [PublicAdmissionController::class, 'brochure'])->name('admissions.flier');
+    Route::get('/programmes', [PublicAdmissionController::class, 'catalogue']);
+    Route::get('/programmes/{offering}', [PublicAdmissionController::class, 'apply']);
+    Route::get('/apply', [PublicAdmissionController::class, 'catalogue']);
+});
 Route::get('/terms', [LegalController::class, 'terms'])->name('legal.terms');
 Route::get('/terms/export/pdf', [LegalController::class, 'terms'])->name('legal.terms.pdf');
 Route::get('/privacy', [LegalController::class, 'privacy'])->name('legal.privacy');
@@ -66,20 +72,29 @@ foreach (['verify-email' => 'Verify your email', 'accessibility' => 'Accessibili
     Route::view('/'.$path, 'admissions.info', compact('title'));
 }
 Route::get('/forgot-password', fn () => view('auth.forgot-password'))->name('password.request');
-Route::get('/reset-password/{token}', fn (string $token) => view('auth.reset-password', ['token' => $token]))->name('password.reset');
-Route::get('/apply/{offering}', [PublicAdmissionController::class, 'apply'])->name('admissions.apply');
-Route::post('/apply/{offering}', [PublicAdmissionController::class, 'register'])->middleware('throttle:10,1')->name('admissions.register');
-Route::get('/verify/admission/{token}', [PublicAdmissionController::class, 'verify'])->middleware('throttle:30,1')->name('admissions.verify');
+Route::get('/reset-password/{token}', fn (string $token, Request $request) => view('auth.reset-password', [
+    'token' => $token,
+    'email' => $request->query('email', ''),
+]))->name('password.reset');
+Route::middleware('module:admissions')->group(function (): void {
+    Route::get('/apply/{offering}', [PublicAdmissionController::class, 'apply'])->name('admissions.apply');
+    Route::post('/apply/{offering}', [PublicAdmissionController::class, 'register'])->middleware('throttle:10,1')->name('admissions.register');
+    Route::get('/verify/admission/{token}', [PublicAdmissionController::class, 'verify'])->middleware('throttle:30,1')->name('admissions.verify');
+});
 Route::middleware('auth')->group(function (): void {
     Route::get('/admin/setups', [AdminSetupController::class, 'platformIndex'])->name('admin.setups.index');
-    Route::get('/admissions/setups', [AdminSetupController::class, 'index'])->name('admissions.setups.index');
-    Route::get('/admissions/setups/{setup}', [AdminSetupController::class, 'show'])->name('admissions.setups.show');
-    Route::post('/admissions/setups/{setup}/versions', [AdminSetupController::class, 'store'])->name('admissions.setups.store');
-    Route::post('/admissions/setups/versions/{version}/publish', [AdminSetupController::class, 'publish'])->name('admissions.setups.publish');
-    Route::patch('/admissions/setups/versions/{version}/status', [AdminSetupController::class, 'status'])->name('admissions.setups.status');
+    Route::middleware('module:admissions')->group(function (): void {
+        Route::get('/admissions/setups', [AdminSetupController::class, 'index'])->name('admissions.setups.index');
+        Route::get('/admissions/setups/{setup}', [AdminSetupController::class, 'show'])->name('admissions.setups.show');
+        Route::post('/admissions/setups/{setup}/versions', [AdminSetupController::class, 'store'])->name('admissions.setups.store');
+        Route::post('/admissions/setups/versions/{version}/publish', [AdminSetupController::class, 'publish'])->name('admissions.setups.publish');
+        Route::patch('/admissions/setups/versions/{version}/status', [AdminSetupController::class, 'status'])->name('admissions.setups.status');
+    });
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
-    Route::get('/dashboard/export', [\App\Http\Controllers\DashboardExportController::class, 'export'])->name('dashboard.export');
-    Route::get('/dashboard/records-preview', [\App\Http\Controllers\DashboardExportController::class, 'preview'])->name('dashboard.records-preview');
+    Route::get('/dashboard/export', [DashboardExportController::class, 'export'])->name('dashboard.export');
+    Route::get('/dashboard/records-preview', [DashboardExportController::class, 'preview'])->name('dashboard.records-preview');
+    Route::post('/operational/{module}/{kind}', [OperationalRecordController::class, 'store'])->name('operational.records.store');
+    Route::patch('/operational/records/{record}/status', [OperationalRecordController::class, 'updateStatus'])->name('operational.records.status');
     Route::get('/account/{section}', [AccountController::class, 'show'])->name('account.show');
     Route::put('/account/preferences', [AccountController::class, 'preferences'])->name('account.preferences');
     Route::post('/account/switch-role', [AccountController::class, 'switchRole'])->name('account.switch-role');
@@ -127,64 +142,70 @@ Route::middleware('auth')->group(function (): void {
     // Support Actions
     Route::post('/account/support/ticket', [AccountController::class, 'submitSupportTicket'])->name('account.support.ticket');
 
-    Route::get('/admissions/my-application', [ApplicantAdmissionController::class, 'portal'])->name('admissions.portal');
-    foreach (['dashboard', 'profile', 'applications', 'applications/new', 'receipts', 'documents', 'settings', 'support'] as $path) {
-        Route::get('/applicant/'.$path, [ApplicantAdmissionController::class, 'portal']);
-    }
-    foreach (['payment', 'review', 'timeline', 'documents', 'messages', 'offer'] as $section) {
-        Route::get('/applicant/applications/{applicationId}/'.$section, [ApplicantAdmissionController::class, 'portal']);
-    }
-    Route::get('/applicant/applications/{applicationId}', [ApplicantAdmissionController::class, 'portal']);
-    Route::put('/admissions/applications/{application}', [ApplicantAdmissionController::class, 'update'])->name('admissions.application.update');
-    Route::post('/admissions/applications/{application}/documents', [ApplicantAdmissionController::class, 'upload'])->name('admissions.application.documents');
-    Route::post('/admissions/applications/{application}/payment', [ApplicantAdmissionController::class, 'payment'])->name('admissions.application.payment');
-    Route::post('/admissions/applications/{application}/submit', [ApplicantAdmissionController::class, 'submit'])->name('admissions.application.submit');
-    Route::post('/admissions/applications/{application}/offer-response', [ApplicantAdmissionController::class, 'respond'])->name('admissions.application.respond');
-    Route::post('/admissions/applications/{application}/enrol', [ApplicantAdmissionController::class, 'enrol'])->name('admissions.application.enrol');
-    Route::get('/admissions', [AdmissionAdminController::class, 'index'])->name('admissions.index');
-    Route::get('/admissions/analytics', [AdmissionAdminController::class, 'analytics'])->name('admissions.analytics');
-    Route::get('/admissions/reports', [AdmissionAdminController::class, 'reports'])->name('admissions.reports');
-    Route::get('/admissions/student-conversions', [AdmissionAdminController::class, 'conversions'])->name('admissions.conversions');
-    Route::post('/admissions/conversions/{conversion}/retry', [AdmissionAdminController::class, 'retryConversion'])->name('admissions.conversions.retry');
+    Route::middleware('module:admissions')->group(function (): void {
+        Route::get('/admissions/my-application', [ApplicantAdmissionController::class, 'portal'])->name('admissions.portal');
+        foreach (['dashboard', 'profile', 'applications', 'applications/new', 'receipts', 'documents', 'settings', 'support'] as $path) {
+            Route::get('/applicant/'.$path, [ApplicantAdmissionController::class, 'portal']);
+        }
+        foreach (['payment', 'review', 'timeline', 'documents', 'messages', 'offer'] as $section) {
+            Route::get('/applicant/applications/{applicationId}/'.$section, [ApplicantAdmissionController::class, 'portal']);
+        }
+        Route::get('/applicant/applications/{applicationId}', [ApplicantAdmissionController::class, 'portal']);
+        Route::put('/admissions/applications/{application}', [ApplicantAdmissionController::class, 'update'])->name('admissions.application.update');
+        Route::post('/admissions/applications/{application}/documents', [ApplicantAdmissionController::class, 'upload'])->name('admissions.application.documents');
+        Route::post('/admissions/applications/{application}/payment', [ApplicantAdmissionController::class, 'payment'])->name('admissions.application.payment');
+        Route::post('/admissions/applications/{application}/payment/{attempt}/transaction-code', [ApplicantAdmissionController::class, 'declarePayment'])->middleware('throttle:20,1')->name('admissions.application.payment.declare');
+        Route::post('/admissions/applications/{application}/submit', [ApplicantAdmissionController::class, 'submit'])->name('admissions.application.submit');
+        Route::post('/admissions/applications/{application}/offer-response', [ApplicantAdmissionController::class, 'respond'])->name('admissions.application.respond');
+        Route::post('/admissions/applications/{application}/enrol', [ApplicantAdmissionController::class, 'enrol'])->name('admissions.application.enrol');
+        Route::get('/admissions', [AdmissionAdminController::class, 'index'])->name('admissions.index');
+        Route::get('/admissions/analytics', [AdmissionAdminController::class, 'analytics'])->name('admissions.analytics');
+        Route::get('/admissions/reports', [AdmissionAdminController::class, 'reports'])->name('admissions.reports');
+        Route::get('/admissions/student-conversions', [AdmissionAdminController::class, 'conversions'])->name('admissions.conversions');
+        Route::post('/admissions/conversions/{conversion}/retry', [AdmissionAdminController::class, 'retryConversion'])->name('admissions.conversions.retry');
 
-    // Admissions Workspaces (End-to-End Lifecycle Operations)
-    Route::get('/admissions/dashboard', [AdmissionAdminController::class, 'dashboard'])->name('admissions.workspace.dashboard');
-    Route::get('/admissions/applications', [AdmissionAdminController::class, 'index'])->name('admissions.workspace.applications');
-    Route::get('/admissions/work-queues', [AdmissionAdminController::class, 'workQueues'])->name('admissions.workspace.work-queues');
-    Route::get('/admissions/document-verification', [AdmissionAdminController::class, 'documentVerification'])->name('admissions.workspace.document-verification');
-    Route::get('/admissions/reviews', [AdmissionAdminController::class, 'reviews'])->name('admissions.workspace.reviews');
-    Route::get('/admissions/shortlists', [AdmissionAdminController::class, 'shortlists'])->name('admissions.workspace.shortlists');
-    Route::get('/admissions/approvals', [AdmissionAdminController::class, 'approvals'])->name('admissions.workspace.approvals');
-    Route::get('/admissions/offers', [AdmissionAdminController::class, 'offers'])->name('admissions.workspace.offers');
-    Route::get('/admissions/waitlists', [AdmissionAdminController::class, 'waitlists'])->name('admissions.workspace.waitlists');
-    Route::get('/admissions/admission-rolls', [AdmissionAdminController::class, 'admissionRolls'])->name('admissions.workspace.admission-rolls');
-    Route::get('/admissions/payments', [AdmissionAdminController::class, 'payments'])->name('admissions.workspace.payments');
-    Route::get('/admissions/payment-reconciliation', [AdmissionAdminController::class, 'paymentReconciliation'])->name('admissions.workspace.payment-reconciliation');
-    Route::get('/admissions/audit', [AdmissionAdminController::class, 'audit'])->name('admissions.workspace.audit');
+        // Admissions Workspaces (End-to-End Lifecycle Operations)
+        Route::get('/admissions/dashboard', [AdmissionAdminController::class, 'dashboard'])->name('admissions.workspace.dashboard');
+        Route::get('/admissions/applications', [AdmissionAdminController::class, 'index'])->name('admissions.workspace.applications');
+        Route::get('/admissions/work-queues', [AdmissionAdminController::class, 'workQueues'])->name('admissions.workspace.work-queues');
+        Route::get('/admissions/document-verification', [AdmissionAdminController::class, 'documentVerification'])->name('admissions.workspace.document-verification');
+        Route::get('/admissions/reviews', [AdmissionAdminController::class, 'reviews'])->name('admissions.workspace.reviews');
+        Route::get('/admissions/shortlists', [AdmissionAdminController::class, 'shortlists'])->name('admissions.workspace.shortlists');
+        Route::get('/admissions/approvals', [AdmissionAdminController::class, 'approvals'])->name('admissions.workspace.approvals');
+        Route::get('/admissions/offers', [AdmissionAdminController::class, 'offers'])->name('admissions.workspace.offers');
+        Route::get('/admissions/waitlists', [AdmissionAdminController::class, 'waitlists'])->name('admissions.workspace.waitlists');
+        Route::get('/admissions/admission-rolls', [AdmissionAdminController::class, 'admissionRolls'])->name('admissions.workspace.admission-rolls');
+        Route::get('/admissions/payments', [AdmissionAdminController::class, 'payments'])->name('admissions.workspace.payments');
+        Route::get('/admissions/payment-reconciliation', [AdmissionAdminController::class, 'paymentReconciliation'])->name('admissions.workspace.payment-reconciliation');
+        Route::get('/admissions/audit', [AdmissionAdminController::class, 'audit'])->name('admissions.workspace.audit');
 
-    // Workspace actions — the write side of the screens above.
-    Route::post('/admissions/work-queues/auto-assign', [AdmissionWorkspaceActionController::class, 'autoAssign'])->name('admissions.work-queues.auto-assign');
-    Route::post('/admissions/reviews/assign', [AdmissionWorkspaceActionController::class, 'assignReviewers'])->name('admissions.reviews.assign');
-    Route::post('/admissions/shortlists/submit-to-board', [AdmissionWorkspaceActionController::class, 'submitShortlistToBoard'])->name('admissions.shortlists.submit');
-    Route::post('/admissions/shortlists/{application}/advance', [AdmissionWorkspaceActionController::class, 'advanceShortlist'])->name('admissions.shortlists.advance');
-    Route::post('/admissions/approvals/authorize', [AdmissionWorkspaceActionController::class, 'authorizeOffers'])->name('admissions.approvals.authorize');
-    Route::post('/admissions/approvals/{application}/sign-off', [AdmissionWorkspaceActionController::class, 'signOff'])->name('admissions.approvals.sign-off');
-    Route::post('/admissions/waitlists/auto-promote', [AdmissionWorkspaceActionController::class, 'autoPromoteWaitlist'])->name('admissions.waitlists.auto-promote');
-    Route::post('/admissions/waitlists/{application}/promote', [AdmissionWorkspaceActionController::class, 'promoteWaitlisted'])->name('admissions.waitlists.promote');
-    Route::get('/admissions/admission-rolls/export.csv', [AdmissionWorkspaceActionController::class, 'exportRoll'])->name('admissions.rolls.export');
-    Route::post('/admissions/payments/waiver', [AdmissionWorkspaceActionController::class, 'waiveFee'])->name('admissions.payments.waiver');
-    Route::get('/admissions/payments/{attempt}/receipt', [AdmissionWorkspaceActionController::class, 'receipt'])->name('admissions.payments.receipt');
-    Route::post('/admissions/payment-reconciliation/run', [AdmissionWorkspaceActionController::class, 'runReconciliation'])->name('admissions.reconciliation.run');
-    Route::post('/admissions/audit/verify-integrity', [AdmissionWorkspaceActionController::class, 'verifyAuditIntegrity'])->name('admissions.audit.verify');
+        // Workspace actions — the write side of the screens above.
+        Route::post('/admissions/work-queues/auto-assign', [AdmissionWorkspaceActionController::class, 'autoAssign'])->name('admissions.work-queues.auto-assign');
+        Route::post('/admissions/reviews/assign', [AdmissionWorkspaceActionController::class, 'assignReviewers'])->name('admissions.reviews.assign');
+        Route::post('/admissions/shortlists/submit-to-board', [AdmissionWorkspaceActionController::class, 'submitShortlistToBoard'])->name('admissions.shortlists.submit');
+        Route::post('/admissions/shortlists/{application}/advance', [AdmissionWorkspaceActionController::class, 'advanceShortlist'])->name('admissions.shortlists.advance');
+        Route::post('/admissions/approvals/authorize', [AdmissionWorkspaceActionController::class, 'authorizeOffers'])->name('admissions.approvals.authorize');
+        Route::post('/admissions/approvals/{application}/sign-off', [AdmissionWorkspaceActionController::class, 'signOff'])->name('admissions.approvals.sign-off');
+        Route::post('/admissions/waitlists/auto-promote', [AdmissionWorkspaceActionController::class, 'autoPromoteWaitlist'])->name('admissions.waitlists.auto-promote');
+        Route::post('/admissions/waitlists/{application}/promote', [AdmissionWorkspaceActionController::class, 'promoteWaitlisted'])->name('admissions.waitlists.promote');
+        Route::get('/admissions/admission-rolls/export.csv', [AdmissionWorkspaceActionController::class, 'exportRoll'])->name('admissions.rolls.export');
+        Route::post('/admissions/payments/waiver', [AdmissionWorkspaceActionController::class, 'waiveFee'])->name('admissions.payments.waiver');
+        Route::post('/admissions/payments/{attempt}/confirm', [AdmissionWorkspaceActionController::class, 'confirmPayment'])->name('admissions.payments.confirm');
+        Route::post('/admissions/payments/{attempt}/reject', [AdmissionWorkspaceActionController::class, 'rejectPayment'])->name('admissions.payments.reject');
+        Route::get('/admissions/payments/{attempt}/receipt', [AdmissionWorkspaceActionController::class, 'receipt'])->name('admissions.payments.receipt');
+        Route::post('/admissions/payment-reconciliation/run', [AdmissionWorkspaceActionController::class, 'runReconciliation'])->name('admissions.reconciliation.run');
+        Route::post('/admissions/audit/verify-integrity', [AdmissionWorkspaceActionController::class, 'verifyAuditIntegrity'])->name('admissions.audit.verify');
 
-    Route::get('/admissions/reports/applications.csv', [AdmissionAdminController::class, 'exportApplications'])->name('admissions.reports.applications');
-    Route::get('/admissions/{application}', [AdmissionAdminController::class, 'show'])->name('admissions.show');
-    Route::get('/admissions/applications/{application}/letter', [AdmissionAdminController::class, 'admissionLetter'])->name('admissions.application.letter');
-    Route::get('/admissions/documents/{document}/download', [AdmissionAdminController::class, 'downloadDocument'])->name('admissions.document.download');
-    Route::post('/admissions/documents/{document}/verify', [AdmissionAdminController::class, 'verifyDocument'])->name('admissions.document.verify');
-    Route::post('/admissions/{application}/reviews', [AdmissionAdminController::class, 'review'])->name('admissions.review');
-    Route::post('/admissions/{application}/transition', [AdmissionAdminController::class, 'transition'])->name('admissions.transition');
-    Route::post('/admissions/applications/{application}/convert', [AdmissionAdminController::class, 'convertToStudent'])->name('admissions.application.convert');
+        Route::get('/admissions/document-templates', [DocumentTemplateController::class, 'index'])->name('admissions.templates');
+        Route::get('/admissions/reports/applications.csv', [AdmissionAdminController::class, 'exportApplications'])->name('admissions.reports.applications');
+        Route::get('/admissions/{application}', [AdmissionAdminController::class, 'show'])->name('admissions.show');
+        Route::get('/admissions/applications/{application}/letter', [AdmissionAdminController::class, 'admissionLetter'])->name('admissions.application.letter');
+        Route::get('/admissions/documents/{document}/download', [AdmissionAdminController::class, 'downloadDocument'])->name('admissions.document.download');
+        Route::post('/admissions/documents/{document}/verify', [AdmissionAdminController::class, 'verifyDocument'])->name('admissions.document.verify');
+        Route::post('/admissions/{application}/reviews', [AdmissionAdminController::class, 'review'])->name('admissions.review');
+        Route::post('/admissions/{application}/transition', [AdmissionAdminController::class, 'transition'])->name('admissions.transition');
+        Route::post('/admissions/applications/{application}/convert', [AdmissionAdminController::class, 'convertToStudent'])->name('admissions.application.convert');
+    });
     Route::get('/students', [AcademicController::class, 'students'])->name('students.index');
     Route::post('/students', [AcademicController::class, 'storeStudent'])->middleware('can:admin')->name('students.store');
     Route::delete('/students/{student}', [AcademicController::class, 'destroyStudent'])->middleware('can:admin')->name('students.destroy');
@@ -220,9 +241,16 @@ Route::middleware('auth')->group(function (): void {
     Route::prefix('transfers')->middleware('module:transfers')->name('transfers.')->group(function (): void {
         Route::get('/', [StudentTransferController::class, 'datesSetup'])->name('index');
         Route::get('/dates-setup', [StudentTransferController::class, 'datesSetup'])->name('dates-setup');
+        Route::post('/dates-setup', [StudentTransferController::class, 'storeDate'])->name('dates.store');
         Route::get('/inter-intra', [StudentTransferController::class, 'interIntra'])->name('inter-intra');
+        Route::post('/inter-intra', [StudentTransferController::class, 'storeInterIntra'])->name('inter-intra.store');
+        Route::patch('/inter-intra/{transfer}/status', [StudentTransferController::class, 'updateInterIntraStatus'])->name('inter-intra.status');
         Route::get('/credit-transfers', [StudentTransferController::class, 'creditTransfers'])->name('credit-transfers');
+        Route::post('/credit-transfers', [StudentTransferController::class, 'storeCredit'])->name('credits.store');
+        Route::patch('/credit-transfers/{credit}/status', [StudentTransferController::class, 'updateCreditStatus'])->name('credits.status');
         Route::get('/exemptions', [StudentTransferController::class, 'exemptions'])->name('exemptions');
+        Route::post('/exemptions', [StudentTransferController::class, 'storeExemption'])->name('exemptions.store');
+        Route::patch('/exemptions/{exemption}/status', [StudentTransferController::class, 'updateExemptionStatus'])->name('exemptions.status');
     });
 
     // PG Research Management Module Routes (Start-to-End Lifecycle)
@@ -381,13 +409,21 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/application-approval', [RegistrationController::class, 'applicationApproval'])->name('application-approval');
         Route::get('/rejected-list', [RegistrationController::class, 'rejectedList'])->name('rejected-list');
         Route::get('/kuccps-registration', [RegistrationController::class, 'kuccpsRegistration'])->name('kuccps-registration');
+        Route::post('/kuccps-registration', [RegistrationController::class, 'storeKuccps'])->name('kuccps.store');
         Route::get('/student-registrations', [RegistrationController::class, 'studentRegistrations'])->name('student-registrations');
         Route::get('/course-registration-periods', [RegistrationController::class, 'courseRegistrationPeriods'])->name('course-registration-periods');
+        Route::post('/course-registration-periods', [RegistrationController::class, 'storePeriod'])->name('periods.store');
+        Route::post('/course-enrolments', [RegistrationController::class, 'storeEnrolment'])->name('enrolments.store');
         Route::get('/promotions', [RegistrationController::class, 'promotions'])->name('promotions');
+        Route::post('/promotions', [RegistrationController::class, 'storePromotion'])->name('promotions.store');
         Route::get('/professional-development-users', [RegistrationController::class, 'professionalDevelopmentUsers'])->name('professional-development-users');
+        Route::post('/professional-development-users', [RegistrationController::class, 'storeCpd'])->name('cpd.store');
         Route::get('/moodle-sync', [RegistrationController::class, 'moodleSync'])->name('moodle-sync');
+        Route::post('/moodle-sync', [RegistrationController::class, 'storeMoodle'])->name('moodle.store');
         Route::get('/student-info-update', [RegistrationController::class, 'studentInfoUpdate'])->name('student-info-update');
+        Route::post('/student-info-update', [RegistrationController::class, 'storeInfoUpdate'])->name('info-updates.store');
         Route::get('/reminders', [RegistrationController::class, 'reminders'])->name('reminders');
+        Route::post('/reminders', [RegistrationController::class, 'storeReminder'])->name('reminders.store');
         Route::get('/user-registration', [RegistrationController::class, 'userRegistration'])->name('user-registration');
         Route::get('/student-password', [RegistrationController::class, 'studentPassword'])->name('student-password');
         Route::get('/staff-password', [RegistrationController::class, 'staffPassword'])->name('staff-password');
@@ -440,10 +476,16 @@ Route::middleware('auth')->group(function (): void {
     Route::prefix('fees')->middleware('module:fees')->name('fees.')->group(function (): void {
         Route::get('/', [FeesController::class, 'paymentAccounts'])->name('index');
         Route::get('/payment-accounts', [FeesController::class, 'paymentAccounts'])->name('payment-accounts');
+        Route::post('/payment-accounts', [FeesController::class, 'storeAccount'])->name('accounts.store');
         Route::get('/payment-types', [FeesController::class, 'paymentTypes'])->name('payment-types');
+        Route::post('/payment-types', [FeesController::class, 'storeType'])->name('types.store');
         Route::get('/payment-source', [FeesController::class, 'paymentSource'])->name('payment-source');
+        Route::post('/payment-source', [FeesController::class, 'storeSource'])->name('sources.store');
         Route::get('/fee-setup', [FeesController::class, 'feeSetup'])->name('fee-setup');
+        Route::post('/fee-setup', [FeesController::class, 'storeStructure'])->name('structures.store');
         Route::get('/fee-payables', [FeesController::class, 'feePayables'])->name('fee-payables');
+        Route::post('/fee-payments', [FeesController::class, 'storePayment'])->name('payments.store');
+        Route::post('/fee-payments/{payment}/confirm', [FeesController::class, 'confirmPayment'])->name('payments.confirm');
         Route::get('/pending-payments', [FeesController::class, 'pendingPayments'])->name('pending-payments');
         Route::get('/payment-receipt', [FeesController::class, 'paymentReceipt'])->name('payment-receipt');
     });
@@ -452,23 +494,44 @@ Route::middleware('auth')->group(function (): void {
     Route::prefix('graduation')->middleware('module:graduation')->name('graduation.')->group(function (): void {
         Route::get('/', [GraduationController::class, 'criteria'])->name('index');
         Route::get('/criteria', [GraduationController::class, 'criteria'])->name('criteria');
+        Route::post('/criteria', [GraduationController::class, 'storeCriteria'])->name('criteria.store');
         Route::get('/clearance-checklist', [GraduationController::class, 'clearanceChecklist'])->name('clearance-checklist');
+        Route::post('/clearance-checklist', [GraduationController::class, 'storeClearanceChecklist'])->name('clearance-checklist.store');
         Route::get('/finance-clearance', [GraduationController::class, 'financeClearance'])->name('finance-clearance');
+        Route::post('/finance-clearance', [GraduationController::class, 'storeFinanceClearance'])->name('finance-clearance.store');
         Route::get('/grade-list', [GraduationController::class, 'gradeList'])->name('grade-list');
+        Route::post('/grade-list', [GraduationController::class, 'storeGradeList'])->name('grade-list.store');
         Route::get('/generate-list', [GraduationController::class, 'generateList'])->name('generate-list');
+        Route::post('/generate-list', [GraduationController::class, 'storeGenerateList'])->name('generate-list.store');
         Route::get('/validate-list', [GraduationController::class, 'validateList'])->name('validate-list');
+        Route::post('/validate-list', [GraduationController::class, 'storeValidateList'])->name('validate-list.store');
         Route::get('/publish-list', [GraduationController::class, 'publishList'])->name('publish-list');
+        Route::post('/publish-list', [GraduationController::class, 'storePublishList'])->name('publish-list.store');
         Route::get('/list-report', [GraduationController::class, 'listReport'])->name('list-report');
+        Route::post('/list-report', [GraduationController::class, 'storeListReport'])->name('list-report.store');
         Route::get('/summary-list', [GraduationController::class, 'summaryList'])->name('summary-list');
+        Route::post('/summary-list', [GraduationController::class, 'storeSummaryList'])->name('summary-list.store');
         Route::get('/certification-setup', [GraduationController::class, 'certificationSetup'])->name('certification-setup');
+        Route::post('/certification-setup', [GraduationController::class, 'storeCertificationSetup'])->name('certification-setup.store');
         Route::get('/alumni-list', [GraduationController::class, 'alumniList'])->name('alumni-list');
+        Route::post('/alumni-list', [GraduationController::class, 'storeAlumniList'])->name('alumni-list.store');
         Route::get('/ceremony', [GraduationController::class, 'ceremony'])->name('ceremony');
+        Route::post('/ceremony', [GraduationController::class, 'storeCeremony'])->name('ceremony.store');
         Route::get('/ceremony-report', [GraduationController::class, 'ceremonyReport'])->name('ceremony-report');
+        Route::post('/ceremony-report', [GraduationController::class, 'storeCeremonyReport'])->name('ceremony-report.store');
     });
 
-    // Task Management Module Routes (Start-to-End Operational Lifecycle)
+    // User Management & Task Management Module Routes (Start-to-End Operational Lifecycle)
+    Route::redirect('/user-management', '/task-management');
+    Route::redirect('/users', '/task-management');
     Route::prefix('task-management')->middleware('module:task-management')->name('task-management.')->group(function (): void {
-        Route::get('/', [TaskManagementController::class, 'roles'])->name('index');
+        Route::get('/', [TaskManagementController::class, 'landing'])->name('index');
+        Route::get('/college-users', [TaskManagementController::class, 'collegeUsers'])->name('users');
+        Route::post('/college-users', [TaskManagementController::class, 'storeUser'])->middleware('can:admin')->name('users.store');
+        Route::patch('/college-users/{user}', [TaskManagementController::class, 'updateUser'])->middleware('can:admin')->name('users.update');
+        Route::post('/college-users/{user}/toggle-status', [TaskManagementController::class, 'toggleStatus'])->middleware('can:admin')->name('users.toggle-status');
+        Route::post('/college-users/assign-role', [TaskManagementController::class, 'assignRole'])->middleware('can:admin')->name('users.assign-role');
+        Route::delete('/college-users/role-assignment/{assignment}', [TaskManagementController::class, 'revokeRoleAssignment'])->middleware('can:admin')->name('users.revoke-role');
         Route::get('/roles', [TaskManagementController::class, 'roles'])->name('roles');
         Route::post('/roles', [TaskManagementController::class, 'storeRole'])->middleware('can:admin')->name('roles.store');
         Route::get('/task-roles', [TaskManagementController::class, 'taskRoles'])->name('task-roles');
@@ -562,12 +625,18 @@ Route::middleware('auth')->group(function (): void {
 
     // Admin Setups Submodules Routes
     Route::prefix('admin-setups')->name('admin.setups.')->group(function (): void {
+        Route::get('/document-templates', [DocumentTemplateController::class, 'index'])->name('document-templates');
+        Route::get('/document-templates/{templateKey}/preview', [DocumentTemplateController::class, 'preview'])->name('document-templates.preview');
+        Route::get('/document-templates/{templateKey}/pdf', [DocumentTemplateController::class, 'pdf'])->name('document-templates.pdf');
         Route::get('/accounting', [AdminSetupController::class, 'accounting'])->name('accounting');
         Route::get('/bank', [AdminSetupController::class, 'bank'])->name('bank');
         Route::get('/invoicing', [AdminSetupController::class, 'invoicing'])->name('invoicing');
         Route::get('/payment', [AdminSetupController::class, 'payment'])->name('payment');
         Route::get('/module-manager', [AdminSetupController::class, 'moduleManager'])->name('module-manager');
         Route::patch('/module-manager/toggle', [AdminSetupController::class, 'toggleModule'])->name('module-manager.toggle');
+        Route::post('/module-manager/enable-all', [AdminSetupController::class, 'enableAllModules'])->name('module-manager.enable-all');
+        Route::match(['GET', 'POST'], '/module-manager/integrity', [AdminSetupController::class, 'verifyModuleIntegrity'])->name('module-manager.integrity');
+        Route::match(['GET', 'POST'], '/module-manager/audit-integrity', [AdminSetupController::class, 'verifyModuleIntegrity'])->name('module-manager.audit-integrity');
         Route::prefix('access')->middleware('can:platform.role.manage')->name('access.')->group(function (): void {
             Route::get('/', [RoleAssignmentController::class, 'index'])->name('index');
             Route::post('/assignments', [RoleAssignmentController::class, 'store'])->name('assignments.store');
@@ -580,7 +649,6 @@ Route::middleware('auth')->group(function (): void {
             Route::patch('/legal-holds/{hold}/release', [GovernanceAdminController::class, 'releaseHold'])->middleware('can:platform.retention.execute')->name('holds.release');
             Route::get('/audit', [GovernanceAdminController::class, 'audit'])->middleware('can:platform.audit.view')->name('audit');
         });
-
         // Recycle Bin & Data Recovery Routes
         Route::prefix('recycle-bin')->name('recycle-bin.')->group(function (): void {
             Route::get('/', [RecycleBinController::class, 'index'])->middleware('can:platform.audit.view')->name('index');
@@ -596,27 +664,52 @@ Route::middleware('auth')->group(function (): void {
             Route::get('/', [SystemMaintenanceController::class, 'index'])->name('index');
             Route::post('/lockdown', [SystemMaintenanceController::class, 'toggleLockdown'])->name('lockdown.update');
             Route::post('/clear-cache', [SystemMaintenanceController::class, 'clearCache'])->name('cache.clear');
+            Route::post('/cache/purge', [SystemMaintenanceController::class, 'purgeCaches'])->name('cache.purge');
+            Route::post('/cache/rebuild', [SystemMaintenanceController::class, 'rebuildCaches'])->name('cache.rebuild');
             Route::post('/optimize', [SystemMaintenanceController::class, 'runOptimization'])->name('optimize');
             Route::post('/backup', [SystemMaintenanceController::class, 'triggerBackup'])->name('backup.create');
             Route::get('/backup/{backup}/download', [SystemMaintenanceController::class, 'downloadBackup'])->name('backup.download');
+            Route::post('/backup/{backup}/restore', [SystemMaintenanceController::class, 'restoreBackup'])->name('backup.restore');
+            Route::post('/upgrade', [SystemMaintenanceController::class, 'applyUpgrade'])->name('upgrade');
+            Route::post('/upgrade/apply', [SystemMaintenanceController::class, 'applyUpgrade'])->name('upgrade.apply');
             Route::post('/version/{version}/rollback', [SystemMaintenanceController::class, 'triggerRollback'])->name('version.rollback');
             Route::post('/broadcast', [SystemMaintenanceController::class, 'sendBroadcast'])->name('broadcast');
+            Route::post('/cron', [SystemMaintenanceController::class, 'runCron'])->name('cron');
+            Route::post('/cron/run', [SystemMaintenanceController::class, 'runCron'])->name('cron.run');
+            Route::post('/codebase', [SystemMaintenanceController::class, 'syncCodebase'])->name('codebase.sync');
+            Route::post('/cloud-mirror', [SystemMaintenanceController::class, 'cloudMirror'])->name('cloud-mirror');
         });
 
         // Load Balancer & Queuing Strategy Routes
-        Route::prefix('load-balancer')->name('load-balancer')->group(function (): void {
-            Route::get('/', [LoadBalancerController::class, 'index']);
-            Route::post('/strategy', [LoadBalancerController::class, 'updateStrategy'])->name('.strategy');
-            Route::post('/config', [LoadBalancerController::class, 'updateConfig'])->name('.config');
-            Route::post('/nodes', [LoadBalancerController::class, 'storeNode'])->name('.store-node');
-            Route::post('/nodes/{id}/toggle', [LoadBalancerController::class, 'toggleNode'])->name('.toggle-node');
-            Route::delete('/nodes/{id}', [LoadBalancerController::class, 'destroyNode'])->name('.destroy-node');
-            Route::post('/simulate', [LoadBalancerController::class, 'simulate'])->name('.simulate');
-            Route::post('/health-check', [LoadBalancerController::class, 'healthCheck'])->name('.health-check');
+        Route::get('/load-balancer', [LoadBalancerController::class, 'index'])->name('load-balancer');
+        Route::prefix('load-balancer')->name('load-balancer.')->group(function (): void {
+            Route::post('/strategy', [LoadBalancerController::class, 'updateStrategy'])->name('strategy');
+            Route::post('/config', [LoadBalancerController::class, 'updateConfig'])->name('config');
+            Route::post('/nodes', [LoadBalancerController::class, 'storeNode'])->name('store-node');
+            Route::post('/nodes/{id}/toggle', [LoadBalancerController::class, 'toggleNode'])->name('toggle-node');
+            Route::delete('/nodes/{id}', [LoadBalancerController::class, 'destroyNode'])->name('destroy-node');
+            Route::post('/simulate', [LoadBalancerController::class, 'simulate'])->name('simulate');
+            Route::post('/health-check', [LoadBalancerController::class, 'healthCheck'])->name('health-check');
+            Route::post('/nodes/{node}/toggle', [LoadBalancerController::class, 'toggleNode'])->name('nodes.toggle');
+            Route::post('/nodes/{node}/drain', [LoadBalancerController::class, 'drainNode'])->name('nodes.drain');
+            Route::post('/queues/pause', [LoadBalancerController::class, 'pauseQueues'])->name('queues.pause');
+            Route::post('/queues/resume', [LoadBalancerController::class, 'resumeQueues'])->name('queues.resume');
+            Route::post('/queues/flush-failed', [LoadBalancerController::class, 'flushFailed'])->name('queues.flush-failed');
+            Route::post('/queues/retry-failed', [LoadBalancerController::class, 'retryFailed'])->name('queues.retry-failed');
+            Route::post('/restart-workers', [LoadBalancerController::class, 'restartWorkers'])->name('restart-workers');
         });
     });
 
-    Route::get('/recycle-bin', [RecycleBinController::class, 'index'])->middleware('can:platform.audit.view')->name('recycle-bin');
+    // Standalone Recycle Bin & Data Recovery Module Routes
+    Route::prefix('recycle-bin')->middleware('can:platform.audit.view')->group(function (): void {
+        Route::get('/', [RecycleBinController::class, 'index'])->name('recycle-bin');
+        Route::get('/all', [RecycleBinController::class, 'index'])->name('recycle-bin.index');
+        Route::post('/restore/{deletion}', [RecycleBinController::class, 'restore'])->middleware('can:platform.retention.execute')->name('recycle-bin.restore');
+        Route::post('/purge/{deletion}/request', [RecycleBinController::class, 'requestPurge'])->middleware('can:platform.retention.execute')->name('recycle-bin.purge.request');
+        Route::post('/purge-requests/{action}/approve', [RecycleBinController::class, 'approvePurge'])->middleware('can:platform.retention.execute')->name('recycle-bin.purge.approve');
+        Route::delete('/empty', [RecycleBinController::class, 'emptyBin'])->middleware('can:platform.retention.execute')->name('recycle-bin.empty');
+        Route::post('/restore-all', [RecycleBinController::class, 'restoreAll'])->middleware('can:platform.retention.execute')->name('recycle-bin.restore-all');
+    });
 
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
     Route::post('/impersonate/stop', [ImpersonationController::class, 'stop'])->name('impersonate.stop');

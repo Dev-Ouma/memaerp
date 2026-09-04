@@ -110,9 +110,10 @@ final class AdmissionWorkspaceTest extends TestCase
 
     public function test_shortlist_advance_opens_the_ladder_and_two_signoffs_admit(): void
     {
-        $staff = $this->staff();
+        $officer = $this->admissionOfficer('admissions_officer');
+        $registrar = $this->admissionOfficer('registrar');
         $application = $this->submitted('Esther', 'Muthoni');
-        $this->actingAs($staff);
+        $this->actingAs($officer);
         $workflow = app(AdmissionWorkflow::class);
         $workflow->move($application, 'UNDER_REVIEW', 'triage');
         $workflow->move($application->refresh(), 'VERIFIED', 'documents_verified');
@@ -122,12 +123,16 @@ final class AdmissionWorkspaceTest extends TestCase
         $this->assertSame('APPROVAL_PENDING', $application->refresh()->status);
         $this->assertSame(2, ApprovalStep::query()->where('admission_application_id', $application->id)->count());
 
-        $this->post(route('admissions.approvals.sign-off', $application), ['verdict' => 'APPROVED']);
-        $this->post(route('admissions.approvals.sign-off', $application), ['verdict' => 'APPROVED']);
+        $this->actingAs($registrar)
+            ->post(route('admissions.approvals.sign-off', $application), ['verdict' => 'APPROVED'])
+            ->assertRedirect();
+        $this->actingAs($registrar)
+            ->post(route('admissions.approvals.sign-off', $application), ['verdict' => 'APPROVED'])
+            ->assertRedirect();
         $this->assertSame(2, ApprovalStep::query()
             ->where('admission_application_id', $application->id)->where('status', 'APPROVED')->count());
 
-        $this->post(route('admissions.approvals.authorize'))->assertRedirect();
+        $this->actingAs($registrar)->post(route('admissions.approvals.authorize'))->assertRedirect();
         $this->assertSame('ADMITTED', $application->refresh()->status);
         $this->assertDatabaseHas('admission_offers', ['admission_application_id' => $application->id]);
         $this->assertDatabaseHas('decisions', ['admission_application_id' => $application->id, 'decision_type' => 'FINAL']);
@@ -169,7 +174,7 @@ final class AdmissionWorkspaceTest extends TestCase
             'paid_at' => now(),
         ]);
 
-        $this->actingAs($this->staff())
+        $this->actingAs($this->admissionOfficer('finance_officer'))
             ->post(route('admissions.reconciliation.run'))
             ->assertRedirect();
 
@@ -185,7 +190,11 @@ final class AdmissionWorkspaceTest extends TestCase
 
     public function test_audit_integrity_check_confirms_the_append_only_triggers(): void
     {
-        $this->actingAs($this->staff())
+        $this->seedRbac();
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $this->grantRole($admin, 'system_administrator');
+
+        $this->actingAs($admin)
             ->post(route('admissions.audit.verify'))
             ->assertRedirect()
             ->assertSessionHas('success');
@@ -213,7 +222,7 @@ final class AdmissionWorkspaceTest extends TestCase
             ->assertDontSee($other->application_number);
     }
 
-    public function test_only_an_administrator_may_authorise_a_fee_waiver(): void
+    public function test_only_finance_may_authorise_a_fee_waiver(): void
     {
         [, $application] = $this->applicant('Joyce', 'Kamau');
         $payload = [
@@ -224,7 +233,7 @@ final class AdmissionWorkspaceTest extends TestCase
 
         $this->actingAs($this->staff())->post(route('admissions.payments.waiver'), $payload)->assertForbidden();
 
-        $this->actingAs(User::factory()->create(['role' => 'admin', 'is_active' => true]))
+        $this->actingAs($this->admissionOfficer('finance_officer'))
             ->post(route('admissions.payments.waiver'), $payload)
             ->assertRedirect();
 
@@ -238,7 +247,7 @@ final class AdmissionWorkspaceTest extends TestCase
 
     private function staff(): User
     {
-        return User::factory()->create(['role' => 'staff', 'is_active' => true]);
+        return $this->admissionOfficer('admissions_officer');
     }
 
     /** A paid, complete application carried through submission by the workflow. */

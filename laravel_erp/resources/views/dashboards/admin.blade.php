@@ -17,28 +17,165 @@
 <div class="ouk-dashboard-container font-quicksand">
     <div class="sr-only">College-wide operations, people and academic performance.</div>
     
-    {{-- TOP ACTION BAR WITH EXPORT & AUDIT STATUS --}}
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 bg-white p-4 rounded-xl border border-slate-200/90 shadow-2xs">
-        <div>
-            <div class="flex items-center gap-2">
-                <h1 class="text-base font-bold text-slate-900 tracking-tight">Institutional Intelligence & Operations Scorecard</h1>
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Live PostgreSQL Data
-                </span>
+    {{-- TOP FILTER CONTROLS BAR (END-TO-END CONNECTED) --}}
+    @php
+        $f = $filters ?? [
+            'academic_year' => request('academic_year', ''),
+            'semester' => request('semester', ''),
+            'cohort' => request('cohort', ''),
+            'programme' => request('programme', ''),
+            'level' => request('level', ''),
+            'options' => [
+                'academic_years' => ['2026/2027', '2025/2026', '2024/2025', '2023/2024'],
+                'semesters' => ['Semester 1', 'Semester 2', 'Trimester 1', 'Trimester 2', 'Trimester 3'],
+                'cohorts' => ['2026/2027 - September Intake', '2026/2027 - January Intake', '2026/2027 - May Intake'],
+                'programmes' => \App\Models\Course::query()->orderBy('name')->get(['id', 'code', 'name']),
+                'levels' => ['Undergraduate' => 'Undergraduate (Degree)', 'Postgraduate' => 'Postgraduate (Masters / PhD)', 'Diploma' => 'Diploma Programmes', 'Certificate' => 'Certificate Courses', 'Short Course' => 'Executive & Short Courses'],
+            ],
+            'active' => array_filter(request()->only(['academic_year', 'semester', 'cohort', 'programme', 'level'])),
+            'active_count' => count(array_filter(request()->only(['academic_year', 'semester', 'cohort', 'programme', 'level']))),
+            'has_active' => count(array_filter(request()->only(['academic_year', 'semester', 'cohort', 'programme', 'level']))) > 0,
+        ];
+    @endphp
+
+    <div class="mb-6 bg-white p-4 sm:p-5 rounded-xl border border-slate-200/90 shadow-2xs">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 mb-3.5 pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2.5 flex-wrap">
+                <div class="w-8 h-8 rounded-lg bg-[#0A3E50]/10 flex items-center justify-center text-[#0A3E50]">
+                    <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold text-slate-900 tracking-tight">Institutional Operations & Telemetry Filters</span>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Live PostgreSQL Data
+                        </span>
+                        @if($f['has_active'])
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200">
+                                <i data-lucide="filter" class="w-3 h-3 text-amber-600"></i> {{ $f['active_count'] }} Active {{ \Illuminate\Support\Str::plural('Filter', $f['active_count']) }}
+                            </span>
+                        @endif
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Filter real-time student admissions lifecycle, enrolment registers, and institutional performance metrics.</p>
+                </div>
             </div>
-            <p class="text-xs text-slate-500 mt-0.5">Real-time metrics, student admissions lifecycle, financial governance, and academic telemetry.</p>
-        </div>
-        <div class="flex items-center gap-2 flex-wrap">
-            {{-- Quick Export Dropdown --}}
-            <div class="relative inline-block text-left" id="exportDropdownContainer">
-                <button type="button" onclick="openDashboardExportModal()" class="px-3.5 py-1.5 rounded-lg bg-[#0A3E50] hover:bg-[#072c39] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
+            <div class="flex items-center gap-2 flex-wrap self-end lg:self-auto">
+                <button type="button" onclick="openDashboardExportModal()" class="px-3 py-1.5 rounded-lg bg-[#0A3E50] hover:bg-[#072c39] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
                     <i data-lucide="download" class="w-3.5 h-3.5 text-[#E67E22]"></i> Export Report / Data
                 </button>
+                <a href="{{ route('admissions.reports') }}" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-300/80 flex items-center gap-1.5">
+                    <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> Detailed Reports
+                </a>
             </div>
-            <a href="{{ route('admissions.reports') }}" class="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-300/80 flex items-center gap-1.5">
-                <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> Detailed Reports
-            </a>
         </div>
+
+        {{-- Interactive Filter Form --}}
+        <form method="GET" action="{{ route('dashboard') }}" id="dashboardFilterForm" class="space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5">
+                {{-- 1. Academic Year --}}
+                <div>
+                    <label for="filter_academic_year" class="block text-[11px] font-bold text-slate-600 mb-1 flex items-center gap-1">
+                        <i data-lucide="calendar" class="w-3 h-3 text-[#0A3E50]"></i> Academic Year
+                    </label>
+                    <select name="academic_year" id="filter_academic_year" onchange="this.form.submit()" class="w-full text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:bg-white focus:border-[#0A3E50] focus:ring-1 focus:ring-[#0A3E50] transition-all">
+                        <option value="">All Academic Years</option>
+                        @foreach($f['options']['academic_years'] as $yr)
+                            <option value="{{ $yr }}" {{ $f['academic_year'] === (string)$yr ? 'selected' : '' }}>{{ $yr }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- 2. Semester / Term --}}
+                <div>
+                    <label for="filter_semester" class="block text-[11px] font-bold text-slate-600 mb-1 flex items-center gap-1">
+                        <i data-lucide="clock" class="w-3 h-3 text-[#0A3E50]"></i> Semester / Term
+                    </label>
+                    <select name="semester" id="filter_semester" onchange="this.form.submit()" class="w-full text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:bg-white focus:border-[#0A3E50] focus:ring-1 focus:ring-[#0A3E50] transition-all">
+                        <option value="">All Semesters</option>
+                        @foreach($f['options']['semesters'] as $sem)
+                            <option value="{{ $sem }}" {{ $f['semester'] === (string)$sem ? 'selected' : '' }}>{{ $sem }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- 3. Cohort / Intake --}}
+                <div>
+                    <label for="filter_cohort" class="block text-[11px] font-bold text-slate-600 mb-1 flex items-center gap-1">
+                        <i data-lucide="layers" class="w-3 h-3 text-[#0A3E50]"></i> Cohort / Intake
+                    </label>
+                    <select name="cohort" id="filter_cohort" onchange="this.form.submit()" class="w-full text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:bg-white focus:border-[#0A3E50] focus:ring-1 focus:ring-[#0A3E50] transition-all">
+                        <option value="">All Cohorts</option>
+                        @foreach($f['options']['cohorts'] as $coh)
+                            <option value="{{ $coh }}" {{ $f['cohort'] === (string)$coh ? 'selected' : '' }}>{{ $coh }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- 4. Programme / Course --}}
+                <div>
+                    <label for="filter_programme" class="block text-[11px] font-bold text-slate-600 mb-1 flex items-center gap-1">
+                        <i data-lucide="graduation-cap" class="w-3 h-3 text-[#0A3E50]"></i> Programme
+                    </label>
+                    <select name="programme" id="filter_programme" onchange="this.form.submit()" class="w-full text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:bg-white focus:border-[#0A3E50] focus:ring-1 focus:ring-[#0A3E50] transition-all">
+                        <option value="">All Programmes</option>
+                        @foreach($f['options']['programmes'] as $prog)
+                            @php
+                                $val = is_object($prog) ? ($prog->code ?? $prog->id) : (string)$prog;
+                                $label = is_object($prog) ? ($prog->code ? "{$prog->name} ({$prog->code})" : $prog->name) : (string)$prog;
+                            @endphp
+                            <option value="{{ $val }}" {{ $f['programme'] === (string)$val ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- 5. Level --}}
+                <div>
+                    <label for="filter_level" class="block text-[11px] font-bold text-slate-600 mb-1 flex items-center gap-1">
+                        <i data-lucide="award" class="w-3 h-3 text-[#0A3E50]"></i> Study Level
+                    </label>
+                    <select name="level" id="filter_level" onchange="this.form.submit()" class="w-full text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:bg-white focus:border-[#0A3E50] focus:ring-1 focus:ring-[#0A3E50] transition-all">
+                        <option value="">All Levels</option>
+                        @foreach($f['options']['levels'] as $lvlKey => $lvlLabel)
+                            <option value="{{ $lvlKey }}" {{ strtolower($f['level']) === strtolower((string)$lvlKey) ? 'selected' : '' }}>{{ $lvlLabel }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            {{-- Filter Actions & Active Filter Badges --}}
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <div class="flex items-center gap-1.5 flex-wrap text-xs">
+                    @if($f['has_active'])
+                        <span class="text-[11px] font-bold text-slate-500 mr-1">Active:</span>
+                        @foreach($f['active'] as $key => $val)
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold text-[#0A3E50] bg-[#0A3E50]/8 border border-[#0A3E50]/20">
+                                <span class="capitalize text-slate-600">{{ str_replace('_', ' ', $key) }}:</span>
+                                <strong>{{ $val }}</strong>
+                                <a href="{{ route('dashboard', request()->except($key)) }}" class="text-slate-400 hover:text-rose-600 ml-0.5" title="Remove filter">
+                                    <i data-lucide="x" class="w-3 h-3"></i>
+                                </a>
+                            </span>
+                        @endforeach
+                        <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors ml-1">
+                            <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Clear All Filters
+                        </a>
+                    @else
+                        <span class="text-[11px] text-slate-400 italic">Showing institutional-wide metrics across all programmes, cohorts, and academic years.</span>
+                    @endif
+                </div>
+
+                <div class="flex items-center gap-2">
+                    @if($f['has_active'])
+                        <a href="{{ route('dashboard') }}" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-300 flex items-center gap-1">
+                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset
+                        </a>
+                    @endif
+                    <button type="submit" class="px-3.5 py-1.5 rounded-lg bg-[#0A3E50] hover:bg-[#072c39] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
+                        <i data-lucide="filter" class="w-3.5 h-3.5 text-[#E67E22]"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
 
     {{-- SECTION 1: APPLICATION OVERVIEW (KPI CARDS) --}}

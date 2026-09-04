@@ -86,68 +86,127 @@
         </div>
     </div>
 
-    {{-- Trashed Items Table --}}
+    {{-- Trashed Items Table with Forensic Audit Logging --}}
     <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs" id="recycle-table">
                 <thead>
                     <tr class="bg-[#0A3E50] text-white">
-                        <th class="py-3 px-4 font-bold tracking-wider text-white border-r border-white/15 uppercase text-[11px]" style="color:#ffffff !important; background-color:#0A3E50 !important;">Entity Suite</th>
-                        <th class="py-3 px-4 font-bold tracking-wider text-white border-r border-white/15 uppercase text-[11px]" style="color:#ffffff !important; background-color:#0A3E50 !important;">Record Title & Code</th>
-                        <th class="py-3 px-4 font-bold tracking-wider text-white border-r border-white/15 uppercase text-[11px]" style="color:#ffffff !important; background-color:#0A3E50 !important;">Deleted At</th>
-                        <th class="py-3 px-4 font-bold tracking-wider text-white border-r border-white/15 uppercase text-[11px]" style="color:#ffffff !important; background-color:#0A3E50 !important;">Auto-Purge SLA</th>
-                        <th class="py-3 px-4 font-bold tracking-wider text-white text-center w-36 uppercase text-[11px]" style="color:#ffffff !important; background-color:#0A3E50 !important;">Actions</th>
+                        <th class="py-3 px-3 font-bold tracking-wider text-white border-r border-white/15 uppercase text-[10.5px]" style="color:#ffffff !important; background-color:#0A3E50 !important;">Entity Suite</th>
+                        <th class="py-3 px-3 font-bold tracking-wider text-white border-r border-white/15 uppercase text-[10.5px]" style="color:#ffffff !important; background-color:#0A3E50 !important;">Record Title & Code</th>
+                        <th class="py-3 px-3 font-bold tracking-wider text-white border-r border-white/15 uppercase text-[10.5px]" style="color:#ffffff !important; background-color:#0A3E50 !important;">Deleted By (Actor)</th>
+                        <th class="py-3 px-3 font-bold tracking-wider text-white border-r border-white/15 uppercase text-[10.5px]" style="color:#ffffff !important; background-color:#0A3E50 !important;">Channel & Origin IP</th>
+                        <th class="py-3 px-3 font-bold tracking-wider text-white border-r border-white/15 uppercase text-[10.5px]" style="color:#ffffff !important; background-color:#0A3E50 !important;">Action & Reason</th>
+                        <th class="py-3 px-3 font-bold tracking-wider text-white border-r border-white/15 uppercase text-[10.5px]" style="color:#ffffff !important; background-color:#0A3E50 !important;">Timestamp & SLA</th>
+                        <th class="py-3 px-3 font-bold tracking-wider text-white text-center w-36 uppercase text-[10.5px]" style="color:#ffffff !important; background-color:#0A3E50 !important;">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white" id="recycle-tbody">
                     @forelse($items as $item)
-                        <tr class="hover:bg-slate-50/70 transition-colors recycle-row" data-search="{{ strtolower($item['title'].' '.$item['code'].' '.$item['type_label']) }}">
+                        <tr class="hover:bg-slate-50/70 transition-colors recycle-row" data-search="{{ strtolower($item['title'].' '.$item['code'].' '.$item['type_label'].' '.$item['actor_name'].' '.$item['ip_address'].' '.$item['channel'].' '.$item['reason']) }}">
                             
                             {{-- Entity Suite Badge --}}
-                            <td class="py-3.5 px-4">
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border {{ $item['type_badge'] }}">
-                                    <i data-lucide="{{ $item['type_icon'] }}" class="w-3.5 h-3.5"></i>
+                            <td class="py-3 px-3 align-top">
+                                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-bold border {{ $item['type_badge'] }}">
+                                    <i data-lucide="{{ $item['type_icon'] }}" class="w-3 h-3"></i>
                                     <span>{{ $item['type_label'] }}</span>
                                 </span>
                             </td>
 
                             {{-- Title & Code --}}
-                            <td class="py-3.5 px-4">
+                            <td class="py-3 px-3 align-top">
                                 <div class="font-bold text-xs" style="color: #0f172a !important;">{{ $item['title'] }}</div>
-                                <div class="font-mono text-[10.5px] mt-0.5" style="color: #475569 !important;">Code: <strong style="color: #0f172a !important;">{{ $item['code'] }}</strong></div>
+                                <div class="font-mono text-[10px] mt-0.5 text-slate-500">ID: <strong class="text-slate-800">{{ $item['code'] }}</strong></div>
                             </td>
 
-                            {{-- Deleted At --}}
-                            <td class="py-3.5 px-4 font-mono text-[11px]" style="color: #334155 !important;">
-                                {{ $item['deleted_at'] }}
+                            {{-- Deleted By (Actor & Role) --}}
+                            <td class="py-3 px-3 align-top">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="w-5 h-5 rounded-full bg-[#0A3E50] text-white flex items-center justify-center font-bold text-[9px] shrink-0">
+                                        {{ strtoupper(substr($item['actor_name'], 0, 1)) }}
+                                    </span>
+                                    <div>
+                                        <div class="font-bold text-slate-900 text-xs" style="color: #0f172a !important;">{{ $item['actor_name'] }}</div>
+                                        <div class="flex items-center gap-1 mt-0.5">
+                                            <span class="inline-block px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 text-[9.5px] font-semibold border border-slate-200 uppercase">
+                                                {{ $item['deleted_by_role'] }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
                             </td>
 
-                            {{-- SLA Countdown --}}
-                            <td class="py-3.5 px-4">
-                                <span class="inline-block px-2.5 py-0.5 rounded text-[10.5px] font-bold {{ $item['days_left'] <= 7 ? 'bg-rose-100 text-rose-900 border border-rose-200' : 'bg-slate-100 text-slate-800 border border-slate-200' }}" style="{{ $item['days_left'] <= 7 ? 'color:#881337 !important; background:#ffe4e6 !important;' : 'color:#1e293b !important; background:#f1f5f9 !important;' }}">
-                                    {{ $item['days_left'] }} days remaining
-                                </span>
+                            {{-- Channel & Origin IP --}}
+                            <td class="py-3 px-3 align-top">
+                                <div class="flex flex-col gap-1">
+                                    {{-- Channel Pill --}}
+                                    <div>
+                                        @if(strtoupper($item['channel']) === 'CLI')
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-100 text-purple-900 border border-purple-200 text-[10px] font-bold">
+                                                <i data-lucide="terminal" class="w-2.8 h-2.8"></i> CLI Command
+                                            </span>
+                                        @elseif(strtoupper($item['channel']) === 'API')
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 text-[10px] font-bold">
+                                                <i data-lucide="code" class="w-2.8 h-2.8"></i> REST API
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-200 text-[10px] font-bold">
+                                                <i data-lucide="globe" class="w-2.8 h-2.8"></i> Web Portal
+                                            </span>
+                                        @endif
+                                    </div>
+                                    {{-- Origin IP --}}
+                                    <div class="font-mono text-[10.5px] text-slate-700 flex items-center gap-1" title="User Agent: {{ $item['user_agent'] }}">
+                                        <i data-lucide="network" class="w-3 h-3 text-slate-400"></i>
+                                        <strong>{{ $item['ip_address'] }}</strong>
+                                    </div>
+                                </div>
+                            </td>
+
+                            {{-- Action & Reason --}}
+                            <td class="py-3 px-3 align-top">
+                                <div>
+                                    <span class="inline-block px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 text-[9.5px] font-bold border border-amber-200">
+                                        {{ $item['action_type'] }}
+                                    </span>
+                                    <p class="text-[11px] text-slate-600 mt-1 italic line-clamp-2 max-w-xs" title="{{ $item['reason'] }}">
+                                        "{{ $item['reason'] }}"
+                                    </p>
+                                </div>
+                            </td>
+
+                            {{-- Timestamp & SLA --}}
+                            <td class="py-3 px-3 align-top">
+                                <div class="font-mono text-[10.5px] text-slate-700">
+                                    {{ $item['deleted_at'] }}
+                                </div>
+                                <div class="mt-1">
+                                    <span class="inline-block px-2 py-0.5 rounded text-[9.5px] font-bold {{ $item['days_left'] <= 7 ? 'bg-rose-100 text-rose-900 border border-rose-200' : 'bg-slate-100 text-slate-800 border border-slate-200' }}">
+                                        {{ $item['days_left'] }}d SLA remaining
+                                    </span>
+                                </div>
                             </td>
 
                             {{-- Action Buttons --}}
-                            <td class="py-3.5 px-4 text-center">
+                            <td class="py-3 px-3 text-center align-middle">
                                 <div class="flex items-center justify-center gap-1.5">
                                     
-                                    {{-- Restore Button --}}
-                                    <form method="POST" action="{{ route('admin.setups.recycle-bin.restore', ['deletion' => $item['id']]) }}" data-processing-message="Restoring item…">
-                                        @csrf
-                                        <button type="submit" class="px-2.5 py-1 rounded border border-emerald-500 font-semibold text-xs transition-colors flex items-center gap-1 shadow-2xs hover:bg-emerald-50" style="color: #065f46 !important; background: #ffffff !important;" title="Restore item">
-                                            <i data-lucide="rotate-ccw" class="w-3 h-3" style="color: #065f46 !important;"></i> Restore
-                                        </button>
-                                    </form>
+                                    {{-- Restore Button with Confirmation Prompt --}}
+                                    <button type="button" 
+                                            onclick="confirmRestore('{{ $item['id'] }}', '{{ addslashes($item['title']) }}', '{{ addslashes($item['type_label']) }} (#{{ $item['code'] }})')"
+                                            class="px-2.5 py-1 rounded border border-emerald-500 font-semibold text-xs transition-colors flex items-center gap-1 shadow-2xs hover:bg-emerald-50" 
+                                            style="color: #065f46 !important; background: #ffffff !important;" 
+                                            title="Restore item">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3" style="color: #065f46 !important;"></i> Restore
+                                    </button>
 
-                                    {{-- Inspect Snapshot Modal Button --}}
+                                    {{-- Inspect Snapshot & Forensics Button --}}
                                     <button type="button" 
                                             onclick='inspectSnapshot(@json($item))' 
                                             class="p-1 rounded border border-slate-200 hover:bg-slate-50 transition-colors"
                                             style="color: #334155 !important; background: #ffffff !important;"
-                                            title="View Snapshot">
-                                        <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                            title="Inspect Audit Forensics & Snapshot">
+                                        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-[#0A3E50]"></i>
                                     </button>
 
                                     {{-- Permanent Purge Button --}}
@@ -165,11 +224,11 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="py-12 text-center text-slate-400">
+                            <td colspan="7" class="py-12 text-center text-slate-400">
                                 <div class="flex flex-col items-center justify-center gap-2">
                                     <i data-lucide="check-circle" class="w-8 h-8 text-emerald-500/60"></i>
                                     <div class="font-bold text-sm" style="color: #334155 !important;">Recycle Bin is Empty</div>
-                                    <p class="text-xs max-w-sm" style="color: #64748b !important;">No soft-deleted records found. When academic schools, departments, courses or cohorts are deleted, they will appear here for safe recovery.</p>
+                                    <p class="text-xs max-w-sm" style="color: #64748b !important;">No soft-deleted records found. When academic schools, departments, courses or cohorts are deleted, they will appear here with full deletion forensics.</p>
                                 </div>
                             </td>
                         </tr>
@@ -186,30 +245,87 @@
 
 </div>
 
-{{-- MODAL 1: INSPECT SNAPSHOT --}}
+{{-- MODAL 0: RESTORE CONFIRMATION --}}
+<div class="modal" id="restore-modal" role="dialog" aria-modal="true">
+    <div class="modal-card" style="width:min(480px, 94vw);">
+        <div class="panel-head" style="background:#0A3E50;color:#fff;padding:14px 20px;border-radius:10px 10px 0 0;">
+            <div class="flex items-center gap-2">
+                <i data-lucide="rotate-ccw" class="w-5 h-5 text-emerald-400"></i>
+                <div>
+                    <h2 class="text-sm font-bold text-white" style="color:#ffffff !important;">Confirm Record Restoration</h2>
+                    <small style="color:rgba(255,255,255,0.85);">Restore soft-deleted entity back to active status.</small>
+                </div>
+            </div>
+            <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
+        </div>
+        <form class="panel-body p-5" id="restore-form" method="POST" action="" data-processing-message="Restoring record securely…">
+            @csrf
+            <div class="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl mb-4 text-xs">
+                <div class="text-emerald-900 text-[10.5px] font-bold uppercase tracking-wider">Target Item for Restoration</div>
+                <div class="font-bold text-slate-900 text-sm mt-1" id="restore-record-title"></div>
+                <div class="font-mono text-slate-600 text-[11px] mt-0.5" id="restore-record-code"></div>
+            </div>
+            <p class="text-xs text-slate-700 leading-relaxed mb-4">
+                Are you sure you want to restore this record? It will be reinstated with all its original configuration, academic relations, and operational attributes.
+            </p>
+            <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button type="button" class="btn btn-secondary text-xs" data-modal-close>Cancel</button>
+                <button type="submit" class="btn text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shadow-2xs">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Yes, Restore Record
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- MODAL 1: INSPECT FORENSICS & SNAPSHOT --}}
 <div class="modal" id="snapshot-modal" role="dialog" aria-modal="true">
-    <div class="modal-card" style="width:min(620px, 94vw);">
+    <div class="modal-card" style="width:min(680px, 94vw);">
         <div class="panel-head" style="background:#0A3E50;color:#fff;padding:14px 20px;border-radius:10px 10px 0 0;">
             <div>
-                <h2 class="text-sm font-bold text-white" id="snapshot-modal-title" style="color:#ffffff !important;">Record Snapshot</h2>
-                <small style="color:rgba(255,255,255,0.85);" id="snapshot-modal-sub">Historical data state at time of deletion.</small>
+                <h2 class="text-sm font-bold text-white" id="snapshot-modal-title" style="color:#ffffff !important;">Deletion Forensic Dossier</h2>
+                <small style="color:rgba(255,255,255,0.85);" id="snapshot-modal-sub">Forensic metadata and historical record snapshot.</small>
             </div>
             <button class="btn btn-secondary" type="button" data-modal-close style="background:transparent;border:none;color:#fff;"><i data-lucide="x"></i></button>
         </div>
         <div class="panel-body p-5">
-            <div class="space-y-3">
-                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-                    <div class="text-slate-500 text-[11px] font-semibold uppercase">Entity Information</div>
-                    <div class="font-bold text-slate-900 text-sm mt-0.5" id="snapshot-entity-name" style="color: #0f172a !important;"></div>
-                    <div class="font-mono text-slate-600 mt-0.5" id="snapshot-entity-code"></div>
+            <div class="space-y-4">
+                
+                {{-- Forensic Audit Grid --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {{-- Actor Card --}}
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                        <div class="text-slate-500 text-[10.5px] font-bold uppercase tracking-wider">Deletion Actor & Role</div>
+                        <div class="font-bold text-slate-900 text-sm mt-1" id="forensic-actor-name"></div>
+                        <div class="text-slate-600 text-[11px] mt-0.5" id="forensic-actor-email"></div>
+                        <div class="inline-block px-1.5 py-0.5 rounded bg-slate-200 text-slate-800 text-[10px] font-mono font-bold mt-1.5" id="forensic-actor-role"></div>
+                    </div>
+
+                    {{-- Network & Channel Card --}}
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                        <div class="text-slate-500 text-[10.5px] font-bold uppercase tracking-wider">Network & Execution Channel</div>
+                        <div class="font-mono text-purple-900 font-bold text-sm mt-1" id="forensic-ip"></div>
+                        <div class="text-slate-600 text-[11px] mt-0.5" id="forensic-channel"></div>
+                        <div class="text-slate-500 text-[10px] truncate mt-1" id="forensic-agent"></div>
+                    </div>
                 </div>
+
+                {{-- Action Context & Reason --}}
+                <div class="p-3 bg-amber-50/70 rounded-xl border border-amber-200 text-xs">
+                    <div class="text-amber-900 text-[10.5px] font-bold uppercase tracking-wider">Action Type & Justification</div>
+                    <div class="font-bold text-slate-900 text-xs mt-1" id="forensic-action"></div>
+                    <p class="text-slate-700 italic text-[11px] mt-1" id="forensic-reason"></p>
+                    <div class="font-mono text-[10.5px] text-slate-500 mt-1" id="forensic-location"></div>
+                </div>
+
+                {{-- JSON Payload Snapshot --}}
                 <div>
-                    <label class="text-xs font-bold text-slate-700 block mb-1">Payload JSON Attributes</label>
-                    <pre class="bg-slate-900 text-slate-100 p-3.5 rounded-xl text-[11px] font-mono overflow-x-auto max-h-64" id="snapshot-json-display"></pre>
+                    <label class="text-xs font-bold text-slate-700 block mb-1">Payload JSON Attributes at Deletion</label>
+                    <pre class="bg-slate-900 text-slate-100 p-3.5 rounded-xl text-[11px] font-mono overflow-x-auto max-h-56" id="snapshot-json-display"></pre>
                 </div>
             </div>
             <div class="flex justify-end gap-2 mt-5 pt-3 border-t border-slate-100">
-                <button type="button" class="btn btn-secondary text-xs" data-modal-close>Close</button>
+                <button type="button" class="btn btn-secondary text-xs" data-modal-close>Close Dossier</button>
             </div>
         </div>
     </div>
@@ -248,18 +364,32 @@
 </div>
 
 <script>
+    function confirmRestore(id, title, code) {
+        document.getElementById('restore-record-title').textContent = title;
+        document.getElementById('restore-record-code').textContent = code;
+        document.getElementById('restore-form').action = `/recycle-bin/restore/${id}`;
+        document.getElementById('restore-modal').classList.add('open');
+    }
+
     function inspectSnapshot(item) {
-        document.getElementById('snapshot-modal-title').textContent = `${item.type_label} Snapshot`;
+        document.getElementById('snapshot-modal-title').textContent = `${item.type_label}: Forensic Audit Dossier`;
         document.getElementById('snapshot-modal-sub').textContent = `Deleted on ${item.deleted_at}`;
-        document.getElementById('snapshot-entity-name').textContent = item.title;
-        document.getElementById('snapshot-entity-code').textContent = `Identifier: ${item.code}`;
+        document.getElementById('forensic-actor-name').textContent = item.actor_name;
+        document.getElementById('forensic-actor-email').textContent = item.actor_email || 'No email registered';
+        document.getElementById('forensic-actor-role').textContent = `ROLE: ${item.deleted_by_role}`;
+        document.getElementById('forensic-ip').textContent = `IP: ${item.ip_address}`;
+        document.getElementById('forensic-channel').textContent = `Channel: ${item.channel}`;
+        document.getElementById('forensic-agent').textContent = `Client: ${item.user_agent}`;
+        document.getElementById('forensic-action').textContent = `Action: ${item.action_type} on ${item.type_label} (#${item.code})`;
+        document.getElementById('forensic-reason').textContent = item.reason ? `Reason: "${item.reason}"` : 'No explicit reason provided';
+        document.getElementById('forensic-location').textContent = item.original_location ? `Location: ${item.original_location}` : '';
         document.getElementById('snapshot-json-display').textContent = JSON.stringify(item.snapshot, null, 2);
         document.getElementById('snapshot-modal').classList.add('open');
     }
 
     function confirmPurge(id, title) {
         document.getElementById('purge-record-title').textContent = title;
-        document.getElementById('purge-form').action = `/admin-setups/recycle-bin/purge/${id}/request`;
+        document.getElementById('purge-form').action = `/recycle-bin/purge/${id}/request`;
         document.getElementById('purge-modal').classList.add('open');
     }
 

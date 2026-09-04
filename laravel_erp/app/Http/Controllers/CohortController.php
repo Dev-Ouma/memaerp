@@ -47,7 +47,7 @@ final class CohortController extends Controller
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
             'status' => $validated['status'],
-            'description' => $validated['description'] ? trim($validated['description']) : null,
+            'description' => ($validated['description'] ?? null) ? trim((string) $validated['description']) : null,
         ]);
 
         if ($request->wantsJson()) {
@@ -78,7 +78,7 @@ final class CohortController extends Controller
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
             'status' => $validated['status'],
-            'description' => $validated['description'] ? trim($validated['description']) : null,
+            'description' => ($validated['description'] ?? null) ? trim((string) $validated['description']) : null,
         ]);
 
         if ($request->wantsJson()) {

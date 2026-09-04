@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Models\AcademicDepartment;
-use App\Models\AcademicIntake;
-use App\Models\AcademicOffering;
 use App\Models\AcademicProgramme;
 use App\Models\AcademicSession;
 use App\Models\AdmissionApplication;
@@ -18,25 +16,17 @@ use App\Models\ApplicationPaymentAttempt;
 use App\Models\ApplicationReview;
 use App\Models\Course;
 use App\Models\DeletionRecord;
-use App\Models\Department;
-use App\Models\FeeInvoice;
-use App\Models\FeePayment;
-use App\Models\GuardianStudent;
 use App\Models\InstitutionalTask;
 use App\Models\PgResearch\PgPlagiarismScan;
 use App\Models\PgResearch\PgResearchCandidate;
-use App\Models\PgResearch\PgSeminar;
+use App\Models\PgResearch\PgSupervisor;
 use App\Models\PgResearch\PgSupervisorAllocation;
-use App\Models\Platform\LegalHold;
 use App\Models\ProgrammeOffering;
 use App\Models\School;
 use App\Models\Student;
-use App\Models\StudentResult;
-use App\Models\Subject;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -49,7 +39,7 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
         // ---------------------------------------------------------------------
         $staffMembers = [
             ['name' => 'Prof. Peter Wabwire', 'email' => 'vc@mema.ac.ke', 'role' => 'admin', 'title' => 'Vice Chancellor'],
-            ['name' => 'Dr. Godfrey Ouma', 'email' => 'registrar@mema.ac.ke', 'role' => 'admin', 'title' => 'Academic Registrar'],
+            ['name' => 'Dr. Godfrey Ouma', 'email' => 'registrar@mema.ac.ke', 'role' => 'staff', 'title' => 'Academic Registrar'],
             ['name' => 'Dr. Jane Muthoni', 'email' => 'dean.computing@mema.ac.ke', 'role' => 'staff', 'title' => 'Dean, School of Computing'],
             ['name' => 'Dr. David Kiprop', 'email' => 'dean.business@mema.ac.ke', 'role' => 'staff', 'title' => 'Dean, School of Business'],
             ['name' => 'Prof. Alice Wangui', 'email' => 'dean.research@mema.ac.ke', 'role' => 'staff', 'title' => 'Director, PG Research'],
@@ -58,13 +48,16 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
             ['name' => 'Grace Nduta', 'email' => 'dpo@mema.ac.ke', 'role' => 'staff', 'title' => 'Data Protection Officer'],
             ['name' => 'Kevin Ombati', 'email' => 'examinations@mema.ac.ke', 'role' => 'staff', 'title' => 'Chief Examinations Officer'],
             ['name' => 'Faith Chebet', 'email' => 'admissions.officer@mema.ac.ke', 'role' => 'staff', 'title' => 'Senior Admissions Officer'],
+            ['name' => 'Amina Hassan', 'email' => 'finance.officer@mema.ac.ke', 'role' => 'staff', 'title' => 'Finance Officer'],
+            ['name' => 'Peter Kariuki', 'email' => 'curriculum.manager@mema.ac.ke', 'role' => 'staff', 'title' => 'Curriculum Manager'],
+            ['name' => 'Grace Atieno', 'email' => 'hr.officer@mema.ac.ke', 'role' => 'staff', 'title' => 'HR Officer'],
         ];
 
         $createdStaff = [];
         foreach ($staffMembers as $s) {
             $nameParts = explode(' ', $s['name'], 2);
             $username = strtolower(str_replace([' ', '.'], '', $s['name']));
-            $user = User::where('email', $s['email'])->orWhere('username', $username)->first() ?? new User();
+            $user = User::where('email', $s['email'])->orWhere('username', $username)->first() ?? new User;
             $user->fill([
                 'name' => $s['name'],
                 'first_name' => $nameParts[0],
@@ -272,17 +265,17 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
 
         foreach ($createdOfferings as $pIdx => $offering) {
             $progCode = $coursesData[$pIdx % count($coursesData)]['code'];
-            
+
             for ($itemIdx = 0; $itemIdx < 10; $itemIdx++) {
                 $status = $statuses[$itemIdx % count($statuses)];
                 $fName = $firstNames[($appGlobalIdx + $itemIdx) % count($firstNames)];
                 $lName = $lastNames[($appGlobalIdx * 3 + $itemIdx) % count($lastNames)];
                 $fullName = "{$fName} {$lName}";
-                $email = "applicant.{$appGlobalIdx}." . strtolower($fName) . "@example.ac.ke";
-                $phone = '07' . str_pad((string)($appGlobalIdx * 1234567 % 100000000), 8, '0', STR_PAD_LEFT);
-                $username = "app_" . strtolower($fName) . "_{$appGlobalIdx}";
+                $email = "applicant.{$appGlobalIdx}.".strtolower($fName).'@example.ac.ke';
+                $phone = '07'.str_pad((string) ($appGlobalIdx * 1234567 % 100000000), 8, '0', STR_PAD_LEFT);
+                $username = 'app_'.strtolower($fName)."_{$appGlobalIdx}";
 
-                $appUser = User::where('email', $email)->orWhere('username', $username)->first() ?? new User();
+                $appUser = User::where('email', $email)->orWhere('username', $username)->first() ?? new User;
                 $appUser->fill([
                     'name' => $fullName,
                     'first_name' => $fName,
@@ -296,7 +289,7 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
                 ]);
                 $appUser->save();
 
-                $piNumber = 'PI-2026-' . str_pad((string)($appGlobalIdx), 4, '0', STR_PAD_LEFT);
+                $piNumber = 'PI-2026-'.str_pad((string) ($appGlobalIdx), 4, '0', STR_PAD_LEFT);
                 $profile = ApplicantProfile::updateOrCreate(
                     ['applicant_number' => $piNumber],
                     [
@@ -306,14 +299,14 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
                         'nationality' => 'Kenyan',
                         'county' => $counties[$appGlobalIdx % count($counties)],
                         'identity_type' => 'national_id',
-                        'identity_number' => '38' . str_pad((string)($appGlobalIdx + 1000), 6, '0', STR_PAD_LEFT),
+                        'identity_number' => '38'.str_pad((string) ($appGlobalIdx + 1000), 6, '0', STR_PAD_LEFT),
                         'qr_token' => Str::random(48),
                     ]
                 );
 
                 // Reference format: 001/2026 or APP-2026-0001
-                $refNumber = str_pad((string)$appGlobalIdx, 3, '0', STR_PAD_LEFT) . '/2026';
-                $appNumber = 'APP-2026-' . str_pad((string)$appGlobalIdx, 4, '0', STR_PAD_LEFT);
+                $refNumber = str_pad((string) $appGlobalIdx, 3, '0', STR_PAD_LEFT).'/2026';
+                $appNumber = 'APP-2026-'.str_pad((string) $appGlobalIdx, 4, '0', STR_PAD_LEFT);
 
                 $application = AdmissionApplication::updateOrCreate(
                     ['applicant_profile_id' => $profile->id],
@@ -323,7 +316,7 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
                         'status' => $status,
                         'form_data' => [
                             'reference_number' => $refNumber,
-                            'education' => "KCSE 2024, Mean Grade " . (['A', 'A-', 'B+', 'B', 'B-'][$appGlobalIdx % 5]),
+                            'education' => 'KCSE 2024, Mean Grade '.(['A', 'A-', 'B+', 'B', 'B-'][$appGlobalIdx % 5]),
                             'gender' => $appUser->gender,
                             'county' => $profile->county,
                             'source_channel' => 'Website',
@@ -380,8 +373,8 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
 
                 // If ADMITTED, ACCEPTED, or ENROLLED, issue official AdmissionOffer
                 if (in_array($status, ['ADMITTED', 'ACCEPTED', 'ENROLLED', 'REVOKED'])) {
-                    $offerNumber = 'OFF-2026-' . str_pad((string)$appGlobalIdx, 4, '0', STR_PAD_LEFT);
-                    $offer = AdmissionOffer::where('offer_number', $offerNumber)->orWhere('admission_application_id', $application->id)->first() ?? new AdmissionOffer();
+                    $offerNumber = 'OFF-2026-'.str_pad((string) $appGlobalIdx, 4, '0', STR_PAD_LEFT);
+                    $offer = AdmissionOffer::where('offer_number', $offerNumber)->orWhere('admission_application_id', $application->id)->first() ?? new AdmissionOffer;
                     $offer->fill([
                         'admission_application_id' => $application->id,
                         'offer_number' => $offerNumber,
@@ -396,7 +389,7 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
 
                 // If ENROLLED, create student record
                 if ($status === 'ENROLLED') {
-                    $admNumber = "MEMA/{$progCode}/2026/" . str_pad((string)$appGlobalIdx, 3, '0', STR_PAD_LEFT);
+                    $admNumber = "MEMA/{$progCode}/2026/".str_pad((string) $appGlobalIdx, 3, '0', STR_PAD_LEFT);
                     Student::updateOrCreate(
                         ['user_id' => $appUser->id],
                         [
@@ -409,9 +402,9 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
 
                 // Financial Payments & Receipts
                 $txnCodes = ['QJH7823901', 'RKP9012384', 'SHL5610293', 'TLM1928374', 'UKN8291047', 'VKP3910284', 'WLM9018273', 'XKN1928475', 'YLM8291048', 'ZKP9102948'];
-                $receiptNumber = 'REC-2026-' . str_pad((string)$appGlobalIdx, 4, '0', STR_PAD_LEFT);
-                $reference = $txnCodes[$appGlobalIdx % count($txnCodes)] . '-' . $appGlobalIdx;
-                $payment = ApplicationPaymentAttempt::where('receipt_number', $receiptNumber)->orWhere('reference', $reference)->first() ?? new ApplicationPaymentAttempt();
+                $receiptNumber = 'REC-2026-'.str_pad((string) $appGlobalIdx, 4, '0', STR_PAD_LEFT);
+                $reference = $txnCodes[$appGlobalIdx % count($txnCodes)].'-'.$appGlobalIdx;
+                $payment = ApplicationPaymentAttempt::where('receipt_number', $receiptNumber)->orWhere('reference', $reference)->first() ?? new ApplicationPaymentAttempt;
                 $payment->fill([
                     'admission_application_id' => $application->id,
                     'receipt_number' => $receiptNumber,
@@ -451,13 +444,13 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
         ];
 
         foreach ($researchTopics as $rIdx => $topic) {
-            $email = "researcher".($rIdx + 1)."@mema.ac.ke";
-            $username = "phd_candidate_".($rIdx + 1);
-            $candUser = User::where('email', $email)->orWhere('username', $username)->first() ?? new User();
+            $email = 'researcher'.($rIdx + 1).'@mema.ac.ke';
+            $username = 'phd_candidate_'.($rIdx + 1);
+            $candUser = User::where('email', $email)->orWhere('username', $username)->first() ?? new User;
             $candUser->fill([
-                'name' => "Researcher ".($rIdx + 1),
-                'first_name' => "Researcher",
-                'last_name' => (string)($rIdx + 1),
+                'name' => 'Researcher '.($rIdx + 1),
+                'first_name' => 'Researcher',
+                'last_name' => (string) ($rIdx + 1),
                 'email' => $email,
                 'username' => $username,
                 'password' => Hash::make('password'),
@@ -469,14 +462,14 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
             $candStudent = Student::firstOrCreate(
                 ['user_id' => $candUser->id],
                 [
-                    'admission_number' => 'PHD/2026/'.str_pad((string)($rIdx + 1), 3, '0', STR_PAD_LEFT),
+                    'admission_number' => 'PHD/2026/'.str_pad((string) ($rIdx + 1), 3, '0', STR_PAD_LEFT),
                     'course_id' => $createdCourses['PHD-CS']->id ?? 1,
                     'academic_session_id' => $session->id,
                 ]
             );
 
             $candidate = PgResearchCandidate::updateOrCreate(
-                ['reg_no' => 'PHD/2026/'.str_pad((string)($rIdx + 1), 3, '0', STR_PAD_LEFT)],
+                ['reg_no' => 'PHD/2026/'.str_pad((string) ($rIdx + 1), 3, '0', STR_PAD_LEFT)],
                 [
                     'student_id' => $candStudent->id,
                     'candidate_name' => $candUser->name,
@@ -496,7 +489,7 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
                 ]
             );
 
-            $supervisor = \App\Models\PgResearch\PgSupervisor::updateOrCreate(
+            $supervisor = PgSupervisor::updateOrCreate(
                 ['staff_no' => 'STF/001'],
                 [
                     'user_id' => $createdStaff['dean.research@mema.ac.ke']->id ?? 1,
@@ -530,7 +523,7 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
                     'ai_index' => 2.00,
                     'ai_threshold' => 10.00,
                     'status' => 'APPROVED',
-                    'report_reference' => "TURNITIN-2026-".str_pad((string)($rIdx + 1), 4, '0', STR_PAD_LEFT),
+                    'report_reference' => 'TURNITIN-2026-'.str_pad((string) ($rIdx + 1), 4, '0', STR_PAD_LEFT),
                     'scanned_at' => now()->subWeeks(3),
                 ]
             );
@@ -556,7 +549,7 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
             InstitutionalTask::updateOrCreate(
                 ['title' => $t['title']],
                 [
-                    'task_ref' => 'TSK-2026-'.str_pad((string)($tIdx + 1), 3, '0', STR_PAD_LEFT),
+                    'task_ref' => 'TSK-2026-'.str_pad((string) ($tIdx + 1), 3, '0', STR_PAD_LEFT),
                     'assignee_user_id' => $createdStaff['registrar@mema.ac.ke']->id ?? null,
                     'created_by' => $createdStaff['vc@mema.ac.ke']->id ?? 1,
                     'priority' => $t['priority'],
@@ -576,12 +569,12 @@ final class ComprehensiveInstitutionalDataSeeder extends Seeder
                 [
                     'entity_type' => ['academic_offerings', 'courses', 'students', 'fee_invoices', 'documents'][$dIdx % 5],
                     'model_type' => 'App\\Models\\Course',
-                    'deleted_by' => (string)($createdStaff['registrar@mema.ac.ke']->id ?? 1),
+                    'deleted_by' => (string) ($createdStaff['registrar@mema.ac.ke']->id ?? 1),
                     'deleted_by_role' => 'admin',
                     'deleted_at' => now()->subDays($dIdx * 2),
                     'purge_after' => now()->addDays(30 - ($dIdx * 2)),
                     'status' => ($dIdx === 1) ? 'RESTORED' : (($dIdx === 2) ? 'LEGAL_HOLD' : 'IN_BIN'),
-                    'reason' => "Routine archival and data clean-up cycle.",
+                    'reason' => 'Routine archival and data clean-up cycle.',
                     'original_location' => '/academic/offerings/archived',
                     'owner_type' => 'user',
                     'owner_id' => '1',

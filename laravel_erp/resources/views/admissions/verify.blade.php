@@ -1,1 +1,33 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offer verification | MEMA College</title>@vite(['resources/css/app.css'])<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f3f6f4;color:#17211d;font:14px/1.45 var(--font-system,'Quicksand','Nunito','Book Antiqua',sans-serif)}.card{width:min(520px,calc(100% - 32px));background:white;border:1px solid #dfe5e1;border-radius:8px;padding:30px}.mark{width:45px;height:45px;display:grid;place-items:center;background:#0A3E50;color:#E67E22;font-weight:900}.ok{margin:24px 0;padding:14px;background:#e7f4ed;color:#165b3d;border-left:4px solid #1E8449}.row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #edf0ee}.row span{color:#69736e}</style></head><body><main class="card"><div class="mark">M</div><h1>Admission offer verification</h1><div class="ok"><strong>{{ $offer->status==='ISSUED'?'Valid offer':'Offer status: '.$offer->status }}</strong><br>This record was issued by MEMA College.</div><div class="row"><span>Offer reference</span><strong>{{ $offer->offer_number }}</strong></div><div class="row"><span>Candidate</span><strong>{{ Str::mask($offer->application->applicant->user->name,'•',2) }}</strong></div><div class="row"><span>Programme</span><strong>{{ $offer->application->offering->course->name }}</strong></div><div class="row"><span>Issued</span><strong>{{ $offer->issued_at->format('d M Y') }}</strong></div><div class="row"><span>Valid until</span><strong>{{ $offer->expires_at->format('d M Y') }}</strong></div><p style="color:#69736e;font-size:12px">This public page intentionally displays minimal information. Contact the Admissions Office for further verification.</p></main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Offer verification | MEMA College</title>
+    @vite(['resources/css/app.css'])
+    <style>
+        body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f3f6f4;color:#17211d;font:14px/1.45 var(--font-system,'Quicksand','Nunito','Book Antiqua',sans-serif)}
+        .card{width:min(520px,calc(100% - 32px));background:white;border:1px solid #dfe5e1;border-radius:8px;padding:30px}
+        .mark{width:45px;height:45px;display:grid;place-items:center;background:#0A3E50;color:#E67E22;font-weight:900}
+        .ok{margin:24px 0;padding:14px;background:#e7f4ed;color:#165b3d;border-left:4px solid #1E8449}
+        .row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #edf0ee}
+        .row span{color:#69736e}
+    </style>
+</head>
+<body>
+<main class="card">
+    <div class="mark">M</div>
+    <h1>Admission offer verification</h1>
+    <div class="ok">
+        <strong>{{ $offer->status === 'ISSUED' ? 'Valid offer' : 'Offer status: '.$offer->status }}</strong><br>
+        This record was issued by MEMA College.
+    </div>
+    <div class="row"><span>Offer reference</span><strong>{{ $offer->offer_number }}</strong></div>
+    <div class="row"><span>Candidate</span><strong>{{ Str::mask($offer->application->applicant->user->name, '•', 2) }}</strong></div>
+    <div class="row"><span>Programme</span><strong>{{ $offer->application->offering->course->name }}</strong></div>
+    <div class="row"><span>Issued</span><strong>{{ optional($offer->issued_at)->format('d M Y') ?? '—' }}</strong></div>
+    <div class="row"><span>Valid until</span><strong>{{ optional($offer->expires_at)->format('d M Y') ?? '—' }}</strong></div>
+    <p style="color:#69736e;font-size:12px">This public page intentionally displays minimal information. Contact the Admissions Office for further verification.</p>
+</main>
+</body>
+</html>

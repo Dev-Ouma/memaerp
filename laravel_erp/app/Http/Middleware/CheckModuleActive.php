@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use App\Models\ModuleState;
 use App\Models\SystemMaintenanceConfig;
+use App\Modules\Platform\Modules\ModuleCatalogue;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -47,26 +48,6 @@ final class CheckModuleActive
 
     private function humanName(string $key): string
     {
-        $map = [
-            'smhr' => 'SMHR — Staff HR & Payroll',
-            'transfers' => 'Student Transfers Registry',
-            'pg-research' => 'PG Research & Graduate Studies',
-            'curriculum' => 'Curriculum Setup',
-            'student-affairs' => 'Student Affairs & Work Study',
-            'imprest' => 'Imprest Management',
-            'cohort' => 'Cohort Setup',
-            'registration' => 'Registration & Admissions',
-            'lms' => 'LMS Virtual Classrooms',
-            'examination' => 'Examination & Grading Board',
-            'fees' => 'Fees Billing & M-Pesa',
-            'graduation' => 'Graduation & Alumni',
-            'task-management' => 'Task Management',
-            'admissions' => 'Admissions & Intake Registry',
-            'reports' => 'Reports & Analytics',
-            'service-providers' => 'Service Providers & Procurement',
-            'budgeting' => 'Budgeting & Planning',
-        ];
-
-        return $map[$key] ?? ucwords(str_replace('-', ' ', $key));
+        return ModuleCatalogue::name($key);
     }
 }

@@ -133,6 +133,9 @@
             <button onclick="switchOpsTab('backups')" id="tab-btn-backups" class="opscenter-tab-btn px-3.5 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5">
                 <i data-lucide="archive" class="w-3.5 h-3.5"></i> Backups
             </button>
+            <button onclick="switchOpsTab('upgrades')" id="tab-btn-upgrades" class="opscenter-tab-btn px-3.5 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5">
+                <i data-lucide="git-merge" class="w-3.5 h-3.5"></i> Upgrades &amp; Migrations
+            </button>
             <button onclick="switchOpsTab('specs')" id="tab-btn-specs" class="opscenter-tab-btn px-3.5 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5">
                 <i data-lucide="cpu" class="w-3.5 h-3.5"></i> System Specs
             </button>
@@ -165,10 +168,11 @@
             <strong class="uppercase text-[10px] text-rose-400">System Bulletins:</strong>
         </div>
         <div class="marquee-content flex gap-8 whitespace-nowrap text-[11.5px] font-mono">
-            <span class="text-rose-400">● Google Drive Storage Quota Exceeded (403 FileLimitExceeded)</span>
-            <span class="text-amber-400">● System Load Average Elevated (20.42 Critical Threshold)</span>
-            <span class="text-sky-400">● Cloud Mirror Operation In Progress</span>
-            <span class="text-slate-400">● System continuous monitoring active. SMTP Gateway Ready.</span>
+            @forelse($broadcasts as $broadcast)
+                <span class="text-sky-400">● {{ $broadcast->message }}</span>
+            @empty
+                <span class="text-slate-400">● No operator broadcasts. System continuous monitoring active.</span>
+            @endforelse
         </div>
     </div>
 
@@ -186,52 +190,52 @@
 
             <div class="opscenter-card p-3">
                 <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">System Uptime</span>
-                <strong class="text-lg font-bold text-emerald-400 block mt-1.5">2 days</strong>
+                <strong class="text-lg font-bold text-emerald-400 block mt-1.5">{{ $health['uptime'] }}</strong>
                 <small class="text-[10px] text-emerald-500/80 block mt-0.5 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ONLINE
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> {{ strtoupper($health['status']) }}
                 </small>
             </div>
 
             <div class="opscenter-card p-3">
                 <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">System Load</span>
-                <strong class="text-lg font-bold text-rose-400 block mt-1.5">20.42</strong>
-                <small class="text-[10px] text-rose-500/80 block mt-0.5 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> CRITICAL
+                <strong class="text-lg font-bold {{ $health['cpu_percentage'] >= 85 ? 'text-rose-400' : 'text-emerald-400' }} block mt-1.5">{{ $health['cpu_load'] }}</strong>
+                <small class="text-[10px] text-slate-400 block mt-0.5 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full {{ $health['cpu_percentage'] >= 85 ? 'bg-rose-500' : 'bg-emerald-500' }}"></span> {{ $health['cpu_percentage'] }}% of {{ $health['cpu_cores'] }} cores
                 </small>
             </div>
 
             <div class="opscenter-card p-3">
-                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Cloud Backup</span>
-                <strong class="text-lg font-bold text-sky-400 block mt-1.5">0%</strong>
+                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Current Version</span>
+                <strong class="text-lg font-bold text-sky-400 block mt-1.5">{{ $currentVersion?->version ?? 'n/a' }}</strong>
                 <small class="text-[10px] text-sky-500/80 block mt-0.5 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span> SYNC RUNNING
+                    <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span> {{ $currentVersion?->type ?? 'unversioned' }}
                 </small>
             </div>
 
             <div class="opscenter-card p-3">
                 <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Database</span>
-                <strong class="text-lg font-bold text-emerald-400 block mt-1.5">HEALTHY</strong>
+                <strong class="text-lg font-bold {{ $health['db_healthy'] ? 'text-emerald-400' : 'text-rose-400' }} block mt-1.5">{{ $health['db_healthy'] ? 'HEALTHY' : 'DOWN' }}</strong>
                 <small class="text-[10px] text-emerald-500/80 block mt-0.5 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Responsive
+                    <span class="w-1.5 h-1.5 rounded-full {{ $health['db_healthy'] ? 'bg-emerald-500' : 'bg-rose-500' }}"></span> {{ $health['db_status'] }}
                 </small>
             </div>
 
             <div class="opscenter-card p-3">
                 <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Active Users</span>
-                <strong class="text-lg font-bold text-white block mt-1.5">68</strong>
+                <strong class="text-lg font-bold text-white block mt-1.5">{{ $health['active_users'] }}</strong>
                 <small class="text-[10px] text-slate-400 block mt-0.5">sessions last 15m</small>
             </div>
 
             <div class="opscenter-card p-3">
                 <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Cron Status</span>
-                <strong class="text-lg font-bold text-emerald-400 block mt-1.5">RUNNING</strong>
-                <small class="text-[10px] text-slate-400 block mt-0.5">Last: 32s ago</small>
+                <strong class="text-lg font-bold text-emerald-400 block mt-1.5">{{ $health['last_cron_at'] ? 'RECORDED' : 'IDLE' }}</strong>
+                <small class="text-[10px] text-slate-400 block mt-0.5">{{ $health['last_cron_at'] ? \Carbon\Carbon::parse($health['last_cron_at'])->diffForHumans() : 'No heartbeat yet' }}</small>
             </div>
 
             <div class="opscenter-card p-3">
-                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Upload Speed</span>
-                <strong class="text-lg font-bold text-white block mt-1.5">0.00</strong>
-                <small class="text-[10px] text-slate-400 block mt-0.5">MB/s current</small>
+                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Process RAM</span>
+                <strong class="text-lg font-bold text-white block mt-1.5">{{ $health['ram_used'] }} MB</strong>
+                <small class="text-[10px] text-slate-400 block mt-0.5">of {{ $health['ram_limit'] }} MB ({{ $health['ram_percentage'] }}%)</small>
             </div>
         </div>
 
@@ -243,17 +247,17 @@
                 <div>
                     <div class="flex justify-between items-center">
                         <span class="text-xs font-bold uppercase text-slate-400">Health Score</span>
-                        <span class="px-2 py-0.5 bg-rose-950 text-rose-400 text-[9px] rounded font-bold uppercase border border-rose-800">CRITICAL</span>
+                        <span class="px-2 py-0.5 {{ $health['status'] === 'healthy' ? 'bg-emerald-950 text-emerald-400 border-emerald-800' : ($health['status'] === 'degraded' ? 'bg-amber-950 text-amber-400 border-amber-800' : 'bg-rose-950 text-rose-400 border-rose-800') }} text-[9px] rounded font-bold uppercase border">{{ strtoupper($health['status']) }}</span>
                     </div>
                     
                     {{-- Circular SVG Gauge --}}
                     <div class="relative w-36 h-36 mx-auto mt-4 flex items-center justify-center">
                         <svg class="w-full h-full" viewBox="0 0 100 100">
                             <circle class="text-slate-800" stroke-width="8" stroke="currentColor" fill="transparent" r="38" cx="50" cy="50"/>
-                            <circle class="text-rose-500" stroke-width="8" stroke-dasharray="238" stroke-dashoffset="107" stroke-linecap="round" stroke="currentColor" fill="transparent" r="38" cx="50" cy="50" class="gauge-circle" style="transform: rotate(-90deg); transform-origin: 50px 50px;"/>
+                            <circle class="{{ $health['health_score'] >= 70 ? 'text-emerald-500' : 'text-amber-500' }}" stroke-width="8" stroke-dasharray="238" stroke-dashoffset="{{ (int) round(238 - (238 * $health['health_score'] / 100)) }}" stroke-linecap="round" stroke="currentColor" fill="transparent" r="38" cx="50" cy="50" class="gauge-circle" style="transform: rotate(-90deg); transform-origin: 50px 50px;"/>
                         </svg>
                         <div class="absolute text-center">
-                            <span class="text-4xl font-extrabold text-white leading-none">55</span>
+                            <span class="text-4xl font-extrabold text-white leading-none">{{ $health['health_score'] }}</span>
                         </div>
                     </div>
 
@@ -264,7 +268,7 @@
                 </div>
 
                 <div class="border-t border-slate-800 mt-4 pt-3.5 space-y-2">
-                    <div class="text-[10px] text-rose-400 font-bold uppercase tracking-wider">Immediate mitigation required.</div>
+                    <div class="text-[10px] {{ $health['status'] === 'healthy' ? 'text-emerald-400' : 'text-amber-400' }} font-bold uppercase tracking-wider">{{ $health['status'] === 'healthy' ? 'No immediate mitigation required.' : 'Review load, disk and RAM gauges.' }}</div>
                     
                     <div class="space-y-1.5 text-[11px]">
                         <div class="flex justify-between">
@@ -299,36 +303,25 @@
                 <div>
                     <div class="flex justify-between items-center border-b border-slate-800 pb-2">
                         <span class="text-xs font-bold uppercase text-slate-400">Active Alerts</span>
-                        <span class="px-2 py-0.5 bg-rose-950 text-rose-400 text-[9px] rounded font-bold uppercase border border-rose-800">3 ALERTS</span>
+                        <span class="px-2 py-0.5 bg-slate-900 text-slate-300 text-[9px] rounded font-bold uppercase border border-slate-700">{{ $broadcasts->count() }} BROADCASTS</span>
                     </div>
 
                     <div class="mt-4 space-y-3">
-                        <div class="p-3 bg-[#110b0f] border-l-4 border-rose-600 rounded-r-lg">
-                            <div class="flex items-center gap-2">
-                                <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
-                                <strong class="text-xs font-bold text-white">Google Drive Storage Quota Exceeded</strong>
+                        @forelse($broadcasts as $broadcast)
+                            <div class="p-3 bg-[#0d121b] border-l-4 border-sky-500 rounded-r-lg">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+                                    <strong class="text-xs font-bold text-white">Operator broadcast</strong>
+                                </div>
+                                <p class="text-[11px] text-slate-400 mt-1">{{ $broadcast->message }}</p>
+                                <small class="text-[9px] text-sky-400 font-mono block mt-1 uppercase font-bold">{{ $broadcast->created_at?->diffForHumans() }}</small>
                             </div>
-                            <p class="text-[11px] text-slate-400 mt-1">Google Drive storage quota exceeded - manual cleanup needed (403 teamDriveFileLimitExceeded)</p>
-                            <small class="text-[9px] text-rose-400 font-mono block mt-1 uppercase font-bold">Ongoing</small>
-                        </div>
-
-                        <div class="p-3 bg-[#12100d] border-l-4 border-amber-500 rounded-r-lg">
-                            <div class="flex items-center gap-2">
-                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                                <strong class="text-xs font-bold text-white">System Load Average Elevated</strong>
+                        @empty
+                            <div class="p-3 bg-[#0d121b] border-l-4 border-emerald-500 rounded-r-lg">
+                                <strong class="text-xs font-bold text-white">No active operator alerts</strong>
+                                <p class="text-[11px] text-slate-400 mt-1">Database {{ $health['db_status'] }}. Load {{ $health['cpu_load'] }} on {{ $health['cpu_cores'] }} cores.</p>
                             </div>
-                            <p class="text-[11px] text-slate-400 mt-1">Load average (20.42) exceeds primary CPU bounds.</p>
-                            <small class="text-[9px] text-amber-400 font-mono block mt-1 uppercase font-bold">Active</small>
-                        </div>
-
-                        <div class="p-3 bg-[#0d121b] border-l-4 border-sky-500 rounded-r-lg">
-                            <div class="flex items-center gap-2">
-                                <span class="w-2.5 h-2.5 rounded-full bg-sky-500 animate-pulse"></span>
-                                <strong class="text-xs font-bold text-white">Cloud Mirror Operation In Progress</strong>
-                            </div>
-                            <p class="text-[11px] text-slate-400 mt-1">rclone syncing local moodledata directly to Google Shared Drive. Speed: 0 MB/s.</p>
-                            <small class="text-[9px] text-sky-400 font-mono block mt-1 uppercase font-bold">Running</small>
-                        </div>
+                        @endforelse
                     </div>
                 </div>
 
@@ -348,11 +341,11 @@
                     </div>
 
                     <div class="mt-4 space-y-2">
-                        <button onclick="simulateCloudSync()" class="override-btn w-full p-2.5 rounded-lg text-left flex items-start gap-2.5">
+                        <button type="button" onclick="postOps('{{ route('admin.setups.system-maintenance.cloud-mirror') }}')" class="override-btn w-full p-2.5 rounded-lg text-left flex items-start gap-2.5">
                             <i data-lucide="cloud" class="w-4 h-4 text-sky-400 shrink-0 mt-0.5"></i>
                             <div>
                                 <strong class="text-xs font-bold text-slate-200 block">Cloud Mirror (Moodledata)</strong>
-                                <small class="text-[9.5px] text-slate-400 block font-mono">rclone sync -> GDrive</small>
+                                <small class="text-[9.5px] text-slate-400 block font-mono">rclone status check</small>
                             </div>
                         </button>
 
@@ -367,11 +360,11 @@
                             </button>
                         </form>
 
-                        <button onclick="alert('Codebase synchronization initiated...')" class="override-btn w-full p-2.5 rounded-lg text-left flex items-start gap-2.5">
+                        <button type="button" onclick="postOps('{{ route('admin.setups.system-maintenance.codebase.sync') }}')" class="override-btn w-full p-2.5 rounded-lg text-left flex items-start gap-2.5">
                             <i data-lucide="git-branch" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
                             <div>
                                 <strong class="text-xs font-bold text-slate-200 block">Sync Codebase</strong>
-                                <small class="text-[9.5px] text-slate-400 block font-mono">tar wwwroot -> GDrive</small>
+                                <small class="text-[9.5px] text-slate-400 block font-mono">git status / HEAD</small>
                             </div>
                         </button>
 
@@ -406,30 +399,14 @@
             {{-- Console Stream --}}
             <div class="lg:col-span-7 opscenter-card p-4">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-2.5 mb-3">
-                    <span class="text-xs font-bold uppercase text-slate-400">Live Transfer – Upload Stream</span>
+                    <span class="text-xs font-bold uppercase text-slate-400">Ops Console</span>
                     <span class="px-2 py-0.5 bg-sky-950 text-sky-400 text-[9px] rounded font-bold uppercase border border-sky-800 flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span> ACTIVE
+                        LIVE
                     </span>
                 </div>
                 
-                <div class="text-xs text-sky-400 font-bold mb-2">Syncing data...</div>
-                <div class="grid grid-cols-4 gap-2 text-[10px] font-mono text-slate-400 mb-3 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
-                    <div>Progress: <span class="text-sky-300">0%</span></div>
-                    <div>Speed: <span class="text-sky-300">0.00 MB/s</span></div>
-                    <div>ETA: <span class="text-sky-300">--</span></div>
-                    <div>Size: <span class="text-sky-300">--</span></div>
-                </div>
-
-                <pre class="console-block p-4 rounded-lg overflow-y-auto max-h-56 leading-relaxed shadow-inner">
-stdout_stream – ROOT@OUK_VLE
------------------------------
-<span class="text-rose-500">googleapi: Error 403: The file limit for this shared drive has been exceeded., teamDriveFileLimitExceeded</span>
-<span class="text-rose-500">2026/08/29 15:21:32 ERROR : filedir/55/69/5569e2fc88894c712cc09ebe38b381170890ef95: Failed to copy: failed to make directory</span>
-<span class="text-rose-500">googleapi: Error 403: The file limit for this shared drive has been exceeded., teamDriveFileLimitExceeded</span>
-<span class="text-rose-500">2026/08/29 15:21:33 ERROR : filedir/56/68/5668d42f3530b3e377ecb2a5921de84b7aeb3ce: Failed to copy: failed to make directory</span>
-<span class="text-rose-500">googleapi: Error 403: The file limit for this shared drive has been exceeded., teamDriveFileLimitExceeded</span>
-<span class="text-slate-400">2026/08/29 15:21:34 INFO  : Local cache verified. Outbox empty. Ready.</span>
-</pre>
+                <div class="text-xs text-sky-400 font-bold mb-2">Command output</div>
+                <pre class="console-block p-4 rounded-lg overflow-y-auto max-h-56 leading-relaxed shadow-inner" id="ops-console">{{ $consoleLog }}</pre>
             </div>
 
             {{-- Recent Activity Logs --}}
@@ -458,26 +435,8 @@ stdout_stream – ROOT@OUK_VLE
                                     <td class="py-2 px-3 text-slate-300 font-mono text-[10.5px] truncate max-w-[200px]" title="{{ $log->action }}">{{ str_replace('system.maintenance.', '', $log->action) }}</td>
                                 </tr>
                             @empty
-                                <tr class="hover:bg-slate-900/30 transition-colors">
-                                    <td class="py-2 px-3 text-slate-400">15:21:32</td>
-                                    <td class="py-2 px-3">
-                                        <span class="inline-block px-1.5 py-0.2 bg-sky-950 text-sky-400 border border-sky-900 rounded text-[9px] font-bold uppercase">EVENT</span>
-                                    </td>
-                                    <td class="py-2 px-3 text-slate-300">Activity: section_viewed</td>
-                                </tr>
-                                <tr class="hover:bg-slate-900/30 transition-colors">
-                                    <td class="py-2 px-3 text-slate-400">15:21:31</td>
-                                    <td class="py-2 px-3">
-                                        <span class="inline-block px-1.5 py-0.2 bg-sky-950 text-sky-400 border border-sky-900 rounded text-[9px] font-bold uppercase">EVENT</span>
-                                    </td>
-                                    <td class="py-2 px-3 text-slate-300">Activity: webservice_token_sent</td>
-                                </tr>
-                                <tr class="hover:bg-slate-900/30 transition-colors">
-                                    <td class="py-2 px-3 text-slate-400">15:21:29</td>
-                                    <td class="py-2 px-3">
-                                        <span class="inline-block px-1.5 py-0.2 bg-rose-950 text-rose-400 border border-rose-900 rounded text-[9px] font-bold uppercase">FAIL</span>
-                                    </td>
-                                    <td class="py-2 px-3 text-rose-400">Activity: email_failed</td>
+                                <tr>
+                                    <td colspan="3" class="py-8 text-center text-slate-500">No audit events yet.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -561,6 +520,14 @@ stdout_stream – ROOT@OUK_VLE
                     </button>
                 </div>
             </form>
+
+            <form id="broadcast-form" class="mt-6 space-y-3 border-t border-slate-800 pt-5">
+                <label class="block text-xs font-bold text-slate-300">Broadcast to signed-in sessions</label>
+                <div class="flex gap-2">
+                    <input type="text" name="message" minlength="5" maxlength="255" required placeholder="Maintenance window starts at 18:00..." class="flex-1 border border-[#142334] bg-[#05090f] text-slate-200 rounded-lg p-2.5 text-xs">
+                    <button type="submit" class="px-4 py-2 rounded-lg bg-sky-700 text-white text-xs font-bold">Send</button>
+                </div>
+            </form>
         </div>
 
     </div>
@@ -607,7 +574,7 @@ stdout_stream – ROOT@OUK_VLE
                                         <a href="{{ route('admin.setups.system-maintenance.backup.download', $backup) }}" target="_blank" class="px-2 py-1 border border-slate-700 rounded bg-[#05090f] hover:bg-slate-900 text-slate-300">
                                             Download
                                         </a>
-                                        <button onclick="confirmRestoreBackup('{{ $backup->filename }}')" class="px-2.5 py-1 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded text-xs font-bold">
+                                        <button type="button" onclick="confirmRestoreBackup('{{ $backup->id }}', '{{ $backup->filename }}')" class="px-2.5 py-1 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded text-xs font-bold">
                                             Restore
                                         </button>
                                     </div>
@@ -630,7 +597,92 @@ stdout_stream – ROOT@OUK_VLE
                 </div>
             @endif
         </div>
+    </div>
 
+    {{-- ------------------- PANEL: UPGRADES & VERSIONS ------------------- --}}
+    <div id="panel-upgrades" class="tab-panel hidden space-y-4">
+        <div class="opscenter-card p-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-800 pb-4 mb-5 gap-3">
+                <div>
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i data-lucide="git-merge" class="w-4.5 h-4.5 text-[#00f2fe]"></i> System Upgrades &amp; Release Management
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-1">Execute live database migrations (`php artisan migrate --force`), flush cache tiers, and register version release manifests.</p>
+                </div>
+                <button type="button" onclick="executeUpgrade()" id="btn-upgrade" class="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs rounded-lg transition-all shadow-md flex items-center gap-1.5" style="background: linear-gradient(to right, #E67E22, #d35400) !important; color:#ffffff !important;">
+                    <i data-lucide="zap" class="w-4 h-4"></i> Run Live Platform Upgrade
+                </button>
+            </div>
+
+            {{-- Upgrade Console / Output Stream --}}
+            <div id="upgrade-output-box" class="hidden mb-5 p-4 rounded-lg bg-[#05090f] border border-cyan-500/40">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-cyan-400 font-mono flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> Upgrade Execution Log
+                    </span>
+                    <span class="text-[10px] text-slate-400 font-mono" id="upgrade-status-text">Migrating...</span>
+                </div>
+                <pre class="text-[11px] font-mono text-slate-200 overflow-x-auto whitespace-pre-wrap max-h-40" id="upgrade-output-content"></pre>
+            </div>
+
+            {{-- Version History Table --}}
+            <div class="border border-slate-800 rounded-lg overflow-hidden">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="bg-slate-900/60 text-slate-400 border-b border-slate-800">
+                            <th class="py-2.5 px-4 font-bold">Release Version</th>
+                            <th class="py-2.5 px-4 font-bold">Release Type</th>
+                            <th class="py-2.5 px-4 font-bold">Changelog / Migration Details</th>
+                            <th class="py-2.5 px-4 font-bold">Installed At</th>
+                            <th class="py-2.5 px-4 text-center font-bold">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60" id="versions-tbody">
+                        @forelse($versions as $ver)
+                            <tr class="hover:bg-slate-900/20 transition-colors">
+                                <td class="py-3 px-4 font-bold text-slate-200">
+                                    <span class="font-mono text-cyan-400">{{ $ver->version }}</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-800 text-slate-300 border border-slate-700">
+                                        {{ $ver->type ?? 'RELEASE' }}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4 text-slate-300 text-[11px] max-w-md">
+                                    {{ $ver->changelog ?? 'Standard continuous release deployment.' }}
+                                </td>
+                                <td class="py-3 px-4 text-slate-400 font-mono text-[11px]">
+                                    {{ $ver->installed_at ? $ver->installed_at->format('d M Y, h:i A') : 'Initial' }}
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    @if($ver->rolled_back_at)
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-400 border border-rose-800">ROLLED BACK</span>
+                                    @else
+                                        <div class="flex flex-col items-center gap-1">
+                                            @if($ver->is_current)
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">CURRENT</span>
+                                            @else
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">RECORDED</span>
+                                            @endif
+                                            <form method="POST" action="{{ route('admin.setups.system-maintenance.version.rollback', $ver) }}">
+                                                @csrf
+                                                <button type="submit" class="text-[10px] text-amber-400 hover:text-amber-200">Rollback pointer</button>
+                                            </form>
+                                        </div>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="py-8 text-center text-slate-500">
+                                    No recorded version releases. Click "Run Live Platform Upgrade" to execute migrations and register a release.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     {{-- ------------------- PANEL 4: SPECS ------------------- --}}
@@ -759,52 +811,118 @@ stdout_stream – ROOT@OUK_VLE
 </div>
 
 <script>
-    // Tab controller
-    function switchOpsTab(tabId) {
-        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden'));
-        document.getElementById(`panel-${tabId}`).classList.remove('hidden');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const cacheClearUrl = "{{ route('admin.setups.system-maintenance.cache.clear') }}";
+    const cronUrl = "{{ route('admin.setups.system-maintenance.cron') }}";
+    const upgradeUrl = "{{ route('admin.setups.system-maintenance.upgrade') }}";
+    const restoreUrlTemplate = @json(url('/admin-setups/system-maintenance/backup/__ID__/restore'));
+    const broadcastUrl = "{{ route('admin.setups.system-maintenance.broadcast') }}";
+    let restoreBackupId = null;
 
-        document.querySelectorAll('.opscenter-tab-btn').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`tab-btn-${tabId}`).classList.add('active');
+    function jsonHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        };
     }
 
-    // Live clock ticks
+    function postOps(url, payload = {}) {
+        fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: jsonHeaders(),
+            body: JSON.stringify(payload),
+        })
+        .then(async (r) => {
+            const data = await r.json();
+            alert(data.message || (r.ok ? 'Done' : 'Request failed'));
+            const consoleEl = document.getElementById('ops-console');
+            if (consoleEl && data.message) {
+                consoleEl.textContent = new Date().toISOString() + '  ' + data.message + '\n' + consoleEl.textContent;
+            }
+        })
+        .catch((err) => alert(err.message));
+    }
+
+    function switchOpsTab(tabId) {
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden'));
+        const activePanel = document.getElementById(`panel-${tabId}`);
+        if (activePanel) activePanel.classList.remove('hidden');
+
+        document.querySelectorAll('.opscenter-tab-btn').forEach(btn => btn.classList.remove('active'));
+        const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+        if (activeBtn) activeBtn.classList.add('active');
+    }
+
     setInterval(() => {
         const clock = document.getElementById('live-clock');
         if (clock) {
-            const now = new Date();
-            clock.textContent = now.toTimeString().split(' ')[0];
+            clock.textContent = new Date().toTimeString().split(' ')[0];
         }
     }, 1000);
 
-    // Mock handlers matching OUK screenshots
-    function simulateCloudSync() {
-        alert('Initiating rclone sync routine: source="moodledata" target="GoogleDrive:Backup". Output stream logs below.');
-    }
-
     function runCronJob() {
-        alert('Executing php artisan schedule:run command. Triggering outstanding batch Admission processes.');
+        postOps(cronUrl);
     }
 
-    function clearCache(target) {
-        alert('Purging application runtime caches: flushing routing files, configs, and template files.');
+    function clearCache(target = 'all') {
+        postOps(cacheClearUrl, { target });
     }
 
-    function confirmRestoreBackup(filename) {
+    function executeUpgrade() {
+        const btn = document.getElementById('btn-upgrade');
+        const box = document.getElementById('upgrade-output-box');
+        const content = document.getElementById('upgrade-output-content');
+        const statusText = document.getElementById('upgrade-status-text');
+
+        if (btn) btn.disabled = true;
+        if (box) box.classList.remove('hidden');
+        if (statusText) statusText.textContent = 'Executing migrations & cache rebuild...';
+        if (content) content.textContent = 'Starting php artisan migrate --force...\n';
+
+        fetch(upgradeUrl, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: jsonHeaders(),
+            body: JSON.stringify({ type: 'patch' }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (btn) btn.disabled = false;
+            if (data.success) {
+                if (statusText) statusText.textContent = 'SUCCESS: ' + data.version;
+                if (content) content.textContent += (data.output || '') + '\n\n' + data.message;
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                if (statusText) statusText.textContent = 'FAILED';
+                if (content) content.textContent += 'Error: ' + data.message;
+                alert('Upgrade failed: ' + data.message);
+            }
+        })
+        .catch(err => {
+            if (btn) btn.disabled = false;
+            if (statusText) statusText.textContent = 'ERROR';
+            if (content) content.textContent += 'Network Error: ' + err.message;
+        });
+    }
+
+    function confirmRestoreBackup(id, filename) {
+        restoreBackupId = id;
         document.getElementById('restore-filename-display').textContent = filename;
-        const progressContainer = document.getElementById('restore-progress-container');
-        const progressBar = document.getElementById('restore-progress-bar');
-        const progressText = document.getElementById('restore-progress-text');
-        
-        progressContainer.classList.add('hidden');
-        progressBar.style.width = '0%';
-        progressText.classList.add('hidden');
+        document.getElementById('restore-progress-container').classList.add('hidden');
+        document.getElementById('restore-progress-bar').style.width = '0%';
+        document.getElementById('restore-progress-text').classList.add('hidden');
         document.getElementById('restore-modal-actions').classList.remove('hidden');
-
         document.getElementById('restore-backup-modal').classList.add('open');
     }
 
     function executeRestore() {
+        if (!restoreBackupId) {
+            alert('No backup selected.');
+            return;
+        }
         const progressContainer = document.getElementById('restore-progress-container');
         const progressBar = document.getElementById('restore-progress-bar');
         const progressText = document.getElementById('restore-progress-text');
@@ -813,22 +931,38 @@ stdout_stream – ROOT@OUK_VLE
         modalActions.classList.add('hidden');
         progressContainer.classList.remove('hidden');
         progressText.classList.remove('hidden');
+        progressText.textContent = 'Submitting restore...';
+        progressBar.style.width = '40%';
 
-        let width = 0;
-        const interval = setInterval(() => {
-            if (width >= 100) {
-                clearInterval(interval);
-                progressText.textContent = 'Database restored successfully! Re-indexing schemas...';
-                setTimeout(() => {
-                    document.getElementById('restore-backup-modal').classList.remove('open');
-                    alert('Database state restoration cycle complete.');
-                }, 1000);
-            } else {
-                width += 20;
-                progressBar.style.width = width + '%';
-                progressText.textContent = `Restoring DB tables... ${width}% complete`;
-            }
-        }, 150);
+        fetch(restoreUrlTemplate.replace('__ID__', restoreBackupId), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: jsonHeaders(),
+            body: JSON.stringify({ confirm: true }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            progressBar.style.width = '100%';
+            progressText.textContent = data.message || 'Restore finished.';
+            setTimeout(() => {
+                document.getElementById('restore-backup-modal').classList.remove('open');
+                alert(data.message || 'Restore finished.');
+            }, 600);
+        })
+        .catch(err => {
+            modalActions.classList.remove('hidden');
+            progressText.textContent = err.message;
+            alert('Restore failed: ' + err.message);
+        });
+    }
+
+    const broadcastForm = document.getElementById('broadcast-form');
+    if (broadcastForm) {
+        broadcastForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const message = broadcastForm.querySelector('[name="message"]').value;
+            postOps(broadcastUrl, { message });
+        });
     }
 </script>
 @endsection

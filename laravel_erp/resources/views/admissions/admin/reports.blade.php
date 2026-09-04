@@ -861,15 +861,8 @@
         link.click();
     }
 
-    // Chart Interactive Telemetry & Tooltips
-    const monthlyChartData = [
-        { month: 'March 2026', apps: 95, adm: 20, vel: '+12.0%', rev: 'KES 95,000' },
-        { month: 'April 2026', apps: 140, adm: 45, vel: '+47.3%', rev: 'KES 140,000' },
-        { month: 'May 2026', apps: 210, adm: 88, vel: '+50.0%', rev: 'KES 210,000' },
-        { month: 'June 2026', apps: 285, adm: 165, vel: '+35.7%', rev: 'KES 285,000' },
-        { month: 'July 2026', apps: 320, adm: 210, vel: '+12.3%', rev: 'KES 320,000' },
-        { month: 'August 2026', apps: 234, adm: 184, vel: '-26.8%', rev: 'KES 234,000' }
-    ];
+    // Chart Interactive Telemetry & Tooltips (from database monthlyTrends)
+    const monthlyChartData = @json($monthlyChartData ?? []);
 
     let showAppsSeries = true;
     let showAdmSeries = true;
