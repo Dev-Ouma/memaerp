@@ -4,7 +4,7 @@
 [![PHP 8.3+](https://img.shields.io/badge/PHP-8.3%2B-777BB4?style=for-the-badge&logo=php)](https://php.net)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-4169E1?style=for-the-badge&logo=postgresql)](https://postgresql.org)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-v4-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com)
-[![Build & Tests](https://img.shields.io/badge/Tests-126%20Passed%20(757%20assertions)-success?style=for-the-badge&logo=checkmarx)](tests)
+[![Build & Tests](https://img.shields.io/badge/Tests-217%20Passed%20(2045%20assertions)-success?style=for-the-badge&logo=checkmarx)](tests)
 [![Platform License](https://img.shields.io/badge/License-Proprietary%20Enterprise-0A3E50?style=for-the-badge)](LICENSE)
 
 > **MEMA ERP** is a full-stack, enterprise-grade Higher Education Management & Operations Platform designed specifically for multi-faculty universities, constituent colleges, and Open, Distance & e-Learning (ODeL) institutions. It powers the complete academic, administrative, human capital, financial, and digital governance lifecycle.
@@ -16,26 +16,26 @@
 1. [System Overview & Key Features](#-system-overview--key-features)
 2. [High-Level System Architecture](#-high-level-system-architecture)
 3. [Network & Infrastructure Topology](#-network--infrastructure-topology)
-4. [Lifecycle Data Flow & Workspaces](#-lifecycle-data-flow--workspaces)
+4. [Lifecycle Data Flow: Applicant to Student](#-lifecycle-data-flow-applicant-to-student)
 5. [Load Balancer & Traffic Routing Design](#-load-balancer--traffic-routing-design)
 6. [Multi-Format Export Engine (Excel, CSV, PDF)](#-multi-format-export-engine)
 7. [Installation & Setup Guide](#-installation--setup-guide)
 8. [Environment Configuration & Security](#-environment-configuration--security)
-9. [Module Catalogue & Routes](#-module-catalogue--routes)
+9. [Default Access & User Credentials](#-default-access--user-credentials)
 10. [Automated Testing Suite](#-automated-testing-suite)
 
 ---
 
 ## 🌟 System Overview & Key Features
 
-* **Admissions & Intake Workflows**: 12 dedicated role-based administrative workspaces (Intake Setup, Application Processing, Auto-Assignment, Document Verification, Level 2 Review, Merit Shortlists, Senate Approvals, Letter Generation, Waitlist Auto-Promotion, Nominal Rolls, Fee Waivers, and M-Pesa Reconciliation).
-* **Curriculum & Academic Structure**: Hierarchical setup of University Schools/Faculties, Constituent Departments, Degree Programmes, Syllabi, Course Unit Templates, and Progression Criteria.
-* **Human Capital & SMHR**: Kenyan statutory salary advice engine with KRA Income Tax Act Cap 470 PAYE tax brackets, personal relief, health insurance relief, housing levy relief, NSSF Act 2013 (Tier 1 & 2), SHA (2.75%), Affordable Housing Levy (1.5%), P9A tax deduction cards, and staff directory.
-* **Postgraduate Research (SPGS)**: Thesis defense management, proposal reader allocation, viva voce panel scoring, plagiarism gating, examiner dashboards, and progress milestones.
-* **Examination & Certification**: Mark entry, grade scale matrices, transcript compilation, degree pass list validation, graduation clearance checklists, and alumni database.
-* **Financial Management & Budgeting**: Fee tracking, M-Pesa Daraja 2.0 integration, receipt generation, departmental vote-head budgeting proposals, and expenditure governance.
-* **System-Wide Load Balancer**: Dynamic LIFO, FIFO, Weighted Round Robin (WRR), Least Connections, and Priority Fair Queuing algorithms with cluster health monitoring and simulation playground.
-* **Platform Governance**: Database recycle bin with soft-delete retention policies, system maintenance lockdown, audit trail verification, and multi-format reporting engine.
+* **Admissions & Intake Pipeline**: Public course catalogue (`/programmes/apply`), KCSE grade matcher, online applications, document verification, Senate approvals, instant QR-verified offer letters, and automatic student conversion.
+* **Curriculum & Academic Registry**: Hierarchical management of Faculties, Departments, Degree Programmes, Syllabi, Course Units, and Grading Matrices.
+* **Human Capital & SMHR**: Kenyan statutory salary engine complying with KRA Income Tax Act Cap 470 PAYE, NSSF (Tier 1 & 2), SHA (2.75%), Affordable Housing Levy (1.5%), P9A tax cards, and staff directory.
+* **Postgraduate Research (SPGS)**: Thesis defense management, proposal reader allocation, viva voce panel scoring, and progress milestones.
+* **Examinations & Graduation**: Mark entry, provisional transcripts, pass list validation, graduation clearance checklists, and alumni database.
+* **Finance & Fee Reconciliation**: Real-time M-Pesa Daraja 2.0 integration, receipt generation, vote-head budgeting, and expenditure governance.
+* **System-Wide Load Balancer**: Dynamic FIFO, LIFO, Weighted Round Robin (WRR), Least Connections, and Priority Fair Queuing algorithms with live node telemetry.
+* **Platform Governance**: Recycle bin with soft-delete retention, maintenance lockdown, audit forensics, and multi-format reporting engine.
 
 ---
 
@@ -43,41 +43,42 @@
 
 ```mermaid
 graph TD
-    subgraph Client_Layer ["Client & Interface Layer"]
-        B1["Desktop Web Browser (Quicksand Theme)"]
-        B2["Mobile & Tablet Responsive Portals"]
-        B3["Automated Public API & Webhooks"]
+    subgraph Clients ["1. Users & Entry Portals"]
+        U1["Applicants<br/>(Admissions & Apply)"]
+        U2["Students<br/>(Academic & Fees Portal)"]
+        U3["Faculty & Staff<br/>(Lecturer & HR Desk)"]
+        U4["Administrators<br/>(Executive OpsCenter)"]
     end
 
-    subgraph Ingress_Layer ["Traffic Ingress & Load Balancer"]
-        LB["MEMA Intelligent Load Balancer<br/>(FIFO / LIFO / WRR / LeastConn / PFQ)"]
-        CB["Circuit Breaker & Telemetry Monitor"]
-        SEC["EnforceMaintenanceLockdown & Auth Middleware"]
+    subgraph Ingress ["2. Gateway & Traffic Control"]
+        WAF["HTTPS / TLS / Reverse Proxy"]
+        LB["MEMA Intelligent Load Balancer<br/>(FIFO · LIFO · WRR · LeastConn · PFQ)"]
+        SEC["Security & RBAC Middleware"]
+        WAF --> LB --> SEC
     end
 
-    subgraph App_Layer ["Application & Business Logic Layer (Laravel 12)"]
-        MOD_ADM["Admissions & Intake Workspaces"]
-        MOD_CUR["Curriculum & Faculty Registry"]
-        MOD_HR["SMHR & Statutory Payroll (KRA / NSSF / SHA)"]
-        MOD_PGR["Postgraduate Research (SPGS Viva)"]
-        MOD_EXAM["Examinations, Grades & Graduation"]
-        MOD_FIN["Fees, M-Pesa Daraja & Budgeting"]
-        EXP_ENG["Multi-Format Export Engine<br/>(OpenXML .xlsx / CSV UTF-8 / PDF Quicksand)"]
+    subgraph Core ["3. Enterprise Modules (Laravel 12 Engine)"]
+        M1["Admissions & Enrollment"]
+        M2["Curriculum & Faculties"]
+        M3["SMHR & Statutory Payroll"]
+        M4["Finance & Fee Payments"]
+        M5["Exams & Certification"]
+        M6["Dynamic Documents & Reports"]
     end
 
-    subgraph Data_Layer ["Persistence & Storage Layer"]
-        PG[("PostgreSQL 15+ Primary DB")]
-        S3[("Encrypted Document Storage / S3")]
-        CACHE[("Database / Redis Cache & Session Store")]
+    subgraph Data ["4. Persistence & External Services"]
+        DB[("PostgreSQL 15+ Primary")]
+        CACHE[("Redis Cache & Sessions")]
+        VAULT[("Encrypted File Storage")]
+        EXT["Safaricom M-Pesa · KRA iTax · KUCCPS"]
     end
 
-    Client_Layer --> LB
-    LB --> CB
-    CB --> SEC
-    SEC --> App_Layer
-    App_Layer --> PG
-    App_Layer --> S3
-    App_Layer --> CACHE
+    Clients --> WAF
+    SEC --> Core
+    Core --> DB
+    Core --> CACHE
+    Core --> VAULT
+    Core --> EXT
 ```
 
 ---
@@ -86,96 +87,92 @@ graph TD
 
 ```mermaid
 graph LR
-    subgraph Public_Internet ["Public Internet"]
-        Users["Students, Faculty, Staff & Public Applicants"]
+    subgraph Public ["Public Network"]
+        Users["Applicants · Students<br/>Lecturers · Administrators"]
     end
 
-    subgraph Edge_DMZ ["Edge Network & Reverse Proxy"]
-        WAF["Web Application Firewall (WAF)"]
-        SSL["TLS / SSL Termination (HTTPS :443)"]
-        Proxy["Nginx / Traefik Reverse Proxy"]
+    subgraph DMZ ["Edge & Ingress Layer"]
+        Proxy["Nginx / Reverse Proxy<br/>(TLS 1.3 / Port :443)"]
     end
 
-    subgraph Cluster_Fleet ["Application Server Fleet (:8000)"]
-        Node1["App Node 1 (Primary Core)"]
-        Node2["App Node 2 (Academic Delivery)"]
-        Node3["App Node 3 (High-Traffic Admissions)"]
+    subgraph Cluster ["Application Cluster (:8000)"]
+        App1["App Node 1 (Core ERP)"]
+        App2["App Node 2 (Academic)"]
+        App3["App Node 3 (Admissions)"]
     end
 
-    subgraph DB_VPC ["Isolated Private Database VPC"]
-        MasterDB[("PostgreSQL Primary DB")]
-        ReplicaDB[("PostgreSQL Read Replica")]
-        Backups["Automated Snapshot & Backup Vault"]
+    subgraph DataTier ["Data & Storage Tier"]
+        Postgres[("PostgreSQL 15+ Database")]
+        RedisStore[("Redis Session & Cache")]
+        S3Storage[("Document Vault Storage")]
     end
 
-    subgraph External_APIs ["External Regulatory & Financial APIs"]
-        MPesa["Safaricom M-Pesa Daraja 2.0"]
-        KRA["KRA iTax Statutory Portal"]
-        KUCCPS["KUCCPS Placement Registry"]
+    subgraph ThirdParty ["External Gateways"]
+        MPesaApi["M-Pesa Daraja 2.0"]
+        KRAApi["KRA Statutory Portal"]
     end
 
-    Users --> WAF --> SSL --> Proxy
-    Proxy --> Node1
-    Proxy --> Node2
-    Proxy --> Node3
-    Node1 --> MasterDB
-    Node2 --> MasterDB
-    Node3 --> ReplicaDB
-    MasterDB -.-> Backups
-    Node1 --> MPesa
-    Node1 --> KRA
-    Node1 --> KUCCPS
+    Users --> Proxy
+    Proxy --> App1
+    Proxy --> App2
+    Proxy --> App3
+    App1 --> Postgres
+    App2 --> Postgres
+    App3 --> Postgres
+    App1 --> RedisStore
+    App1 --> S3Storage
+    App1 --> MPesaApi
+    App1 --> KRAApi
 ```
 
 ---
 
-## 🔄 Lifecycle Data Flow & Workspaces
+## 🔄 Lifecycle Data Flow: Applicant to Student
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Applicant as Student Applicant
-    participant Portal as Admissions Portal
-    participant Review as Review & Shortlist Workspace
-    participant Finance as M-Pesa & Fee Engine
-    participant Senate as Senate & Board Approvals
-    participant Reg as Student Nominal Roll & LMS
+    actor App as Applicant
+    participant Portal as Admissions Portal (/programmes/apply)
+    participant Mpesa as M-Pesa / Finance Engine
+    participant Senate as Admissions & Senate Desk
+    participant Student as Student Registry & LMS
 
-    Applicant->>Portal: Submit Online Application & Upload Documents
-    Portal->>Finance: Process Application Fee via M-Pesa Daraja
-    Finance-->>Portal: Payment Verified (PAID status)
-    Portal->>Review: Enqueue into Automated Work-Queue
-    Review->>Review: Document Verification & Academic Scoring
-    Review->>Senate: Generate Merit Shortlist
-    Senate->>Senate: Board Sign-off & Admission Authorization
-    Senate->>Applicant: Dispatch Official QR-Verified Offer Letter
-    Applicant->>Portal: Accept Admission Offer
-    Portal->>Reg: Automated Matriculation & Student ID Generation
-    Reg->>Reg: Assign Course Units, LMS Forums & Nominal Roll
+    App->>Portal: 1. Select Programme & Submit Online Application
+    App->>Portal: 2. Upload Identification & Academic Transcripts
+    App->>Mpesa: 3. Pay Application Fee via M-Pesa STK / Paybill
+    Mpesa-->>Portal: 4. Fee Cleared & Official Receipt Issued
+    Portal->>Senate: 5. Routed to Verification & Scoring Queue
+    Senate->>Senate: 6. Dean & Senate Board Sign-off
+    Senate->>App: 7. Dispatch Official QR-Verified Offer Letter (PDF)
+    App->>Portal: 8. Accept Admission Offer & Matriculation Oath
+    Portal->>Student: 9. Issue Student Registration No. & Course Enrolment
+    Student-->>App: 10. Student LMS & Student Profile Active
 ```
 
 ---
 
 ## ⚡ Load Balancer & Traffic Routing Design
 
-The system includes a fully functional load balancing core located at [`app/Services/LoadBalancerService.php`](file:///Users/wabwire/Dev/mema_erp/laravel_erp/app/Services/LoadBalancerService.php) and management interface at [`/admin-setups/load-balancer`](http://127.0.0.1:8000/admin-setups/load-balancer).
+The system includes a fully functional load balancing core located at [`app/Services/LoadBalancerService.php`](file:///Users/wabwire/Dev/memaerp/laravel_erp/app/Services/LoadBalancerService.php) and management interface at [`/admin-setups/load-balancer`](http://127.0.0.1:8000/admin-setups/load-balancer).
 
 ```mermaid
 graph TD
-    REQ["Incoming HTTP Request"] --> LB_CORE{"LoadBalancerService"}
-    LB_CORE -->|Strategy: FIFO| FIFO["First-In, First-Out Queue"]
-    LB_CORE -->|Strategy: LIFO| LIFO["Last-In, First-Out Priority Stack"]
-    LB_CORE -->|Strategy: WRR| WRR["Weighted Round Robin Distributor"]
-    LB_CORE -->|Strategy: LEAST_CONN| LC["Least Active Connections"]
-    LB_CORE -->|Strategy: PFQ| PFQ["Priority Fair Queue (VIP & Critical Ops)"]
+    REQ["Incoming HTTP Request"] --> LB_ENGINE{"Load Balancer Service"}
 
-    FIFO --> FLEET["Healthy Server Node Fleet"]
-    LIFO --> FLEET
-    WRR --> FLEET
-    LC --> FLEET
-    PFQ --> FLEET
+    LB_ENGINE -->|Strategy 1| FIFO["First-In, First-Out (FIFO)"]
+    LB_ENGINE -->|Strategy 2| LIFO["Last-In, First-Out (LIFO)"]
+    LB_ENGINE -->|Strategy 3| WRR["Weighted Round Robin (WRR)"]
+    LB_ENGINE -->|Strategy 4| LC["Least Active Connections"]
+    LB_ENGINE -->|Strategy 5| PFQ["Priority Fair Queue (VIP & Admin)"]
 
-    FLEET --> RESP["Attach Telemetry Headers (X-MEMA-LB-*) & Return Response"]
+    FIFO --> NODES["Healthy Server Node Fleet"]
+    LIFO --> NODES
+    WRR --> NODES
+    LC --> NODES
+    PFQ --> NODES
+
+    NODES --> RESP["Attach Telemetry Headers (X-MEMA-LB-*) & Respond"]
 ```
 
 ---
