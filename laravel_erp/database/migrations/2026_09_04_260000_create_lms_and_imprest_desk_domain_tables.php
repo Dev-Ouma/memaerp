@@ -121,6 +121,8 @@ return new class extends Migration
             $table->string('cohort', 80)->nullable();
             $table->unsignedInteger('enrolled_students')->default(0);
             $table->unsignedInteger('total_cat_synced')->default(0);
+            $table->string('cat1_weight', 40)->nullable();
+            $table->string('cat2_weight', 40)->nullable();
             $table->string('erp_exam_engine_sync', 80)->nullable();
             $table->string('sync_timestamp', 80)->nullable();
             $table->string('status', 40)->default('Pending')->index();

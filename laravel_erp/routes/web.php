@@ -382,11 +382,17 @@ Route::middleware('auth')->group(function (): void {
     Route::prefix('imprest')->middleware('module:imprest')->name('imprest.')->group(function (): void {
         Route::get('/', [ImprestController::class, 'permissions'])->name('index');
         Route::get('/permissions', [ImprestController::class, 'permissions'])->name('permissions');
+        Route::post('/permissions', [ImprestController::class, 'storePermissions'])->name('permissions.store');
         Route::get('/claim-approval-permission', [ImprestController::class, 'claimApprovals'])->name('claim-approvals');
+        Route::post('/claim-approval-permission', [ImprestController::class, 'storeClaimApprovals'])->name('claim-approvals.store');
         Route::get('/imprest-surrender-permission', [ImprestController::class, 'surrenderPermissions'])->name('surrender-permissions');
+        Route::post('/imprest-surrender-permission', [ImprestController::class, 'storeSurrenderPermissions'])->name('surrender-permissions.store');
         Route::get('/requisitions', [ImprestController::class, 'requisitions'])->name('requisitions');
+        Route::post('/requisitions', [ImprestController::class, 'storeRequisitions'])->name('requisitions.store');
         Route::get('/surrenders', [ImprestController::class, 'surrenders'])->name('surrenders');
+        Route::post('/surrenders', [ImprestController::class, 'storeSurrenders'])->name('surrenders.store');
         Route::get('/audit-ledger', [ImprestController::class, 'auditLedger'])->name('audit-ledger');
+        Route::post('/audit-ledger', [ImprestController::class, 'storeAuditLedger'])->name('audit-ledger.store');
     });
 
     // Cohort Setup Module Routes (Lifecycle Sequence)
@@ -434,14 +440,23 @@ Route::middleware('auth')->group(function (): void {
     Route::prefix('lms')->middleware('module:lms')->name('lms.')->group(function (): void {
         Route::get('/', [LmsController::class, 'courseShells'])->name('index');
         Route::get('/course-shells', [LmsController::class, 'courseShells'])->name('course-shells');
+        Route::post('/course-shells', [LmsController::class, 'storeCourseShells'])->name('course-shells.store');
         Route::get('/lecturer-assignments', [LmsController::class, 'lecturerAssignments'])->name('lecturer-assignments');
+        Route::post('/lecturer-assignments', [LmsController::class, 'storeLecturerAssignments'])->name('lecturer-assignments.store');
         Route::get('/live-lectures', [LmsController::class, 'liveLectures'])->name('live-lectures');
+        Route::post('/live-lectures', [LmsController::class, 'storeLiveLectures'])->name('live-lectures.store');
         Route::get('/e-resources', [LmsController::class, 'eResources'])->name('e-resources');
+        Route::post('/e-resources', [LmsController::class, 'storeEResources'])->name('e-resources.store');
         Route::get('/assignments', [LmsController::class, 'assignments'])->name('assignments');
+        Route::post('/assignments', [LmsController::class, 'storeAssignments'])->name('assignments.store');
         Route::get('/student-analytics', [LmsController::class, 'studentAnalytics'])->name('student-analytics');
+        Route::post('/student-analytics', [LmsController::class, 'storeStudentAnalytics'])->name('student-analytics.store');
         Route::get('/discussion-forums', [LmsController::class, 'discussionForums'])->name('discussion-forums');
+        Route::post('/discussion-forums', [LmsController::class, 'storeDiscussionForums'])->name('discussion-forums.store');
         Route::get('/online-quizzes', [LmsController::class, 'onlineQuizzes'])->name('online-quizzes');
+        Route::post('/online-quizzes', [LmsController::class, 'storeOnlineQuizzes'])->name('online-quizzes.store');
         Route::get('/gradebook-sync', [LmsController::class, 'gradebookSync'])->name('gradebook-sync');
+        Route::post('/gradebook-sync', [LmsController::class, 'storeGradebookSync'])->name('gradebook-sync.store');
     });
 
     // Examination Module Routes (Start-to-End Operational Lifecycle)

@@ -103,3 +103,28 @@ Graduation desk domain (not `module_records`; requires `graduation.manage`):
 | Alumni | `POST graduation/alumni-list` |
 | Ceremony | `POST graduation/ceremony` |
 | Ceremony report | `POST graduation/ceremony-report` |
+
+LMS desk domain (not `module_records`; requires `lms.manage`):
+
+| Action | Route |
+|---|---|
+| Course shell | `POST lms/course-shells` |
+| Lecturer assignment | `POST lms/lecturer-assignments` |
+| Live lecture | `POST lms/live-lectures` |
+| E-resource | `POST lms/e-resources` |
+| Assignment | `POST lms/assignments` |
+| Student analytic | `POST lms/student-analytics` |
+| Discussion thread | `POST lms/discussion-forums` |
+| Online quiz | `POST lms/online-quizzes` |
+| Gradebook sync | `POST lms/gradebook-sync` |
+
+Imprest desk domain (not `module_records`; requires `imprest.manage`, e.g. `finance_officer`):
+
+| Action | Route |
+|---|---|
+| Permission tier | `POST imprest/permissions` |
+| Claim approval matrix | `POST imprest/claim-approval-permission` |
+| Surrender rule | `POST imprest/imprest-surrender-permission` |
+| Requisition | `POST imprest/requisitions` |
+| Surrender | `POST imprest/surrenders` |
+| Audit ledger | `POST imprest/audit-ledger` |
