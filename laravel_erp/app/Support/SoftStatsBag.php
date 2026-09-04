@@ -12,7 +12,7 @@ use Traversable;
 
 /**
  * Stats bag that returns 0 for missing keys so DB-backed screens
- * with empty module_records do not throw Undefined array key errors.
+ * with empty domain tables do not throw Undefined array key errors.
  *
  * @implements ArrayAccess<string, mixed>
  * @implements IteratorAggregate<string, mixed>

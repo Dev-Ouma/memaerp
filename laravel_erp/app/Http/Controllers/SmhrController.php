@@ -18,7 +18,6 @@ use App\Models\SmhrWorkload;
 use App\Models\Staff;
 use App\Models\StaffLeaveRequest;
 use App\Models\User;
-use App\Services\OperationalRecordService;
 use App\Support\SoftStatsBag;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,10 +28,6 @@ use Illuminate\View\View;
 final class SmhrController extends Controller
 {
     use AuthorizesCataloguePermission;
-
-    public function __construct(
-        private readonly OperationalRecordService $records,
-    ) {}
 
     private function authorizeHr(Request $request, string ...$permissions): void
     {
@@ -730,16 +725,28 @@ final class SmhrController extends Controller
     public function onboarding(Request $request): View
     {
         $records = SmhrOnboardingCandidate::query()->latest()->get();
-        $candidates = $records->map(fn (SmhrOnboardingCandidate $row): array => [
-            'id' => (string) $row->id,
-            'name' => $row->name,
-            'designation' => $row->designation ?? '—',
-            'department' => $row->department ?? '—',
-            'joining_date' => $row->joining_date ?? '—',
-            'stage' => $row->stage ?? '—',
-            'progress' => $row->progress ?? '—',
-            'checklist' => $row->checklist ?? '—',
-        ])->all();
+        $candidates = $records->map(function (SmhrOnboardingCandidate $row): array {
+            $progress = (int) preg_replace('/\D+/', '', (string) ($row->progress ?? '0'));
+            $checklist = $row->checklist;
+            if (is_string($checklist) && $checklist !== '') {
+                $decoded = json_decode($checklist, true);
+                $checklist = is_array($decoded) ? $decoded : ['Credentials' => false, 'IT account' => false, 'Contract' => false, 'Induction' => false, 'Workstation' => false];
+            }
+            if (! is_array($checklist) || $checklist === []) {
+                $checklist = ['Credentials' => false, 'IT account' => false, 'Contract' => false, 'Induction' => false, 'Workstation' => false];
+            }
+
+            return [
+                'id' => (string) $row->id,
+                'name' => $row->name,
+                'designation' => $row->designation ?? '—',
+                'department' => $row->department ?? '—',
+                'joining_date' => $row->joining_date ?? '—',
+                'stage' => $row->stage ?? '—',
+                'progress' => $progress,
+                'checklist' => $checklist,
+            ];
+        })->all();
         $onboardingStats = new SoftStatsBag([
             'inProgress' => $records->filter(fn (SmhrOnboardingCandidate $r): bool => str_contains(strtolower($r->status), 'progress') || str_contains(strtolower($r->status), 'open'))->count(),
             'completedThisQuarter' => $records->filter(fn (SmhrOnboardingCandidate $r): bool => str_contains(strtolower($r->status), 'complet'))->count(),
@@ -765,8 +772,14 @@ final class SmhrController extends Controller
             ...$data,
             'joining_date' => $data['joining_date'] ?? null,
             'stage' => 'Induction',
-            'progress' => '10%',
-            'checklist' => 'Credentials pending',
+            'progress' => '10',
+            'checklist' => json_encode([
+                'Credentials' => true,
+                'IT account' => false,
+                'Contract' => false,
+                'Induction' => false,
+                'Workstation' => false,
+            ]),
             'status' => 'In Progress',
         ]);
 

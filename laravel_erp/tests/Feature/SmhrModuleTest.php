@@ -184,18 +184,20 @@ final class SmhrModuleTest extends TestCase
         $response->assertDontSee('Dr. Mercy Chebet');
 
         $storeResponse = $this->actingAs($this->admin)->post(route('smhr.onboarding.store'), [
-            'staff_name' => 'Dr Jane Mwangi',
+            'name' => 'Dr Jane Mwangi',
+            'email' => 'j.mwangi@mema.ac.ke',
+            'phone' => '+254700000001',
+            'designation' => 'Senior Lecturer',
             'department' => 'Computer Science',
-            'start_date' => '2026-10-01',
-            'status' => 'Open',
+            'joining_date' => '2026-10-01',
         ]);
 
         $storeResponse->assertRedirect(route('smhr.onboarding'));
         $storeResponse->assertSessionHas('success');
-        $this->assertDatabaseHas('module_records', [
-            'module' => 'smhr',
-            'kind' => 'onboarding',
-            'title' => 'Dr Jane Mwangi',
+        $this->assertDatabaseHas('smhr_onboarding_candidates', [
+            'name' => 'Dr Jane Mwangi',
+            'department' => 'Computer Science',
+            'status' => 'In Progress',
         ]);
     }
 }

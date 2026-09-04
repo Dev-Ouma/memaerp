@@ -98,7 +98,7 @@ final class PermissionCatalogue
             ['smhr.leave.submit', 'internal', false, 'Submit leave applications on behalf of staff'],
             ['smhr.leave.approve', 'confidential', false, 'Approve or reject staff leave requests'],
 
-            // Operational modules (module_records write path) --------------------------------------
+            // Desk domain write permissions --------------------------------------------------------
             ['fees.manage', 'confidential', false, 'Create and amend fee structures, accounts and payables'],
             ['registration.manage', 'confidential', false, 'Manage registration periods, promotions and student registration records'],
             ['transfers.manage', 'confidential', false, 'Manage transfer windows, exemptions and credit transfers'],

@@ -45,9 +45,9 @@ Named desk accounts (created by `StakeholderSeeder` / institutional data seeders
 | `graduation.officer@mema.ac.ke` | `graduation_officer` |
 | `student.affairs@mema.ac.ke` | `student_affairs_officer` |
 
-Desk grants are skipped when the user already holds `system_administrator` (segregation of duties). System administrators may manage curriculum, SMHR and operational module records, but not admission decisions.
+Desk grants are skipped when the user already holds `system_administrator` (segregation of duties). System administrators may manage curriculum and SMHR records, but not admission decisions.
 
-Operational `POST /operational/{module}/{kind}` writes require the module write permission from `ModuleWritePermission` (for example `fees.manage`, `transfers.manage`).
+Operational desks write through dedicated module POSTs (not a shared `module_records` shim). Each desk route below requires its catalogue manage permission.
 
 Registration → Fees domain (not `module_records`):
 
@@ -156,3 +156,19 @@ Service providers desk domain (not `module_records`; requires `service_providers
 | Payment | `POST service-providers/payments` |
 | Debit note | `POST service-providers/debit-notes` |
 | Credit note | `POST service-providers/credit-notes` |
+
+SMHR desk domain (not `module_records`; requires `smhr.staff.manage` except leave actions):
+
+| Action | Route | Permission |
+|---|---|---|
+| Staff directory | `POST smhr/staff-directory` | `smhr.staff.manage` |
+| Onboarding | `POST smhr/onboarding` | `smhr.staff.manage` |
+| Workload | `POST smhr/workload-allocation` | `smhr.staff.manage` |
+| Appraisal | `POST smhr/performance-appraisals` | `smhr.staff.manage` |
+| Payroll row | `POST smhr/payroll-register` | `smhr.staff.manage` |
+| Variance report | `POST smhr/reports` | `smhr.staff.manage` |
+| Disciplinary | `POST smhr/disciplinary-records` | `smhr.staff.manage` |
+| Leave submit | `POST smhr/leave-management` | `smhr.leave.submit` |
+| Leave approve/reject | `POST smhr/leave-management/{id}/approve\|reject` | `smhr.leave.approve` |
+
+Cohort creation persists to `institution_cohorts` via `POST cohort/cohort-creation` (authenticated cohort module access). Mapping / publish-finance / transfer screens render empty until dedicated domain tables exist.

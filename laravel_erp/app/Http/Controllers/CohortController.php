@@ -180,62 +180,12 @@ final class CohortController extends Controller
      */
     public function programmeCohortMapping(Request $request): View
     {
+        $mappings = [];
         $stats = [
-            'totalProgrammeMappings' => 48,
-            'mappedDegreeProgrammes' => 18,
-            'mappedCurriculaVersions' => 24,
-            'activeMappedStudents' => 14850,
-        ];
-
-        $mappings = [
-            [
-                'id' => 1,
-                'mapping_code' => 'PCM-2026-BCS',
-                'programme_code' => 'MEMA-BCS',
-                'programme_name' => 'Bachelor of Science in Computer Science',
-                'cohort_code' => 'COH-2026-SEP-MAIN',
-                'curriculum_version' => 'v2026.1 (CUE Approved)',
-                'school' => 'School of Science & Technology',
-                'enrolled_scholars' => 640,
-                'progression_year' => 'Year 1 Trimester 2',
-                'status' => 'Active Mapping',
-            ],
-            [
-                'id' => 2,
-                'mapping_code' => 'PCM-2026-MDS',
-                'programme_code' => 'MEMA-MDS',
-                'programme_name' => 'Master of Data Science',
-                'cohort_code' => 'COH-2026-SEP-MAIN',
-                'curriculum_version' => 'v2025.2 (Modular)',
-                'school' => 'School of Science & Technology',
-                'enrolled_scholars' => 185,
-                'progression_year' => 'Year 1 Trimester 2',
-                'status' => 'Active Mapping',
-            ],
-            [
-                'id' => 3,
-                'mapping_code' => 'PCM-2026-BBA',
-                'programme_code' => 'MEMA-BBA',
-                'programme_name' => 'Bachelor of Business Administration',
-                'cohort_code' => 'COH-2026-SEP-MAIN',
-                'curriculum_version' => 'v2026.1 (Trimester Track)',
-                'school' => 'School of Business & Economics',
-                'enrolled_scholars' => 520,
-                'progression_year' => 'Year 1 Trimester 2',
-                'status' => 'Active Mapping',
-            ],
-            [
-                'id' => 4,
-                'mapping_code' => 'PCM-2027-BCS',
-                'programme_code' => 'MEMA-BCS',
-                'programme_name' => 'Bachelor of Science in Computer Science',
-                'cohort_code' => 'COH-2027-JAN-INT',
-                'curriculum_version' => 'v2026.1 (CUE Approved)',
-                'school' => 'School of Science & Technology',
-                'enrolled_scholars' => 380,
-                'progression_year' => 'Year 1 Trimester 1',
-                'status' => 'Active Mapping',
-            ],
+            'totalProgrammeMappings' => 0,
+            'mappedDegreeProgrammes' => 0,
+            'mappedCurriculaVersions' => 0,
+            'activeMappedStudents' => Student::query()->count(),
         ];
 
         return view('cohort.programme-cohort-mapping', compact('stats', 'mappings'));
@@ -246,62 +196,12 @@ final class CohortController extends Controller
      */
     public function publishFinance(Request $request): View
     {
+        $financeSchedules = [];
         $stats = [
-            'publishedFinanceSchedules' => 36,
-            'totalBilledVolume' => 'KES 342,500,000',
-            'directPaymentReconciled' => 'KES 284,900,000 (83.2%)',
-            'pendingFinancePublish' => 4,
-        ];
-
-        $financeSchedules = [
-            [
-                'id' => 1,
-                'publish_ref' => 'PUB-FIN-2026-BCS',
-                'programme_name' => 'BSc. Computer Science (Sept 2026 Cohort)',
-                'cohort_code' => 'COH-2026-SEP-MAIN',
-                'tuition_fee_per_trimester' => 'KES 45,000',
-                'statutory_fees' => 'KES 8,500',
-                'fee_billing_schedule' => 'Auto-Invoice at Unit Registration',
-                'minimum_exam_clearance' => '100% Tuition Fee Cleared',
-                'finance_approval' => 'Finance Director Published',
-                'publish_status' => 'Live in Billing Engine',
-            ],
-            [
-                'id' => 2,
-                'publish_ref' => 'PUB-FIN-2026-MDS',
-                'programme_name' => 'Master of Data Science (Sept 2026 Cohort)',
-                'cohort_code' => 'COH-2026-SEP-MAIN',
-                'tuition_fee_per_trimester' => 'KES 75,000',
-                'statutory_fees' => 'KES 12,000',
-                'fee_billing_schedule' => 'Auto-Invoice Trimester Start',
-                'minimum_exam_clearance' => '100% Cleared (R19 Gating)',
-                'finance_approval' => 'Finance Director Published',
-                'publish_status' => 'Live in Billing Engine',
-            ],
-            [
-                'id' => 3,
-                'publish_ref' => 'PUB-FIN-2027-BCS',
-                'programme_name' => 'BSc. Computer Science (Jan 2027 Cohort)',
-                'cohort_code' => 'COH-2027-JAN-INT',
-                'tuition_fee_per_trimester' => 'KES 45,000',
-                'statutory_fees' => 'KES 8,500',
-                'fee_billing_schedule' => 'Auto-Invoice at Unit Registration',
-                'minimum_exam_clearance' => '100% Tuition Fee Cleared',
-                'finance_approval' => 'Finance Director Published',
-                'publish_status' => 'Live in Billing Engine',
-            ],
-            [
-                'id' => 4,
-                'publish_ref' => 'PUB-FIN-2027-MAY-EXEC',
-                'programme_name' => 'Executive MBA / Postgrad (May 2027 Cohort)',
-                'cohort_code' => 'COH-2027-MAY-EXEC',
-                'tuition_fee_per_trimester' => 'KES 90,000',
-                'statutory_fees' => 'KES 15,000',
-                'fee_billing_schedule' => 'Trimester Installment 50:50',
-                'minimum_exam_clearance' => '100% Cleared Prior to Exam',
-                'finance_approval' => 'Under Senior Accountant Audit',
-                'publish_status' => 'Pending Finance Publish',
-            ],
+            'publishedFinanceSchedules' => 0,
+            'totalBilledVolume' => 'KES 0',
+            'directPaymentReconciled' => 'KES 0',
+            'pendingFinancePublish' => 0,
         ];
 
         return view('cohort.publish-finance', compact('stats', 'financeSchedules'));
@@ -312,53 +212,12 @@ final class CohortController extends Controller
      */
     public function cohortTransfer(Request $request): View
     {
+        $transfers = [];
         $stats = [
-            'totalCohortTransfers' => 124,
-            'approvedMigrations' => 108,
-            'pendingDeanReview' => 12,
-            'specialDeferrals' => 4,
-        ];
-
-        $transfers = [
-            [
-                'id' => 1,
-                'transfer_no' => 'CT-2027-0051',
-                'student_name' => 'Victor Kipkorir Cheruiyot',
-                'reg_no' => 'MEMA/BCS/2025/0312',
-                'programme' => 'BSc. Computer Science',
-                'source_cohort' => 'COH-2025-SEP-MAIN',
-                'target_cohort' => 'COH-2026-SEP-MAIN',
-                'transfer_reason' => 'Medical Deferral (1 Trimester Sabbatical)',
-                'academic_credit_status' => 'All 8 Units Carried Forward',
-                'fee_credit_transferred' => 'KES 45,000 Preserved',
-                'approval_status' => 'Approved by Registrar Academic',
-            ],
-            [
-                'id' => 2,
-                'transfer_no' => 'CT-2027-0052',
-                'student_name' => 'Caroline Akinyi Okumu',
-                'reg_no' => 'MEMA/BBA/2025/0844',
-                'programme' => 'Bachelor of Business Administration',
-                'source_cohort' => 'COH-2025-SEP-MAIN',
-                'target_cohort' => 'COH-2027-JAN-INT',
-                'transfer_reason' => 'Accelerated Trimester Progression Track',
-                'academic_credit_status' => 'Fast-track Approved',
-                'fee_credit_transferred' => 'KES 45,000 Applied',
-                'approval_status' => 'Approved by Registrar Academic',
-            ],
-            [
-                'id' => 3,
-                'transfer_no' => 'CT-2027-0053',
-                'student_name' => 'Francis Mwangi Kamau',
-                'reg_no' => 'MEMA/BIT/2026/0119',
-                'programme' => 'BSc. Information Technology',
-                'source_cohort' => 'COH-2026-SEP-MAIN',
-                'target_cohort' => 'COH-2027-JAN-INT',
-                'transfer_reason' => 'Employment Schedule Shift (Moved to Evening Virtual Track)',
-                'academic_credit_status' => 'Pending HOD Unit Audit',
-                'fee_credit_transferred' => 'Under Verification',
-                'approval_status' => 'Pending Faculty Dean Endorsement',
-            ],
+            'totalCohortTransfers' => 0,
+            'approvedMigrations' => 0,
+            'pendingDeanReview' => 0,
+            'specialDeferrals' => 0,
         ];
 
         return view('cohort.cohort-transfer', compact('stats', 'transfers'));

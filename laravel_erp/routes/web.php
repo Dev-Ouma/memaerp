@@ -22,7 +22,6 @@ use App\Http\Controllers\ImprestController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\LmsController;
 use App\Http\Controllers\LoadBalancerController;
-use App\Http\Controllers\OperationalRecordController;
 use App\Http\Controllers\PgResearchActionController;
 use App\Http\Controllers\PgResearchController;
 use App\Http\Controllers\PublicAdmissionController;
@@ -93,8 +92,6 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/dashboard/export', [DashboardExportController::class, 'export'])->name('dashboard.export');
     Route::get('/dashboard/records-preview', [DashboardExportController::class, 'preview'])->name('dashboard.records-preview');
-    Route::post('/operational/{module}/{kind}', [OperationalRecordController::class, 'store'])->name('operational.records.store');
-    Route::patch('/operational/records/{record}/status', [OperationalRecordController::class, 'updateStatus'])->name('operational.records.status');
     Route::get('/account/{section}', [AccountController::class, 'show'])->name('account.show');
     Route::put('/account/preferences', [AccountController::class, 'preferences'])->name('account.preferences');
     Route::post('/account/switch-role', [AccountController::class, 'switchRole'])->name('account.switch-role');
@@ -414,6 +411,7 @@ Route::middleware('auth')->group(function (): void {
         Route::put('/academic-year/{academicYear}', [CohortController::class, 'updateAcademicYear'])->name('academic-year.update');
         Route::delete('/academic-year/{academicYear}', [CohortController::class, 'destroyAcademicYear'])->name('academic-year.destroy');
         Route::get('/cohort-creation', [CohortController::class, 'cohortCreation'])->name('cohort-creation');
+        Route::post('/cohort-creation', [CohortController::class, 'storeCohort'])->name('cohort-creation.store');
         Route::get('/programme-cohort-mapping', [CohortController::class, 'programmeCohortMapping'])->name('programme-cohort-mapping');
         Route::get('/publish-finance', [CohortController::class, 'publishFinance'])->name('publish-finance');
         Route::get('/cohort-transfer', [CohortController::class, 'cohortTransfer'])->name('cohort-transfer');

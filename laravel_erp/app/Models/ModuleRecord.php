@@ -9,6 +9,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * Legacy generic operational rows table. Desks now persist to dedicated domain
+ * tables; this model remains only for historical rows until a data migration drops them.
+ */
 #[Fillable([
     'module', 'kind', 'code', 'status', 'title', 'party_name', 'party_ref', 'programme',
     'department', 'amount', 'amount_secondary', 'quantity', 'starts_on', 'ends_on',

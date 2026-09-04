@@ -11,7 +11,6 @@ use App\Models\ApplicationPaymentAttempt;
 use App\Models\ApplicationReview;
 use App\Models\ApplicationStatusHistory;
 use App\Models\Course;
-use App\Models\ModuleRecord;
 use App\Models\Platform\AuditEvent;
 use App\Models\ProgrammeOffering;
 use App\Models\Student;
@@ -726,37 +725,21 @@ final class AdmissionReportService
     }
 
     /**
-     * Fallback for standard operational modules
+     * Fallback for unknown report keys — empty shell (no module_records shim).
      */
     private function fallbackReport(string $key): array
     {
-        $rows = ModuleRecord::query()
-            ->where(function ($query) use ($key): void {
-                $query->where('kind', str_replace('-', '_', $key))
-                    ->orWhere('kind', $key);
-            })
-            ->latest()
-            ->limit(100)
-            ->get()
-            ->map(fn (ModuleRecord $record): array => [
-                $record->code,
-                $record->title,
-                $record->party_name ?: '—',
-                $record->status,
-                optional($record->updated_at)->format('d M Y') ?: '—',
-            ])->all();
-
         return [
             'title' => ucwords(str_replace('-', ' ', $key)).' Report',
-            'description' => "Database-backed operational report for {$key}.",
+            'description' => "No dedicated domain report is registered for {$key}.",
             'stats' => [
-                ['label' => 'Total Records', 'val' => (string) count($rows)],
-                ['label' => 'Active Status', 'val' => (string) collect($rows)->filter(fn ($r) => str_contains(strtolower((string) ($r[3] ?? '')), 'active'))->count()],
-                ['label' => 'Source', 'val' => 'module_records'],
+                ['label' => 'Total Records', 'val' => '0'],
+                ['label' => 'Active Status', 'val' => '0'],
+                ['label' => 'Source', 'val' => 'unregistered'],
                 ['label' => 'Updated', 'val' => now()->format('d M Y')],
             ],
             'headers' => ['Record Identifier', 'Title', 'Party', 'Lifecycle State', 'Last Updated'],
-            'rows' => $rows,
+            'rows' => [],
         ];
     }
 }

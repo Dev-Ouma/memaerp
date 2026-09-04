@@ -35,6 +35,10 @@ final class OperationalModulesDatabaseTest extends TestCase
             'transfers.dates-setup',
             'service-providers.providers',
             'reports.advanced-analytics',
+            'smhr.workload-allocation',
+            'smhr.onboarding',
+            'cohort.cohort-creation',
+            'cohort.programme-cohort-mapping',
         ] as $route) {
             $this->actingAs($this->admin)->get(route($route))->assertOk();
         }
@@ -49,6 +53,12 @@ final class OperationalModulesDatabaseTest extends TestCase
         $this->actingAs($this->admin)->get(route('reports.advanced-analytics'))
             ->assertOk()
             ->assertDontSee('14,850');
+        $this->actingAs($this->admin)->get(route('cohort.cohort-creation'))
+            ->assertOk()
+            ->assertDontSee('COH-2026-SEP-MAIN');
+        $this->actingAs($this->admin)->get(route('smhr.onboarding'))
+            ->assertOk()
+            ->assertDontSee('Dr. Mercy Chebet');
     }
 
     public function test_operational_record_can_be_created_and_listed(): void
@@ -113,7 +123,7 @@ final class OperationalModulesDatabaseTest extends TestCase
         $this->assertSame('approved', $leave->fresh()->status);
     }
 
-    public function test_graduation_record_persists_through_operational_route(): void
+    public function test_graduation_criteria_persist_to_domain_table(): void
     {
 
         $this->actingAs($this->admin)->post(route('graduation.criteria.store'), [

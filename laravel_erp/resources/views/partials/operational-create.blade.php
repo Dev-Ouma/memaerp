@@ -4,11 +4,11 @@
         <summary class="cursor-pointer list-none flex items-center justify-between gap-3 px-4 py-3 bg-slate-50 border-b border-slate-200">
             <div>
                 <div class="text-xs font-bold uppercase tracking-wide text-slate-700">{{ $operationalCreate['title'] ?? 'Add database record' }}</div>
-                <p class="text-[11px] text-slate-500 mt-0.5">{{ $operationalCreate['hint'] ?? 'Persists to PostgreSQL module_records — no mock data.' }}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">{{ $operationalCreate['hint'] ?? 'Persists to the domain table for this desk.' }}</p>
             </div>
             <span class="px-3 py-1 rounded-md border border-orange-500 text-orange-600 font-bold text-xs group-open:bg-orange-50">Add record</span>
         </summary>
-        <form method="POST" action="{{ $operationalCreate['action'] ?? route('operational.records.store', ['module' => $operationalCreate['module'], 'kind' => $operationalCreate['kind']]) }}" class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" data-processing-message="Saving database record…">
+        <form method="POST" action="{{ $operationalCreate['action'] }}" class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" data-processing-message="Saving database record…">
             @csrf
             @foreach(($operationalCreate['fields'] ?? []) as $field)
                 @php
